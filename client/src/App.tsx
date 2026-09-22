@@ -9,7 +9,9 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { NoteEditorPage } from './pages/NoteEditorPage';
 import { NoteViewPage } from './pages/NoteViewPage';
 import { NotesPage } from './pages/NotesPage';
+import { PrivacySettingsPage } from './pages/PrivacySettingsPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { SecureFilesPage } from './pages/SecureFilesPage';
 import { SecurityInspectorPage } from './pages/SecurityInspectorPage';
 import { SharedWithMePage } from './pages/SharedWithMePage';
 import { UnlockPage } from './pages/UnlockPage';
@@ -58,6 +60,8 @@ export default function App(): JSX.Element {
         <Route path="/notes/:noteId" element={<NoteViewPage />} />
         <Route path="/notes/:noteId/edit" element={<NoteEditorPage mode="edit" />} />
         <Route path="/shared" element={<SharedWithMePage />} />
+        <Route path="/files" element={<SecureFilesPage />} />
+        <Route path="/privacy" element={<PrivacySettingsPage />} />
         <Route path="/activity" element={<ActivityLogPage />} />
         <Route path="/inspector" element={<SecurityInspectorPage />} />
         <Route path="/inspector/:noteId" element={<SecurityInspectorPage />} />

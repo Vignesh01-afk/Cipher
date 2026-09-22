@@ -90,3 +90,25 @@ export interface ApiErrorPayload {
   code: string;
   details?: unknown;
 }
+
+export interface SecureFileDto {
+  id: string;
+  noteId: string;
+  ownerId: string;
+  filename: string;
+  mimeType: string;
+  extension: string | null;
+  encryptedBytes: number;
+  plaintextBytes: number;
+  /** IV of the file ciphertext itself. */
+  fileIv: string;
+  encryptionVersion: number;
+  algorithm: string;
+  createdAt: string;
+  /** Present for the owner: the file key wrapped with their master key. */
+  wrappedFileKey?: string;
+  fileKeyIv?: string;
+  /** Present for every participant: the file key wrapped with the note key. */
+  wrappedForNoteKey?: string;
+  noteKeyWrapIv?: string;
+}

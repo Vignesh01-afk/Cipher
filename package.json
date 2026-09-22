@@ -17,5 +17,9 @@
   },
   "engines": {
     "node": ">=18.17"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0",
+    "puppeteer-core": "^25.11.0"
   }
 }

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Menu, Moon, ShieldCheck, Sun } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { SecurityBadge } from './SecurityBadge';
 
 interface TopbarProps {
   title: string;
@@ -37,6 +38,11 @@ export function Topbar({ title, subtitle, onOpenSidebar, actions }: TopbarProps)
 
         <div className="flex shrink-0 items-center gap-2">
           {actions}
+
+          {/* App-wide encryption indicator; click for the claims modal. */}
+          <span className="hidden sm:inline-flex">
+            <SecurityBadge />
+          </span>
 
           <span
             className={`badge hidden sm:inline-flex ${

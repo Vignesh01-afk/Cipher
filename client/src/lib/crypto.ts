@@ -154,6 +154,23 @@ export async function decryptBytes(
   return new Uint8Array(plaintext);
 }
 
+/**
+ * Decrypts raw ciphertext bytes with a base64 IV. Used for file downloads,
+ * where the server streams back the stored binary blob directly.
+ */
+export async function decryptRawBytes(
+  key: CryptoKey,
+  ciphertext: Uint8Array,
+  ivBase64: string,
+): Promise<Uint8Array> {
+  const plaintext = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: ab(fromBase64(ivBase64)) },
+    key,
+    ab(ciphertext),
+  );
+  return new Uint8Array(plaintext);
+}
+
 // --- Asymmetric primitives -------------------------------------------------
 
 export interface GeneratedUserKeyPair {

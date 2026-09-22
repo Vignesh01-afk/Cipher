@@ -46,7 +46,7 @@ export function AppLayout(): JSX.Element {
         </main>
 
         <footer className="mx-auto w-full max-w-7xl px-4 pb-8 text-xs text-slate-400 dark:text-slate-600 sm:px-6">
-          CipherNote · SYNCSQUAD · note content is encrypted with AES-GCM in your browser and is never sent in
+          CipherNote · SYNCSQUAD · notes and files are encrypted with AES-GCM in your browser and are never sent in
           plaintext.
         </footer>
       </div>

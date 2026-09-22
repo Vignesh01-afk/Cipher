@@ -4,6 +4,7 @@ import type {
   KeyMaterial,
   NoteDto,
   PublicProfile,
+  SecureFileDto,
   ShareDto,
   SharedNoteDto,
 } from './types';
@@ -225,5 +226,23 @@ export const api = {
     const query = params.toString();
     const result = await request<{ logs: AuditLogDto[] }>(`/audit${query ? `?${query}` : ''}`);
     return result.logs;
+  },
+
+  // --- Secure files ---------------------------------------------------------
+
+  async listFiles(noteId: string): Promise<SecureFileDto[]> {
+    const result = await request<{ files: SecureFileDto[] }>(
+      `/files?noteId=${encodeURIComponent(noteId)}`,
+    );
+    return result.files;
+  },
+
+  async getFileMeta(fileId: string): Promise<SecureFileDto> {
+    const result = await request<{ file: SecureFileDto }>(`/files/${encodeURIComponent(fileId)}`);
+    return result.file;
+  },
+
+  async deleteFile(fileId: string): Promise<void> {
+    await request<void>(`/files/${encodeURIComponent(fileId)}`, { method: 'DELETE' });
   },
 };

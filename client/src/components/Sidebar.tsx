@@ -1,7 +1,9 @@
 import { NavLink } from 'react-router-dom';
 import {
+  EyeOff,
   FilePlus2,
   FileText,
+  FolderLock,
   LayoutDashboard,
   Lock,
   LogOut,
@@ -30,11 +32,13 @@ const NAV_SECTIONS: Array<{
       { to: '/notes', label: 'My Notes', icon: FileText, end: true },
       { to: '/notes/new', label: 'Create Note', icon: FilePlus2 },
       { to: '/shared', label: 'Shared With Me', icon: Users },
+      { to: '/files', label: 'Secure Files', icon: FolderLock },
     ],
   },
   {
     heading: 'Security',
     items: [
+      { to: '/privacy', label: 'Privacy Mode', icon: EyeOff },
       { to: '/activity', label: 'Activity Log', icon: ScrollText },
       { to: '/inspector', label: 'Security Inspector', icon: ShieldCheck },
     ],
@@ -67,18 +71,19 @@ export function Sidebar({ open, onClose }: SidebarProps): JSX.Element {
             className="group flex items-center gap-2.5"
             onClick={onClose}
           >
-            <img
-              src="/cipher-logo.png"
-              alt="Cipher logo"
-              className="h-9 w-9 shrink-0 object-contain transition-transform duration-150 group-hover:scale-105"
-              draggable={false}
-            />
+            <span className="brand-tile transition-transform duration-150 group-hover:scale-105" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.8">
+                <rect x="4" y="10.5" width="16" height="9.5" rx="2" />
+                <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+                <path d="M12 14v3" strokeLinecap="round" />
+              </svg>
+            </span>
             <span className="leading-tight">
               <span className="block text-sm font-bold tracking-tight text-slate-900 dark:text-slate-50">
                 CipherNote
               </span>
               <span className="block text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                zero-knowledge vault
+                Private by design.
               </span>
             </span>
           </NavLink>

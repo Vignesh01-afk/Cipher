@@ -2,19 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * CipherNote design system - "premium encrypted communication".
+ *
+ * Visual identity:
+ *  - Deep charcoal/graphite surfaces (dark is the primary theme).
+ *  - Electric cyan as the single accent, used sparingly.
+ *  - Glassmorphism only where it improves hierarchy (topbar, overlays).
+ *  - Soft shadows, thin borders, restrained motion.
+ */
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
   }
 
   body {
-    @apply bg-slate-100 text-slate-800 antialiased;
-    @apply dark:bg-slate-950 dark:text-slate-200;
+    @apply bg-slate-100 text-slate-800 antialiased dark:bg-[#05070d] dark:text-slate-200;
     min-height: 100vh;
   }
 
   :focus-visible {
-    @apply outline-none ring-2 ring-cyan-500/60 ring-offset-1 ring-offset-white dark:ring-offset-slate-950;
+    @apply outline-none ring-2 ring-cyan-500/60 ring-offset-1 ring-offset-white dark:ring-offset-[#05070d];
   }
 
   ::selection {
@@ -24,26 +33,37 @@
   /* Scrollbars tuned for the dark cybersecurity theme. */
   * {
     scrollbar-width: thin;
-    scrollbar-color: rgb(100 116 139 / 0.5) transparent;
+    scrollbar-color: rgb(100 116 139 / 0.4) transparent;
+  }
+
+  /* Respect the OS reduced-motion preference. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
 @layer components {
   /* --- Surfaces ---------------------------------------------------------- */
   .card {
-    @apply rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900;
+    @apply rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/[0.06] dark:bg-white/[0.03] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset,0_8px_24px_-12px_rgba(0,0,0,0.6)];
   }
 
   .card-interactive {
-    @apply rounded-xl border border-slate-200 bg-white shadow-sm transition-all hover:border-cyan-400/70 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-cyan-500/50;
+    @apply card transition-all hover:border-cyan-400/60 hover:shadow-md dark:hover:border-cyan-400/30;
   }
 
   .panel {
-    @apply rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/60;
+    @apply rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-white/[0.06] dark:bg-white/[0.02];
   }
 
   .divider {
-    @apply my-4 h-px w-full bg-slate-200 dark:bg-slate-800;
+    @apply my-4 h-px w-full bg-slate-200 dark:bg-white/[0.06];
   }
 
   /* --- Buttons ----------------------------------------------------------- */
@@ -53,16 +73,16 @@
   }
 
   .btn-primary {
-    @apply bg-cyan-600 text-white hover:bg-cyan-500 active:bg-cyan-700;
+    @apply bg-cyan-600 text-white shadow-[0_0_0_1px_rgba(8,145,178,0.4),0_4px_16px_-6px_rgba(6,182,212,0.5)] hover:bg-cyan-500 active:bg-cyan-700;
   }
 
   .btn-secondary {
     @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100;
-    @apply dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800;
+    @apply dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08];
   }
 
   .btn-ghost {
-    @apply text-slate-600 hover:bg-slate-200/70 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100;
+    @apply text-slate-600 hover:bg-slate-200/70 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-slate-100;
   }
 
   .btn-danger {
@@ -82,7 +102,7 @@
     @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-colors;
     @apply placeholder:text-slate-400;
     @apply focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30;
-    @apply dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-600;
+    @apply dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-100 dark:placeholder:text-slate-600;
     @apply disabled:cursor-not-allowed disabled:opacity-60;
   }
 
@@ -90,14 +110,14 @@
     @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm leading-6 text-slate-900 transition-colors;
     @apply placeholder:text-slate-400;
     @apply focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30;
-    @apply dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-600;
+    @apply dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-100 dark:placeholder:text-slate-600;
     @apply disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .select {
     @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-colors;
     @apply focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30;
-    @apply dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100;
+    @apply dark:border-white/10 dark:bg-[#0b0f1a] dark:text-slate-100;
   }
 
   /* --- Misc -------------------------------------------------------------- */
@@ -105,8 +125,14 @@
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset;
   }
 
+  /* Clickable badges (rendered as <button>) must stay tappable on touch
+     screens; purely decorative badge spans are unaffected. */
+  button.badge {
+    @apply min-h-[24px] cursor-pointer;
+  }
+
   .badge-slate {
-    @apply bg-slate-100 text-slate-700 ring-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:ring-slate-700;
+    @apply bg-slate-100 text-slate-700 ring-slate-200 dark:bg-white/[0.06] dark:text-slate-300 dark:ring-white/10;
   }
 
   .badge-cyan {
@@ -125,6 +151,10 @@
     @apply bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:ring-rose-500/30;
   }
 
+  .badge-violet {
+    @apply bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/30;
+  }
+
   .link {
     @apply font-medium text-cyan-700 underline-offset-2 hover:underline dark:text-cyan-400;
   }
@@ -132,7 +162,7 @@
   .nav-link {
     @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors;
     @apply hover:bg-slate-200/70 hover:text-slate-900;
-    @apply dark:text-slate-400 dark:hover:bg-slate-800/80 dark:hover:text-slate-100;
+    @apply dark:text-slate-400 dark:hover:bg-white/[0.05] dark:hover:text-slate-100;
   }
 
   .nav-link-active {
@@ -140,7 +170,7 @@
   }
 
   .mono-value {
-    @apply break-all rounded-md bg-slate-100 px-2 py-1 font-mono text-xs text-slate-700 dark:bg-slate-950 dark:text-slate-300;
+    @apply break-all rounded-md bg-slate-100 px-2 py-1 font-mono text-xs text-slate-700 dark:bg-white/[0.04] dark:text-slate-300;
   }
 
   .table-head {
@@ -149,5 +179,10 @@
 
   .table-cell {
     @apply px-4 py-3 text-sm text-slate-700 dark:text-slate-300;
+  }
+
+  /* Brand mark: cipher-inspired logo tile. */
+  .brand-tile {
+    @apply relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-cyan-500 to-blue-700 text-white shadow-[0_4px_14px_-4px_rgba(6,182,212,0.6)];
   }
 }

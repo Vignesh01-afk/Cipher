@@ -1,4 +1,4 @@
-import type { AuditLog, Note, NoteShare, Prisma, User } from '@prisma/client';
+import type { AuditLog, Note, NoteShare, Prisma, SecureFile, User } from '@prisma/client';
 
 /**
  * Response shapes.
@@ -189,6 +189,56 @@ export function toSharedNoteDto(
     payloadBytes: share.note.payloadBytes,
     createdAt: share.note.createdAt.toISOString(),
     updatedAt: share.note.updatedAt.toISOString(),
+  };
+}
+
+// --- Secure files -----------------------------------------------------------
+
+export interface SecureFileDto {
+  id: string;
+  noteId: string;
+  ownerId: string;
+  filename: string;
+  mimeType: string;
+  extension: string | null;
+  encryptedBytes: number;
+  plaintextBytes: number;
+  /** IV of the file ciphertext itself (needed for decryption). */
+  fileIv: string;
+  encryptionVersion: number;
+  algorithm: string;
+  createdAt: string;
+  /** Only the owner receives the wrapped file key copy. */
+  wrappedFileKey?: string;
+  fileKeyIv?: string;
+  /** Present for note-key holders (owner + share recipients). */
+  wrappedForNoteKey?: string;
+  noteKeyWrapIv?: string;
+}
+
+export function toSecureFileDto(
+  file: SecureFile,
+  options: { includeWrappedKey: boolean; includeNoteKeyWrap?: boolean },
+): SecureFileDto {
+  return {
+    id: file.id,
+    noteId: file.noteId,
+    ownerId: file.ownerId,
+    filename: file.filename,
+    mimeType: file.mimeType,
+    extension: file.extension,
+    encryptedBytes: file.encryptedBytes,
+    plaintextBytes: file.plaintextBytes,
+    fileIv: file.fileIv,
+    encryptionVersion: file.encryptionVersion,
+    algorithm: file.algorithm,
+    createdAt: file.createdAt.toISOString(),
+    ...(options.includeWrappedKey
+      ? { wrappedFileKey: file.wrappedFileKey, fileKeyIv: file.fileKeyIv }
+      : {}),
+    ...(options.includeNoteKeyWrap
+      ? { wrappedForNoteKey: file.wrappedForNoteKey, noteKeyWrapIv: file.noteKeyWrapIv }
+      : {}),
   };
 }
 

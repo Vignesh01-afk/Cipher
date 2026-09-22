@@ -22,6 +22,8 @@ import { ShareNoteModal } from '../components/ShareNoteModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { LoadingBlock } from '../components/Spinner';
 import { ErrorState } from '../components/States';
+import { NoteFilesPanel } from '../components/NoteFilesPanel';
+import { SecurityBadge } from '../components/SecurityBadge';
 
 export function NoteViewPage(): JSX.Element {
   const { noteId } = useParams<{ noteId: string }>();
@@ -139,7 +141,7 @@ export function NoteViewPage(): JSX.Element {
   const activeShares = note.shares.filter((share) => share.isActive);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-5">
+    <div className="mx-auto max-w-6xl space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link to={isOwner ? '/notes' : '/shared'} className="btn btn-ghost btn-sm">
           <ArrowLeft className="h-3.5 w-3.5" />
@@ -147,6 +149,7 @@ export function NoteViewPage(): JSX.Element {
         </Link>
 
         <div className="flex flex-wrap items-center gap-2">
+          <SecurityBadge compact />
           <Link to={`/inspector/${note.id}`} className="btn btn-secondary btn-sm">
             <ShieldCheck className="h-3.5 w-3.5" />
             Security inspector
@@ -227,6 +230,47 @@ export function NoteViewPage(): JSX.Element {
           {note.content || <span className="text-slate-400 dark:text-slate-500">This note is empty.</span>}
         </div>
       </article>
+
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]">
+        <NoteFilesPanel noteId={note.id} noteKey={note.noteKey} />
+
+        <aside className="space-y-5">
+          <section className="card p-5">
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Encryption information</h2>
+            <dl className="mt-3 space-y-2.5 text-xs">
+              <div>
+                <dt className="font-semibold text-slate-700 dark:text-slate-200">Cipher</dt>
+                <dd className="text-slate-500 dark:text-slate-400">
+                  {note.algorithm} · payload v{note.encryptionVersion}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-semibold text-slate-700 dark:text-slate-200">Your access</dt>
+                <dd className="text-slate-500 dark:text-slate-400">
+                  {isOwner ? 'Owner - master key unwrap' : 'Recipient - RSA-OAEP wrapped note key'}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-semibold text-slate-700 dark:text-slate-200">File keys</dt>
+                <dd className="text-slate-500 dark:text-slate-400">
+                  Wrapped with the note key, so every participant can decrypt attachments
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          <section className="card p-5">
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Conversation</h2>
+            <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+              {isOwner
+                ? activeShares.length === 0
+                  ? 'This note is private. Share it to start an encrypted conversation; recipients will see the files too.'
+                  : `Shared with ${activeShares.length} ${activeShares.length === 1 ? 'person' : 'people'}. They can read this note and its encrypted files.`
+                : `Shared by ${note.owner.displayName}. You hold a per-recipient wrapped key; revocation ends future access immediately.`}
+            </p>
+          </section>
+        </aside>
+      </div>
 
       <div className="rounded-xl border border-cyan-200 bg-cyan-50/60 p-4 text-xs leading-5 text-cyan-900 dark:border-cyan-500/30 dark:bg-cyan-500/5 dark:text-cyan-100/90">
         This plaintext exists only in your browser's memory. The server held the ciphertext shown in the security

@@ -25,3 +25,7 @@ yarn-error.log*
 Thumbs.db
 .idea/
 *.swp
+
+.vercel
+.env*
+storage/

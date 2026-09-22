@@ -98,3 +98,56 @@ export type CreateShareInput = z.infer<typeof createShareSchema>;
 export const lookupQuerySchema = z.object({
   email: z.string().email('Enter a valid email address').max(254),
 });
+
+// --- Secure files -----------------------------------------------------------
+
+/**
+ * Filename sanitisation happens server-side (defence in depth - the client
+ * sanitises too, but never trust the client):
+ *  - strip every path separator and parent-directory sequence,
+ *  - keep only a conservative safe set of characters,
+ *  - cap the length and hide extension-based tricks.
+ */
+export function sanitiseFilename(raw: string): string {
+  const withoutPaths = raw
+    .replace(/[\\/]+/g, '')
+    .replace(/\.{2,}/g, '.')
+    .replace(/[\x00-\x1f\x7f]/g, '')
+    .trim();
+  const safe = withoutPaths.replace(/[^A-Za-z0-9 .,_\-()'\[\]]/g, '_').replace(/^\.+/, '');
+  const trimmed = safe.slice(0, 120).trim();
+  return trimmed.length > 0 ? trimmed : 'file';
+}
+
+/** Lowercase extension without the dot, e.g. "pdf". Null when absent. */
+export function extractExtension(raw: string): string | null {
+  const match = /\.([A-Za-z0-9]{1,12})$/.exec(raw);
+  return match ? match[1]!.toLowerCase() : null;
+}
+
+/**
+ * Upload payload. The ciphertext cap mirrors the storage limit; the body
+ * parser ceiling is configured separately in env.ts.
+ */
+export const createFileSchema = z
+  .object({
+    noteId: z.string().min(1).max(64),
+    filename: z.string().min(1).max(255),
+    mimeType: z.string().max(255).regex(/^[\w.+-]+\/[\w.+-]+$/, 'Must look like a MIME type'),
+    plaintextBytes: z.number().int().min(0).max(2_000_000_000),
+    ciphertext: ciphertextSchema.max(48_000_000),
+    /** IV of the file ciphertext itself; the key-wrap IVs are separate fields. */
+    fileIv: ivSchema,
+    encryptionVersion: z.number().int().min(1).max(100).default(1),
+    algorithm: z.string().max(64).default('AES-GCM-256'),
+    wrappedFileKey: keyBlobSchema,
+    fileKeyIv: ivSchema,
+    wrappedForNoteKey: keyBlobSchema,
+    noteKeyWrapIv: ivSchema,
+  })
+  .refine(
+    (value) => Math.ceil((value.ciphertext.length * 3) / 4) <= env.maxFileBytes,
+    { message: 'The encrypted file is too large' },
+  );
+
+export type CreateFileInput = z.infer<typeof createFileSchema>;

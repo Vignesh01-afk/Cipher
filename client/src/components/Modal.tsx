@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -17,6 +18,14 @@ const SIZE_CLASSES: Record<NonNullable<ModalProps['size']>, string> = {
   lg: 'max-w-3xl',
 };
 
+/**
+ * The overlay is portalled to document.body.
+ *
+ * Any ancestor with `backdrop-blur`, `transform` or `filter` (the topbar, for
+ * example) becomes a containing block for `position: fixed` and would clip or
+ * misplace a modal rendered inline. A portal guarantees the dialog is always
+ * positioned against the real viewport.
+ */
 export function Modal({
   open,
   onClose,
@@ -51,7 +60,7 @@ export function Modal({
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm animate-fade-in sm:items-center"
       onMouseDown={(event) => {
@@ -91,6 +100,7 @@ export function Modal({
           </div>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

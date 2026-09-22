@@ -17,6 +17,10 @@ export const AuditAction = {
   NOTE_SHARE: 'NOTE_SHARE',
   SHARE_REVOKE: 'SHARE_REVOKE',
   ACCESS_DENIED: 'ACCESS_DENIED',
+  FILE_CREATE: 'FILE_CREATE',
+  FILE_DOWNLOAD: 'FILE_DOWNLOAD',
+  FILE_DELETE: 'FILE_DELETE',
+  FILE_ACCESS_DENIED: 'FILE_ACCESS_DENIED',
 } as const;
 
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
@@ -32,7 +36,7 @@ export type AuditMetadata = Record<string, string | number | boolean | null>;
 export interface AuditEntry {
   userId: string;
   action: AuditAction;
-  targetType?: 'USER' | 'NOTE' | 'SHARE';
+  targetType?: 'USER' | 'NOTE' | 'SHARE' | 'FILE';
   targetId?: string;
   noteId?: string | null;
   metadata?: AuditMetadata;

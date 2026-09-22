@@ -40,4 +40,13 @@ export const env = {
   jsonBodyLimit: '4mb',
   maxKdfIterations: 2_000_000,
   minKdfIterations: 100_000,
+
+  // --- Secure file storage -------------------------------------------------
+  // Private server-side directory for encrypted file blobs. Never exposed
+  // directly: every read goes through an authenticated API route.
+  fileStorageDir: process.env.FILE_STORAGE_DIR ?? 'storage/files',
+  // Maximum size of the *encrypted* blob accepted per upload.
+  maxFileBytes: readNumber('MAX_FILE_BYTES', 25 * 1024 * 1024),
+  // Base64 inflates ciphertext by ~4/3; this is the request ceiling for uploads.
+  maxFileUploadBodyBytes: readNumber('MAX_FILE_UPLOAD_BODY_BYTES', 36 * 1024 * 1024),
 };

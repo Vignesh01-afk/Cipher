@@ -41,6 +41,7 @@ model User {
   createdAt DateTime @default(now())
 
   notes          Note[]
+  files          SecureFile[]
   sharesGiven    NoteShare[] @relation("ShareOwner")
   sharesReceived NoteShare[] @relation("ShareRecipient")
   auditLogs      AuditLog[]
@@ -71,9 +72,71 @@ model Note {
   updatedAt DateTime @updatedAt
 
   shares    NoteShare[]
+  files     SecureFile[]
   auditLogs AuditLog[]
 
   @@index([ownerId])
+}
+
+/// A secure file attachment.
+///
+/// SECURITY INVARIANT: exactly like notes, the server never sees file
+/// plaintext. The browser encrypts the file with a fresh per-file AES-GCM-256
+/// key, wraps that key with the owner's master key, and uploads only the
+/// ciphertext. `wrappedFileKey` is opaque to the server.
+///
+/// Storage: the encrypted blob lives in private server-side storage
+/// (`server/storage/files/`, configurable) - never in a public bucket and
+/// never with a publicly guessable URL. Downloads go through
+/// `GET /api/files/:id/content`, which re-validates authentication and note
+/// access on every request.
+model SecureFile {
+  id      String @id @default(cuid())
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  /// The note this file is attached to. A file is only downloadable by users
+  /// who can access that note (owner or active share holder).
+  noteId String
+  note   Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  /// Random name generated server-side for the stored blob. Contains no
+  /// user input, so it cannot be used for path traversal.
+  storageKey   String @unique
+  /// Sanitised original filename, shown in the UI.
+  filename     String
+  /// MIME type reported by the browser at upload time.
+  mimeType     String
+  /// Exact byte length of the encrypted blob on disk.
+  encryptedBytes Int
+  /// Byte length of the original plaintext file (metadata only).
+  plaintextBytes Int
+  /// Optional lowercase extension, validated server-side.
+  extension    String?
+
+  /// The per-file AES key, wrapped with the owner's master key (AES-GCM).
+  wrappedFileKey String
+  /// IV used when wrapping `wrappedFileKey`.
+  fileKeyIv      String
+
+  /// The same file key, wrapped with the NOTE key. Every participant who can
+  /// decrypt the note (owner via master wrap, recipients via their RSA-wrapped
+  /// share) already holds the note key, so no extra file-sharing flow is
+  /// needed - the existing note share grants file access automatically.
+  wrappedForNoteKey String
+  noteKeyWrapIv     String
+
+  /// IV (base64) of the file ciphertext itself. Not secret, but required to
+  /// decrypt; the server holds it without being able to use it.
+  fileIv        String
+  encryptionVersion Int    @default(1)
+  algorithm         String @default("AES-GCM-256")
+
+  createdAt DateTime @default(now())
+  deletedAt DateTime?
+
+  @@index([noteId, deletedAt])
+  @@index([ownerId, createdAt])
 }
 
 model NoteShare {

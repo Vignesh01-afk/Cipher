@@ -40,7 +40,9 @@ export function createApp(): express.Express {
       maxAge: 600,
     }),
   );
-  app.use(express.json({ limit: env.jsonBodyLimit }));
+  // One parser only: stacking a second json parser for /api/files consumed
+  // the stream twice and corrupted large upload bodies.
+  app.use(express.json({ limit: env.maxFileUploadBodyBytes }));
 
   app.get('/api/health', (_req, res) => {
     res.json({

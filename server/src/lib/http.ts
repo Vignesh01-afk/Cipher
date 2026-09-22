@@ -37,6 +37,10 @@ export class ApiError extends Error {
   static conflict(message: string, code = 'CONFLICT') {
     return new ApiError(409, message, code);
   }
+
+  static internal(message: string, code = 'INTERNAL_ERROR') {
+    return new ApiError(500, message, code);
+  }
 }
 
 /** Wraps an async route handler so rejected promises reach the error middleware. */

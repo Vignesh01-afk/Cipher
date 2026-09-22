@@ -2,7 +2,9 @@ import { Link } from 'react-router-dom';
 import {
   ArrowRight,
   EyeOff,
+  FileText,
   Fingerprint,
+  FolderLock,
   KeyRound,
   Lock,
   Moon,
@@ -16,14 +18,19 @@ import { useTheme } from '../context/ThemeContext';
 
 const FEATURES = [
   {
-    icon: Lock,
+    icon: FileText,
     title: 'Encrypted before it leaves the tab',
-    body: 'Titles, bodies and tags are serialised and sealed with AES-GCM-256 in your browser. The API receives an opaque blob.',
+    body: 'Titles, bodies, tags and file attachments are sealed with AES-GCM-256 in your browser. The API receives opaque blobs.',
   },
   {
     icon: ServerOff,
     title: 'Zero-knowledge backend',
-    body: 'The database stores ciphertext and wrapped keys. A full dump of the SQLite file reveals no note content.',
+    body: 'The database stores ciphertext and wrapped keys. A full dump of the PostgreSQL database reveals no note or file content.',
+  },
+  {
+    icon: FolderLock,
+    title: 'End-to-end encrypted files',
+    body: 'Every attachment gets its own key, wrapped like note keys. Files live in private server storage with no public URLs.',
   },
   {
     icon: KeyRound,
@@ -66,15 +73,19 @@ export function LandingPage(): JSX.Element {
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950">
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-5">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-600 text-white">
-            <ShieldCheck className="h-5 w-5" />
+          <span className="brand-tile" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.8">
+              <rect x="4" y="10.5" width="16" height="9.5" rx="2" />
+              <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+              <path d="M12 14v3" strokeLinecap="round" />
+            </svg>
           </span>
           <span className="leading-tight">
             <span className="block text-sm font-bold tracking-tight text-slate-900 dark:text-slate-50">
               CipherNote
             </span>
             <span className="block text-[11px] font-medium text-slate-500 dark:text-slate-400">
-              by SYNCSQUAD
+              Private by design.
             </span>
           </span>
         </div>
@@ -102,7 +113,7 @@ export function LandingPage(): JSX.Element {
         <section className="pt-10 text-center sm:pt-16">
           <span className="badge badge-cyan mx-auto">
             <Lock className="h-3 w-3" />
-            End-to-end encrypted · zero-knowledge server
+            End-to-end encrypted · notes & files · zero-knowledge server
           </span>
           <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-bold leading-tight tracking-tight text-slate-900 dark:text-slate-50 sm:text-5xl">
             Notes that are encrypted{' '}
@@ -210,7 +221,7 @@ export function LandingPage(): JSX.Element {
       <footer className="border-t border-slate-200 py-8 dark:border-slate-800">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-2 px-5 text-center text-xs text-slate-500 dark:text-slate-400">
           <p>CipherNote · SYNCSQUAD · Srikanth G · Vignesh S · Moushika G · Navasakthi A</p>
-          <p>React + Vite + TypeScript · Express + TypeScript · Prisma + SQLite · Web Crypto API</p>
+          <p>React + Vite + TypeScript · Express + TypeScript · Prisma + PostgreSQL · Web Crypto API</p>
         </div>
       </footer>
     </div>
