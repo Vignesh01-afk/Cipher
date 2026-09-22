@@ -1,0 +1,121 @@
+// CipherNote data model.
+//
+// SECURITY INVARIANT: nothing in this schema can be turned back into note
+// plaintext by the server. Note titles, bodies and tags live *only* inside
+// `Note.ciphertext`, which is produced by the browser with AES-GCM using a
+// per-note key. That per-note key is itself wrapped (AES-GCM) with the owner's
+// master key, and wrapped again (RSA-OAEP) for each recipient of a share.
+// The server stores those opaque blobs and never holds a key that unwraps them.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String @id @default(cuid())
+  email        String @unique
+  displayName  String
+  passwordHash String
+
+  // ---- Client-side key material (all opaque to the server) ----------------
+  /// RSA-OAEP public key, SPKI, base64. Safe to publish to other users.
+  publicKey         String
+  /// PKCS#8 private key, encrypted with the user's master key (AES-GCM).
+  wrappedPrivateKey String
+  /// IV used when wrapping `wrappedPrivateKey`.
+  privateKeyIv      String
+  /// Salt for the password -> key-encryption-key (PBKDF2) derivation.
+  kdfSalt           String
+  /// PBKDF2 iteration count used for this user's KEK.
+  kdfIterations     Int    @default(210000)
+  /// The user's master key, wrapped with the password-derived KEK (AES-GCM).
+  wrappedMasterKey  String
+  /// IV used when wrapping `wrappedMasterKey`.
+  masterKeyIv       String
+
+  createdAt DateTime @default(now())
+
+  notes          Note[]
+  sharesGiven    NoteShare[] @relation("ShareOwner")
+  sharesReceived NoteShare[] @relation("ShareRecipient")
+  auditLogs      AuditLog[]
+}
+
+model Note {
+  id      String @id @default(cuid())
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  /// AES-GCM ciphertext (base64) of the JSON payload {title, content, tags}.
+  ciphertext        String
+  /// Unique 96-bit nonce (base64) for this ciphertext.
+  iv                String
+  /// Lets the client evolve the payload format without breaking old notes.
+  encryptionVersion Int    @default(1)
+  /// Human readable algorithm label, e.g. "AES-GCM-256".
+  algorithm         String @default("AES-GCM-256")
+  /// Length of the plaintext payload in bytes (metadata only, no content).
+  payloadBytes      Int    @default(0)
+
+  /// The per-note AES key, wrapped with the owner's master key.
+  wrappedNoteKey String
+  /// IV used when wrapping `wrappedNoteKey`.
+  noteKeyIv      String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shares    NoteShare[]
+  auditLogs AuditLog[]
+
+  @@index([ownerId])
+}
+
+model NoteShare {
+  id           String @id @default(cuid())
+  noteId       String
+  note         Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  ownerId      String
+  owner        User   @relation("ShareOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  sharedWithId String
+  sharedWith   User   @relation("ShareRecipient", fields: [sharedWithId], references: [id], onDelete: Cascade)
+
+  /// The note key, encrypted to the recipient with RSA-OAEP.
+  wrappedKey   String
+  keyAlgorithm String @default("RSA-OAEP-2048-SHA256")
+
+  createdAt DateTime  @default(now())
+  /// Soft revocation: a revoked share is kept for the audit trail but is
+  /// excluded from every authorization check.
+  revokedAt DateTime?
+
+  @@unique([noteId, sharedWithId])
+  @@index([sharedWithId])
+  @@index([noteId])
+}
+
+model AuditLog {
+  id         String  @id @default(cuid())
+  userId     String
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// One of the AuditAction values (see src/lib/audit.ts).
+  action     String
+  targetType String?
+  targetId   String?
+  /// Optional relation so a note's history can be queried directly.
+  noteId     String?
+  note       Note?   @relation(fields: [noteId], references: [id], onDelete: SetNull)
+  /// JSON string. Contains identifiers and counts only - never plaintext.
+  metadata   String?
+  ipAddress  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action])
+}

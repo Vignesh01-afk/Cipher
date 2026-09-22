@@ -1,0 +1,21 @@
+{
+  "name": "ciphernote",
+  "private": true,
+  "version": "1.0.0",
+  "description": "CipherNote - end-to-end encrypted notes with revocable sharing (SYNCSQUAD)",
+  "scripts": {
+    "setup": "npm --prefix server install && npm --prefix client install",
+    "db:setup": "npm --prefix server run db:setup",
+    "db:push": "npm --prefix server run prisma:push",
+    "db:reset": "npm --prefix server run db:reset",
+    "dev": "node scripts/dev.mjs",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build": "npm --prefix server run build && npm --prefix client run build",
+    "typecheck": "npm --prefix server run typecheck && npm --prefix client run typecheck",
+    "start": "npm --prefix server run start"
+  },
+  "engines": {
+    "node": ">=18.17"
+  }
+}
