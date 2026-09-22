@@ -62,10 +62,17 @@ export function Sidebar({ open, onClose }: SidebarProps): JSX.Element {
         }`}
       >
         <div className="flex items-center justify-between px-5 py-4">
-          <NavLink to="/dashboard" className="flex items-center gap-2.5" onClick={onClose}>
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-600 text-white shadow-sm">
-              <ShieldCheck className="h-5 w-5" />
-            </span>
+          <NavLink
+            to="/dashboard"
+            className="group flex items-center gap-2.5"
+            onClick={onClose}
+          >
+            <img
+              src="/cipher-logo.png"
+              alt="Cipher logo"
+              className="h-9 w-9 shrink-0 object-contain transition-transform duration-150 group-hover:scale-105"
+              draggable={false}
+            />
             <span className="leading-tight">
               <span className="block text-sm font-bold tracking-tight text-slate-900 dark:text-slate-50">
                 CipherNote
