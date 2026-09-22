@@ -23,7 +23,18 @@ export function createApp(): express.Express {
   app.use(helmet());
   app.use(
     cors({
-      origin: env.clientOrigin.split(',').map((origin) => origin.trim()),
+      // Requests without an Origin header (same-origin fetches, curl,
+      // server-to-server) are allowed. Cross-origin browsers must match
+      // CLIENT_ORIGIN (comma-separated). The deployed app is same-origin, so
+      // the browser never enforces this; it only matters for external clients.
+      origin: (requestOrigin, callback) => {
+        if (!requestOrigin) {
+          callback(null, true);
+          return;
+        }
+        const allowed = env.clientOrigin.split(',').map((value) => value.trim());
+        callback(null, allowed.includes(requestOrigin));
+      },
       methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
       maxAge: 600,
