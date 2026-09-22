@@ -4,18 +4,17 @@
     "lib": ["ES2022"],
     "module": "CommonJS",
     "moduleResolution": "Node",
-    "outDir": "dist",
-    "rootDir": "src",
     "strict": true,
-    "noImplicitOverride": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "sourceMap": true,
-    "declaration": true,
-    "types": ["node"]
+    "noEmit": true,
+    "types": ["node"],
+    "typeRoots": ["../server/node_modules/@types"],
+    "paths": {
+      "@vercel/node": ["../server/node_modules/@vercel/node"]
+    }
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["*.ts"],
+  "exclude": ["node_modules"]
 }
