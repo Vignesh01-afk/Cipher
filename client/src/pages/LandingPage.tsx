@@ -5,6 +5,7 @@ import {
   FileText,
   Fingerprint,
   FolderLock,
+  Github,
   KeyRound,
   Lock,
   Moon,
@@ -91,6 +92,16 @@ export function LandingPage(): JSX.Element {
         </div>
 
         <nav className="flex items-center gap-2">
+          <a
+            href="https://github.com/Vignesh01-afk/Cipher"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-ghost p-2"
+            aria-label="CipherNote on GitHub"
+            title="View the source on GitHub"
+          >
+            <Github className="h-4 w-4" />
+          </a>
           <button
             type="button"
             onClick={toggleTheme}
@@ -220,7 +231,17 @@ export function LandingPage(): JSX.Element {
 
       <footer className="border-t border-slate-200 py-8 dark:border-slate-800">
         <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-2 px-5 text-center text-xs text-slate-500 dark:text-slate-400">
-          <p>CipherNote · SYNCSQUAD · Srikanth G · Vignesh S · Moushika G · Navasakthi A</p>
+          <p>
+            <a
+              href="https://github.com/Vignesh01-afk/Cipher"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-slate-700 underline-offset-2 hover:text-cyan-600 hover:underline dark:text-slate-300 dark:hover:text-cyan-400"
+            >
+              CipherNote
+            </a>{' '}
+            · SYNCSQUAD · Srikanth G · Vignesh S · Moushika G · Navasakthi A
+          </p>
           <p>React + Vite + TypeScript · Express + TypeScript · Prisma + PostgreSQL · Web Crypto API</p>
         </div>
       </footer>
