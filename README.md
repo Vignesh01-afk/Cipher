@@ -6,7 +6,9 @@ CipherNote is a full-stack secure notes application where note content is encryp
 
 **Team SYNCSQUAD** — Srikanth G · Vignesh S · Moushika G · Navasakthi A
 
-This project lives in `desktop/cipher/`. All commands below are run from this directory unless stated otherwise.
+🔗 **Live app:** <https://ciphernote-orcin.vercel.app/> · **Source:** <https://github.com/Vignesh01-afk/Cipher>
+
+All commands below are run from the repository root unless stated otherwise.
 
 ---
 
@@ -77,7 +79,7 @@ No custom cryptography is used anywhere. Every primitive comes from the platform
 ## Repository layout
 
 ```
-desktop/cipher/
+repository root/
 ├── package.json                  # root scripts: setup, dev, build, typecheck
 ├── README.md
 ├── server/                       # Express + Prisma API
@@ -148,7 +150,7 @@ desktop/cipher/
 ### 1. Install dependencies
 
 ```bash
-# from desktop/cipher
+# from the repository root
 npm run setup
 ```
 
@@ -178,7 +180,7 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 SQLite needs no server — Prisma creates a single file at `server/prisma/dev.db`.
 
 ```bash
-# from desktop/cipher
+# from the repository root
 npm run db:setup
 ```
 
@@ -243,7 +245,7 @@ No secret is required by the client. It is architecturally incapable of holding 
 
 ## Running the application
 
-| Command (run from `desktop/cipher`) | What it does |
+| Command (run from the repository root) | What it does |
 | --- | --- |
 | `npm run setup` | Install both packages. |
 | `npm run db:setup` | Generate the Prisma client and apply migrations. |
@@ -256,7 +258,7 @@ No secret is required by the client. It is architecturally incapable of holding 
 | `npm run build` | Compile the server to `server/dist` and build the client to `client/dist`. |
 | `npm start` | Run the compiled server. |
 
-> `server/` and `client/` are resolved relative to this directory, so the root scripts work unchanged from `desktop/cipher`.
+> `server/` and `client/` are resolved relative to this directory, so the root scripts work unchanged from the repository root.
 
 ---
 
@@ -584,7 +586,7 @@ Use two browser profiles (for example a normal window and a private/incognito wi
 
 **Setup**
 
-1. From `desktop/cipher`: `npm run setup` → `cp server/.env.example server/.env` → set `JWT_SECRET` → `npm run db:setup` → `npm run dev`.
+1. From the repository root: `npm run setup` → `cp server/.env.example server/.env` → set `JWT_SECRET` → `npm run db:setup` → `npm run dev`.
 
 **As Alice (window 1)**
 
@@ -707,7 +709,7 @@ Expected. Keys are never persisted; `/unlock` re-derives them. This is the core 
 AES-GCM authentication failed: the ciphertext, nonce or key no longer match. Usually the row was edited directly in the database. The app hides such notes rather than displaying garbage.
 
 **The root scripts cannot find `server` or `client`.**
-Run them from `desktop/cipher`, not from the repository root. `npm --prefix server ...` resolves relative to the current directory.
+Run them from the repository root, not from the repository root. `npm --prefix server ...` resolves relative to the current directory.
 
 ---
 
