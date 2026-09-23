@@ -72,6 +72,18 @@ async function main() {
     await page.type('#password', PASSWORD);
     await page.type('#confirmPassword', PASSWORD);
     await page.click('button[type=submit]');
+    // Registration now ends on the one-time recovery-key handoff.
+    await page.waitForFunction(() => document.body.innerText.includes('Save your recovery key'), { timeout: 30000 });
+    const recoveryKey = await page.evaluate(() => document.querySelector('p.font-mono')?.textContent?.trim() ?? '');
+    report(
+      'register: recovery key generated',
+      /^RCVR-[A-Za-z0-9_-]{43}$/.test(recoveryKey),
+      recoveryKey ? '' : 'no key shown',
+    );
+    await page.evaluate(() => {
+      const buttons = [...document.querySelectorAll('button')];
+      buttons.find((b) => /i saved it - continue/i.test(b.innerText))?.click();
+    });
     await page.waitForFunction(() => window.location.pathname === '/dashboard', { timeout: 30000 });
     report('register: dashboard reached', true);
 

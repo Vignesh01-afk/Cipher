@@ -50,6 +50,7 @@ export function RegisterPage(): JSX.Element {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [recoveryKey, setRecoveryKey] = useState<string | null>(null);
 
   const strength = useMemo(() => assessPassword(password), [password]);
   const passwordsMatch = password.length > 0 && password === confirmPassword;
@@ -64,10 +65,26 @@ export function RegisterPage(): JSX.Element {
     setError(null);
 
     try {
-      await register({ email: email.trim(), displayName: displayName.trim(), password });
-      toast.success(
-        'Account created',
-        'A 2048-bit RSA key pair and an AES-256 master key were generated on this device.',
+      // register() returns the one-time recovery key (or null when its setup
+      // failed - the account still works, the key can be made from Settings).
+      const recovery = await register({
+        email: email.trim(),
+        displayName: displayName.trim(),
+        password,
+      });
+
+      if (recovery) {
+        // Stash the key and move to a handoff ROUTE rather than rendering in
+        // place: RedirectIfAuthenticated bounces /register to /dashboard the
+        // moment status flips to 'unlocked', which would swallow the screen.
+        sessionStorage.setItem('ciphernote.recovery.pending', recovery);
+        navigate('/recovery-key', { replace: true });
+        return;
+      }
+
+      toast.warning(
+        'Account created without a recovery key',
+        'Generate one from Settings → Recovery key - without it a forgotten password cannot be reset.',
       );
       navigate('/dashboard', { replace: true });
     } catch (registerError) {
@@ -229,8 +246,9 @@ export function RegisterPage(): JSX.Element {
             <div className="rounded-lg border border-amber-300 bg-amber-50/70 p-3 dark:border-amber-500/30 dark:bg-amber-500/5">
               <p className="flex items-start gap-2 text-xs leading-5 text-amber-900 dark:text-amber-100/90">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                There is no password reset. Your password derives the only key that can unlock your notes, so nobody
-                - including this server - can recover your vault if you forget it.
+                A recovery key is generated right after registration - it is the only way to reset a forgotten
+                password. Without it, nobody - including this server - can recover your vault if you forget your
+                password.
               </p>
             </div>
 

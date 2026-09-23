@@ -77,12 +77,18 @@ async function main() {
     report('landing: branding visible', brand);
 
     // --- 2. Registration ---------------------------------------------------
+    // Registration ends on the one-time recovery-key handoff, which must be
+    // acknowledged before the dashboard.
     await page.goto(`${BASE}/register`, { waitUntil: 'networkidle' });
     await page.getByLabel('Display name').fill('Playwright User');
     await page.getByLabel('Email address').fill(EMAIL);
     await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
     await page.getByLabel('Confirm password').fill(PASSWORD);
     await page.getByRole('button', { name: /generate keys and create vault/i }).click();
+    await page.getByText('Save your recovery key').waitFor({ timeout: 30000 });
+    const recoveryShown = await page.locator('p.font-mono').first().textContent();
+    report('register: recovery key generated', /^RCVR-[A-Za-z0-9_-]{43}$/.test(recoveryShown?.trim() ?? ''));
+    await page.getByRole('button', { name: /i saved it - continue/i }).click();
     await page.waitForURL('**/dashboard', { timeout: 30000 });
     report('register: landed on dashboard', true);
 

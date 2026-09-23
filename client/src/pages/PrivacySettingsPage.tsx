@@ -1,7 +1,11 @@
-import { EyeOff, MonitorX, ShieldCheck, Timer, Waves } from 'lucide-react';
+import { useState } from 'react';
+import { EyeOff, KeyRound, MonitorX, ShieldCheck, Timer, Waves } from 'lucide-react';
 import { AUTO_LOCK_OPTIONS, usePrivacy } from '../context/PrivacyContext';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import { Toggle } from '../components/Toggle';
 import { SecurityBadge } from '../components/SecurityBadge';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 
 /**
  * Privacy / Security settings page.
@@ -15,6 +19,11 @@ import { SecurityBadge } from '../components/SecurityBadge';
  */
 export function PrivacySettingsPage(): JSX.Element {
   const { settings, updateSettings } = usePrivacy();
+  const { setupRecoveryKey } = useAuth();
+  const toast = useToast();
+  const [newKey, setNewKey] = useState<string | null>(null);
+  const [confirmRegen, setConfirmRegen] = useState(false);
+  const [regenBusy, setRegenBusy] = useState(false);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -134,6 +143,63 @@ export function PrivacySettingsPage(): JSX.Element {
           </span>
         </div>
       </section>
+
+      <section className="card p-5">
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-50">
+          <KeyRound className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+          Recovery key
+        </h2>
+        <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+          The single-use key that can reset a forgotten password. Shown once at registration; the server stores a
+          wrapped copy of your master key under it, but never the key itself.
+        </p>
+        <button type="button" className="btn btn-secondary btn-sm mt-3" onClick={() => setConfirmRegen(true)}>
+          Generate a new recovery key
+        </button>
+        {newKey ? (
+          <div className="mt-3 rounded-lg border border-cyan-200 bg-cyan-50/70 p-3 dark:border-cyan-500/30 dark:bg-cyan-500/5">
+            <p className="select-all break-all font-mono text-xs font-semibold text-cyan-900 dark:text-cyan-100">{newKey}</p>
+            <p className="mt-2 text-[11px] text-amber-700 dark:text-amber-300">
+              Shown once. Copy it to a safe place - the previous key is now invalid.
+            </p>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm mt-2"
+              onClick={() => {
+                void navigator.clipboard.writeText(newKey);
+                toast.success('Copied', 'Paste it somewhere safe.');
+              }}
+            >
+              Copy key
+            </button>
+          </div>
+        ) : null}
+      </section>
+
+      <ConfirmDialog
+        open={confirmRegen}
+        title="Generate a new recovery key?"
+        destructive={false}
+        busy={regenBusy}
+        confirmLabel="Generate"
+        onCancel={() => setConfirmRegen(false)}
+        onConfirm={() => {
+          void (async () => {
+            setRegenBusy(true);
+            try {
+              const key = await setupRecoveryKey();
+              setNewKey(key);
+              setConfirmRegen(false);
+              toast.success('Recovery key regenerated', 'The previous key no longer works.');
+            } catch (error) {
+              toast.error('Could not regenerate', error instanceof Error ? error.message : undefined);
+            } finally {
+              setRegenBusy(false);
+            }
+          })();
+        }}
+        message="A new single-use recovery key will replace the current one. Your notes, files and shares are unaffected."
+      />
 
       <section className="rounded-xl border border-amber-300 bg-amber-50/70 p-5 dark:border-amber-500/30 dark:bg-amber-500/5">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">

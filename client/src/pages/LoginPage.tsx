@@ -110,6 +110,12 @@ export function LoginPage(): JSX.Element {
             </button>
           </form>
 
+          <p className="mt-4 text-center text-sm text-slate-500 dark:text-slate-400">
+            <Link to="/forgot-password" className="link">
+              Forgot your password?
+            </Link>
+          </p>
+
           <p className="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
             No account yet?{' '}
             <Link to="/register" className="link">

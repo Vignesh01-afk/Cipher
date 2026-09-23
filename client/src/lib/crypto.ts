@@ -400,6 +400,122 @@ export async function unwrapNoteKeyFromStorage(
   return key;
 }
 
+// --- Password recovery (zero-knowledge) -------------------------------------
+
+/** Format shown to the user: a checkable prefix plus 32 random bytes. */
+export function generateRecoveryKey(): string {
+  return `RCVR-${toBase64(randomBytes(32)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`;
+}
+
+/**
+ * Derives a KEK from the recovery key. Same PBKDF2 construction as the
+ * password path but with its own salt, stored separately on the account.
+ */
+export async function deriveRecoveryKek(
+  recoveryKey: string,
+  salt: Uint8Array,
+  iterations: number,
+): Promise<CryptoKey> {
+  return deriveKeyEncryptionKey(recoveryKey, salt, iterations);
+}
+
+/** Salted SHA-256 of the raw recovery key (hex). Sent instead of the key. */
+export async function recoveryKeyDigest(recoveryKey: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', ab(textEncoder.encode(recoveryKey)));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Registration-time recovery setup: re-wraps the master key under a KEK
+ * derived from the recovery key. Everything stays in this browser; only the
+ * wrapped blob and derivation parameters are uploaded.
+ */
+export async function buildRecoverySetup(
+  recoveryKey: string,
+  masterKey: CryptoKey,
+): Promise<{
+  recoveryKey: string;
+  kdfSalt: string;
+  kdfIterations: number;
+  wrappedMasterKeyRecovery: string;
+  masterKeyRecoveryIv: string;
+  recoveryKeyHash: string;
+}> {
+  const salt = randomBytes(16);
+  const iterations = DEFAULT_KDF_ITERATIONS;
+  const kek = await deriveRecoveryKek(recoveryKey, salt, iterations);
+
+  // Re-export the master key raw bytes so they can be wrapped again.
+  const masterKeyRaw = await exportAesKey(masterKey);
+  const wrapped = await encryptBytes(kek, masterKeyRaw);
+  wipe(masterKeyRaw);
+
+  return {
+    recoveryKey,
+    kdfSalt: toBase64(salt),
+    kdfIterations: iterations,
+    wrappedMasterKeyRecovery: wrapped.ciphertext,
+    masterKeyRecoveryIv: wrapped.iv,
+    recoveryKeyHash: await recoveryKeyDigest(recoveryKey),
+  };
+}
+
+/**
+ * Forgot-password flow, step 1 (in the browser): unwrap the master key with
+ * the recovery KEK. Returns raw master key bytes for the re-wrap step.
+ */
+export async function unwrapMasterKeyWithRecoveryKey(
+  recoveryKey: string,
+  material: {
+    wrappedMasterKeyRecovery: string;
+    masterKeyRecoveryIv: string;
+    recoveryKdfSalt: string;
+    recoveryKdfIterations: number;
+  },
+): Promise<Uint8Array> {
+  const kek = await deriveRecoveryKek(recoveryKey, fromBase64(material.recoveryKdfSalt), material.recoveryKdfIterations);
+  return decryptBytes(kek, material.wrappedMasterKeyRecovery, material.masterKeyRecoveryIv);
+}
+
+/**
+ * Forgot-password flow, step 2: rebuild the whole key hierarchy under a NEW
+ * password without the server ever seeing a key. The master key raw bytes
+ * become the new password's wrapped master key; the private key is re-wrapped
+ * under the (unchanged) master key with a fresh nonce.
+ */
+export async function buildResetMaterial(
+  newPassword: string,
+  masterKeyRaw: Uint8Array,
+  privateKeyPkcs8: Uint8Array,
+): Promise<{
+  kdfSalt: string;
+  kdfIterations: number;
+  wrappedMasterKey: string;
+  masterKeyIv: string;
+  wrappedPrivateKey: string;
+  privateKeyIv: string;
+  masterKey: CryptoKey;
+}> {
+  const salt = randomBytes(16);
+  const iterations = DEFAULT_KDF_ITERATIONS;
+  const kek = await deriveKeyEncryptionKey(newPassword, salt, iterations);
+
+  const wrappedMaster = await encryptBytes(kek, masterKeyRaw);
+  const masterKey = await importAesKey(masterKeyRaw, false);
+
+  const wrappedPrivate = await encryptBytes(masterKey, privateKeyPkcs8);
+
+  return {
+    kdfSalt: toBase64(salt),
+    kdfIterations: iterations,
+    wrappedMasterKey: wrappedMaster.ciphertext,
+    masterKeyIv: wrappedMaster.iv,
+    wrappedPrivateKey: wrappedPrivate.ciphertext,
+    privateKeyIv: wrappedPrivate.iv,
+    masterKey,
+  };
+}
+
 /** Feature-detects the Web Crypto APIs we depend on (they require a secure context). */
 export function isWebCryptoAvailable(): boolean {
   return (

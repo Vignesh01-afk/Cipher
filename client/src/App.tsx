@@ -3,6 +3,7 @@ import { AppLayout } from './components/AppLayout';
 import { RedirectIfAuthenticated, RequireLockedSession, RequireUnlocked } from './components/RouteGuards';
 import { ActivityLogPage } from './pages/ActivityLogPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -10,6 +11,7 @@ import { NoteEditorPage } from './pages/NoteEditorPage';
 import { NoteViewPage } from './pages/NoteViewPage';
 import { NotesPage } from './pages/NotesPage';
 import { PrivacySettingsPage } from './pages/PrivacySettingsPage';
+import { RecoveryKeyHandoffPage } from './pages/RecoveryKeyHandoffPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { SecureFilesPage } from './pages/SecureFilesPage';
 import { SecurityInspectorPage } from './pages/SecurityInspectorPage';
@@ -29,6 +31,10 @@ export default function App(): JSX.Element {
           </RedirectIfAuthenticated>
         }
       />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      {/* Sits OUTSIDE RedirectIfAuthenticated: the session is already unlocked
+          when the user lands here, and the guard would bounce them away. */}
+      <Route path="/recovery-key" element={<RecoveryKeyHandoffPage />} />
       <Route
         path="/register"
         element={

@@ -85,6 +85,17 @@ export interface AuthResponse {
   user: KeyMaterial;
 }
 
+/** Response of POST /auth/recovery/challenge (see server routes/auth.ts). */
+export interface RecoveryChallengeResponse {
+  displayName: string;
+  wrappedMasterKeyRecovery: string;
+  masterKeyRecoveryIv: string;
+  recoveryKdfSalt: string;
+  recoveryKdfIterations: number;
+  privateKeyIv: string;
+  wrappedPrivateKey: string;
+}
+
 export interface ApiErrorPayload {
   error: string;
   code: string;

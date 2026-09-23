@@ -10,7 +10,9 @@ import {
 } from 'react';
 import { ApiError, api, getAuthToken, setAuthToken } from '../lib/api';
 import {
+  buildRecoverySetup,
   createUserKeyMaterial,
+  generateRecoveryKey,
   isWebCryptoAvailable,
   unlockUserKeyMaterial,
   type CryptoSession,
@@ -39,11 +41,13 @@ interface AuthContextValue {
   user: KeyMaterial | null;
   keys: CryptoSession | null;
   isWebCryptoSupported: boolean;
-  register: (input: RegisterInput) => Promise<void>;
+  register: (input: RegisterInput) => Promise<string | null>;
   login: (email: string, password: string) => Promise<void>;
   unlock: (password: string) => Promise<void>;
   lock: () => void;
   logout: () => Promise<void>;
+  /** Generates a recovery key, wraps the master key under it and stores it. */
+  setupRecoveryKey: () => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -109,8 +113,15 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
     setStatus('anonymous');
   }, []);
 
+  /**
+   * Registers the account and immediately wraps the fresh master key under a
+   * one-time recovery key - using the in-hand session, so no state race.
+   * Returns the recovery key to show to the user exactly once, or null when
+   * the setup call failed (the account still works; a key can be generated
+   * later from Settings).
+   */
   const register = useCallback(
-    async ({ email, displayName, password }: RegisterInput) => {
+    async ({ email, displayName, password }: RegisterInput): Promise<string | null> => {
       if (!isWebCryptoSupported) {
         throw new Error('This browser cannot provide Web Crypto, so CipherNote cannot encrypt notes here.');
       }
@@ -125,6 +136,17 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
         setUser(result.user);
         setKeys(session);
         setStatus('unlocked');
+
+        // Recovery setup uses the in-hand `session` (NOT React state, which
+        // would still be stale within this closure).
+        try {
+          const recoveryKey = generateRecoveryKey();
+          const setup = await buildRecoverySetup(recoveryKey, session.masterKey);
+          await api.setupRecovery(setup);
+          return recoveryKey;
+        } catch {
+          return null;
+        }
       } catch (error) {
         // Do not leave a half-authenticated state behind.
         setAuthToken(null);
@@ -173,6 +195,21 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
     setStatus((current) => (current === 'anonymous' ? current : 'locked'));
   }, []);
 
+  /**
+   * Generates a fresh recovery key in this browser, re-wraps the current
+   * master key under it and stores the wrap server-side. The key is returned
+   * exactly once - the server only holds a hash, so it cannot be re-shown.
+   */
+  const setupRecoveryKey = useCallback(async (): Promise<string> => {
+    if (!keys || !user) {
+      throw new Error('Unlock your vault before generating a recovery key.');
+    }
+    const recoveryKey = generateRecoveryKey();
+    const setup = await buildRecoverySetup(recoveryKey, keys.masterKey);
+    await api.setupRecovery(setup);
+    return recoveryKey;
+  }, [keys, user]);
+
   const logout = useCallback(async () => {
     try {
       await api.logout();
@@ -184,8 +221,30 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
   }, [clearSession]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, user, keys, isWebCryptoSupported, register, login, unlock, lock, logout }),
-    [status, user, keys, isWebCryptoSupported, register, login, unlock, lock, logout],
+    () => ({
+      status,
+      user,
+      keys,
+      isWebCryptoSupported,
+      register,
+      login,
+      unlock,
+      lock,
+      logout,
+      setupRecoveryKey,
+    }),
+    [
+      status,
+      user,
+      keys,
+      isWebCryptoSupported,
+      register,
+      login,
+      unlock,
+      lock,
+      logout,
+      setupRecoveryKey,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

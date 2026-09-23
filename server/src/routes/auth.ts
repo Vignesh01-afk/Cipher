@@ -1,11 +1,21 @@
 import { Router } from 'express';
+import { randomBytes } from 'node:crypto';
+import crypto from 'node:crypto';
 import rateLimit from 'express-rate-limit';
 import { prisma } from '../db';
 import { env } from '../env';
 import { AuditAction, recordAudit, requestIp } from '../lib/audit';
 import { ApiError, asyncHandler, parseBody } from '../lib/http';
+import { createHash } from 'node:crypto';
 import { burnPasswordComparison, hashPassword, verifyPassword } from '../lib/password';
-import { normaliseEmail, loginSchema, registerSchema } from '../lib/schemas';
+import {
+  normaliseEmail,
+  loginSchema,
+  registerSchema,
+  recoverySetupSchema,
+  recoveryChallengeSchema,
+  recoveryResetSchema,
+} from '../lib/schemas';
 import { toKeyMaterial } from '../lib/serialize';
 import { signSessionToken } from '../lib/jwt';
 import { currentUserId, requireAuth } from '../middleware/auth';
@@ -156,5 +166,197 @@ authRouter.post(
       ipAddress: requestIp(req),
     });
     res.status(204).send();
+  }),
+);
+
+// --- Password recovery ------------------------------------------------------
+//
+// Zero-knowledge design: the server NEVER learns the recovery key or any key
+// that can decrypt notes. It stores (a) the master key wrapped under a
+// recovery-key-derived KEK and (b) a salted SHA-256 hash used to verify the
+// key. An attacker with the full database still needs the user's recovery key
+// (or password) to unwrap anything.
+
+/** Server-side verification hash: SHA-256(salt || presented hash input). */
+function verifyRecoveryHash(recoveryKeyHash: string, storedSalt: string, storedHash: string): boolean {
+  const expected = createHash('sha256').update(`${storedSalt}:${recoveryKeyHash}`).digest('hex');
+  const a = Buffer.from(expected, 'hex');
+  const b = Buffer.from(storedHash, 'hex');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+/**
+ * POST /api/auth/recovery/setup
+ *
+ * Called during registration (or re-generation in settings). The browser has
+ * derived a KEK from the fresh recovery key and re-wrapped the master key
+ * under it. Store the wrap + derivation params + verification hash.
+ */
+authRouter.post(
+  '/recovery/setup',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const userId = currentUserId(req);
+    const input = parseBody(recoverySetupSchema, req.body);
+
+    const serverSalt = randomBytes(16).toString('hex');
+    const pepperedHash = createHash('sha256').update(`${serverSalt}:${input.recoveryKeyHash}`).digest('hex');
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        wrappedMasterKeyRecovery: input.wrappedMasterKeyRecovery,
+        masterKeyRecoveryIv: input.masterKeyRecoveryIv,
+        recoveryKdfSalt: input.kdfSalt,
+        recoveryKdfIterations: input.kdfIterations,
+        recoveryKeyHash: `${serverSalt}:${pepperedHash}`,
+        recoveryKeyUsedAt: null,
+      },
+    });
+
+    await recordAudit({
+      userId,
+      action: AuditAction.RECOVERY_SETUP,
+      targetType: 'USER',
+      targetId: userId,
+      ipAddress: requestIp(req),
+    });
+
+    res.status(200).json({ ok: true });
+  }),
+);
+
+/**
+ * POST /api/auth/recovery/challenge
+ *
+ * Pre-reset check from the forgot-password page: does this recovery key match
+ * the account? Returns the wrapped master key + derivation params so the
+ * browser can decrypt it IN MEMORY and derive the new password KEK. The
+ * server still cannot unwrap anything, and the key is not burned until the
+ * reset endpoint completes successfully.
+ */
+authRouter.post(
+  '/recovery/challenge',
+  credentialsLimiter,
+  asyncHandler(async (req, res) => {
+    const input = parseBody(recoveryChallengeSchema, req.body);
+    const email = normaliseEmail(input.email);
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || !user.recoveryKeyHash || !user.wrappedMasterKeyRecovery || !user.recoveryKdfSalt) {
+      await burnPasswordComparison(input.recoveryKey);
+      throw ApiError.badRequest('This recovery key does not match the account', 'RECOVERY_KEY_INVALID');
+    }
+
+    if (user.recoveryKeyUsedAt) {
+      throw ApiError.badRequest(
+        'This recovery key has already been used and cannot be used again',
+        'RECOVERY_KEY_USED',
+      );
+    }
+
+    const [serverSalt, storedHash] = user.recoveryKeyHash.split(':');
+    if (!serverSalt || !storedHash || !verifyRecoveryHash(input.recoveryKeyHash, serverSalt, storedHash)) {
+      await recordAudit({
+        userId: user.id,
+        action: AuditAction.RECOVERY_CHALLENGE_FAILED,
+        targetType: 'USER',
+        targetId: user.id,
+        ipAddress: requestIp(req),
+      });
+      await burnPasswordComparison(input.recoveryKey);
+      throw ApiError.badRequest('This recovery key does not match the account', 'RECOVERY_KEY_INVALID');
+    }
+
+    await recordAudit({
+      userId: user.id,
+      action: AuditAction.RECOVERY_CHALLENGE,
+      targetType: 'USER',
+      targetId: user.id,
+      ipAddress: requestIp(req),
+    });
+
+    res.json({
+      displayName: user.displayName,
+      wrappedMasterKeyRecovery: user.wrappedMasterKeyRecovery,
+      masterKeyRecoveryIv: user.masterKeyRecoveryIv,
+      recoveryKdfSalt: user.recoveryKdfSalt,
+      recoveryKdfIterations: user.recoveryKdfIterations,
+      privateKeyIv: user.privateKeyIv,
+      wrappedPrivateKey: user.wrappedPrivateKey,
+    });
+  }),
+);
+
+/**
+ * POST /api/auth/recovery/reset
+ *
+ * Completes the reset. By now the browser has: unwrapped the master key with
+ * the recovery KEK, derived a NEW password KEK, re-wrapped the master key
+ * under it, and re-wrapped the private key too. The server stores the new
+ * bcrypt hash and the new wraps, and burns the recovery key.
+ */
+authRouter.post(
+  '/recovery/reset',
+  credentialsLimiter,
+  asyncHandler(async (req, res) => {
+    const input = parseBody(recoveryResetSchema, req.body);
+    const email = normaliseEmail(input.email);
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || !user.recoveryKeyHash) {
+      await burnPasswordComparison(input.newPassword);
+      throw ApiError.badRequest('This recovery key does not match the account', 'RECOVERY_KEY_INVALID');
+    }
+
+    if (user.recoveryKeyUsedAt) {
+      throw ApiError.badRequest(
+        'This recovery key has already been used and cannot be used again',
+        'RECOVERY_KEY_USED',
+      );
+    }
+
+    const [serverSalt, storedHash] = user.recoveryKeyHash.split(':');
+    if (!serverSalt || !storedHash || !verifyRecoveryHash(input.recoveryKeyHash, serverSalt, storedHash)) {
+      await recordAudit({
+        userId: user.id,
+        action: AuditAction.RECOVERY_RESET_FAILED,
+        targetType: 'USER',
+        targetId: user.id,
+        ipAddress: requestIp(req),
+      });
+      await burnPasswordComparison(input.newPassword);
+      throw ApiError.badRequest('This recovery key does not match the account', 'RECOVERY_KEY_INVALID');
+    }
+
+    const passwordHash = await hashPassword(input.newPassword);
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        kdfSalt: input.kdfSalt,
+        kdfIterations: input.kdfIterations,
+        wrappedMasterKey: input.wrappedMasterKey,
+        masterKeyIv: input.masterKeyIv,
+        // The private key is wrapped with the master key, which is unchanged,
+        // so wrappedPrivateKey stays valid and is NOT touched here.
+        recoveryKeyUsedAt: new Date(),
+      },
+    });
+
+    await recordAudit({
+      userId: user.id,
+      action: AuditAction.RECOVERY_RESET,
+      targetType: 'USER',
+      targetId: user.id,
+      ipAddress: requestIp(req),
+      metadata: { email: user.email },
+    });
+
+    res.json({
+      token: signSessionToken(updated),
+      user: toKeyMaterial(updated),
+    });
   }),
 );

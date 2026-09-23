@@ -4,6 +4,7 @@ import type {
   KeyMaterial,
   NoteDto,
   PublicProfile,
+  RecoveryChallengeResponse,
   SecureFileDto,
   ShareDto,
   SharedNoteDto,
@@ -226,6 +227,40 @@ export const api = {
     const query = params.toString();
     const result = await request<{ logs: AuditLogDto[] }>(`/audit${query ? `?${query}` : ''}`);
     return result.logs;
+  },
+
+  // --- Password recovery ------------------------------------------------------
+
+  async setupRecovery(payload: {
+    recoveryKey: string;
+    kdfSalt: string;
+    kdfIterations: number;
+    wrappedMasterKeyRecovery: string;
+    masterKeyRecoveryIv: string;
+    recoveryKeyHash: string;
+  }): Promise<void> {
+    await request<{ ok: boolean }>('/auth/recovery/setup', { method: 'POST', body: payload });
+  },
+
+  async recoveryChallenge(payload: {
+    email: string;
+    recoveryKey: string;
+    recoveryKeyHash: string;
+  }): Promise<RecoveryChallengeResponse> {
+    return request<RecoveryChallengeResponse>('/auth/recovery/challenge', { method: 'POST', body: payload });
+  },
+
+  async recoveryReset(payload: {
+    email: string;
+    recoveryKey: string;
+    recoveryKeyHash: string;
+    newPassword: string;
+    kdfSalt: string;
+    kdfIterations: number;
+    wrappedMasterKey: string;
+    masterKeyIv: string;
+  }): Promise<AuthResponse> {
+    return request<AuthResponse>('/auth/recovery/reset', { method: 'POST', body: payload });
   },
 
   // --- Secure files ---------------------------------------------------------

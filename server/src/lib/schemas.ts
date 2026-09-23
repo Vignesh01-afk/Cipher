@@ -57,6 +57,65 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
+// --- Password recovery ------------------------------------------------------
+
+/**
+ * Recovery key. The user's browser generates a 256-bit secret and wraps the
+ * master key under it; the server only ever sees the wrapped output, the
+ * derivation parameters and a salted hash for verification.
+ */
+export const recoveryKeySchema = z
+  .string()
+  .regex(/^RCVR-[A-Za-z0-9_-]{43}$/, 'Malformed recovery key');
+
+/** POST /auth/recovery/setup - store the recovery-wrapped master key. */
+export const recoverySetupSchema = z.object({
+  recoveryKey: recoveryKeySchema,
+  kdfSalt: keyBlobSchema,
+  kdfIterations: z
+    .number()
+    .int()
+    .min(env.minKdfIterations)
+    .max(env.maxKdfIterations),
+  wrappedMasterKeyRecovery: keyBlobSchema,
+  masterKeyRecoveryIv: ivSchema,
+  /** SHA-256(salt || raw recovery key bytes), hex - never the key itself. */
+  recoveryKeyHash: z.string().regex(/^[a-f0-9]{64}$/, 'Must be a hex SHA-256 digest'),
+});
+
+export type RecoverySetupInput = z.infer<typeof recoverySetupSchema>;
+
+/** POST /auth/recovery/challenge - verify a recovery key without resetting. */
+export const recoveryChallengeSchema = z.object({
+  email: z.string().email('Enter a valid email address').max(254),
+  recoveryKey: recoveryKeySchema,
+  /** Salted hash the server compares; the raw key never crosses the wire. */
+  recoveryKeyHash: z.string().regex(/^[a-f0-9]{64}$/, 'Must be a hex SHA-256 digest'),
+});
+
+export type RecoveryChallengeInput = z.infer<typeof recoveryChallengeSchema>;
+
+/** POST /auth/recovery/reset - the actual password reset. */
+export const recoveryResetSchema = z.object({
+  email: z.string().email('Enter a valid email address').max(254),
+  recoveryKey: recoveryKeySchema,
+  recoveryKeyHash: z.string().regex(/^[a-f0-9]{64}$/, 'Must be a hex SHA-256 digest'),
+  /** New bcrypt-hashed password (hashed in the browser? No - bcrypt is server-side.) */
+  newPassword: z.string().min(8, 'Use at least 8 characters').max(200),
+  /** Fresh KDF params for the new password KEK. */
+  kdfSalt: keyBlobSchema,
+  kdfIterations: z
+    .number()
+    .int()
+    .min(env.minKdfIterations)
+    .max(env.maxKdfIterations),
+  /** Master key re-wrapped under the NEW password-derived KEK. */
+  wrappedMasterKey: keyBlobSchema,
+  masterKeyIv: ivSchema,
+});
+
+export type RecoveryResetInput = z.infer<typeof recoveryResetSchema>;
+
 // --- Notes -----------------------------------------------------------------
 
 export const createNoteSchema = z.object({
