@@ -1,39 +1,25 @@
 {
-  "name": "react-example",
+  "name": "ciphernote",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "version": "1.0.0",
+  "description": "CipherNote - end-to-end encrypted notes with revocable sharing (SYNCSQUAD)",
   "scripts": {
-    "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
-    "start": "node dist/server.cjs",
-    "preview": "vite preview",
-    "clean": "rm -rf dist server.js",
-    "lint": "tsc --noEmit"
+    "setup": "npm --prefix server install && npm --prefix client install",
+    "db:setup": "npm --prefix server run db:setup",
+    "db:push": "npm --prefix server run prisma:push",
+    "db:reset": "npm --prefix server run db:reset",
+    "dev": "node scripts/dev.mjs",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build": "npm --prefix server run build && npm --prefix client run build",
+    "typecheck": "npm --prefix server run typecheck && npm --prefix client run typecheck",
+    "start": "npm --prefix server run start"
   },
-  "dependencies": {
-    "@google/genai": "^2.4.0",
-    "@tailwindcss/vite": "^4.3.3",
-    "@vitejs/plugin-react": "^6.1.1",
-    "dotenv": "^17.2.3",
-    "express": "^4.21.2",
-    "lucide-react": "^0.546.0",
-    "mammoth": "^1.12.3",
-    "motion": "^12.23.24",
-    "pdf-parse": "^2.4.5",
-    "react": "^19.0.1",
-    "react-dom": "^19.0.1",
-    "vite": "^8.3.0"
+  "engines": {
+    "node": ">=18.17"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/node": "^22.14.0",
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
-    "autoprefixer": "^10.4.21",
-    "esbuild": "^0.28.0",
-    "tailwindcss": "^4.3.3",
-    "tsx": "^4.21.0",
-    "typescript": "^7.0.2"
+    "playwright": "^1.63.0",
+    "puppeteer-core": "^25.11.0"
   }
 }

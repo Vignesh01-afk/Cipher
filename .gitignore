@@ -1,8 +1,31 @@
 node_modules/
-build/
 dist/
-coverage/
-.DS_Store
+build/
+.vite/
+
+# Environment files (never commit real secrets)
+.env
+.env.local
+.env.*.local
+
+# Prisma / SQLite local database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+server/prisma/migrations/dev.db*
+
+# Logs
 *.log
+npm-debug.log*
+yarn-error.log*
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+.vercel
 .env*
-!.env.example
+storage/

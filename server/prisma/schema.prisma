@@ -1,0 +1,205 @@
+// CipherNote data model.
+//
+// SECURITY INVARIANT: nothing in this schema can be turned back into note
+// plaintext by the server. Note titles, bodies and tags live *only* inside
+// `Note.ciphertext`, which is produced by the browser with AES-GCM using a
+// per-note key. That per-note key is itself wrapped (AES-GCM) with the owner's
+// master key, and wrapped again (RSA-OAEP) for each recipient of a share.
+// The server stores those opaque blobs and never holds a key that unwraps them.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String @id @default(cuid())
+  email        String @unique
+  displayName  String
+  passwordHash String
+
+  // ---- Client-side key material (all opaque to the server) ----------------
+  /// RSA-OAEP public key, SPKI, base64. Safe to publish to other users.
+  publicKey         String
+  /// PKCS#8 private key, encrypted with the user's master key (AES-GCM).
+  wrappedPrivateKey String
+  /// IV used when wrapping `wrappedPrivateKey`.
+  privateKeyIv      String
+  /// Salt for the password -> key-encryption-key (PBKDF2) derivation.
+  kdfSalt           String
+  /// PBKDF2 iteration count used for this user's KEK.
+  kdfIterations     Int    @default(210000)
+  /// The user's master key, wrapped with the password-derived KEK (AES-GCM).
+  wrappedMasterKey  String
+  /// IV used when wrapping `wrappedMasterKey`.
+  masterKeyIv       String
+
+  // ---- Password recovery (zero-knowledge) ---------------------------------
+  // A one-time recovery key shown to the user at registration. The server
+  // stores the master key re-wrapped under a recovery-key-derived KEK plus a
+  // salted SHA-256 HASH of the recovery key for verification. Neither value
+  // lets the server decrypt anything: the recovery KEK exists only in the
+  // user's browser during setup and reset.
+  /// Master key wrapped with the recovery-key-derived KEK (AES-GCM). Null
+  /// until the user generates a recovery key.
+  wrappedMasterKeyRecovery  String?
+  /// IV for `wrappedMasterKeyRecovery`.
+  masterKeyRecoveryIv       String?
+  /// PBKDF2 salt for the recovery-key -> KEK derivation.
+  recoveryKdfSalt           String?
+  /// PBKDF2 iterations for the recovery KEK.
+  recoveryKdfIterations     Int?
+  /// Salted SHA-256 hash of the recovery key (PBKDF2 over the key bytes with
+  /// this salt). Used to verify a presented key without storing it.
+  recoveryKeyHash           String?
+  /// Set when the recovery key is used, so a key cannot be reused.
+  recoveryKeyUsedAt         DateTime?
+
+  createdAt DateTime @default(now())
+
+  notes          Note[]
+  files          SecureFile[]
+  sharesGiven    NoteShare[] @relation("ShareOwner")
+  sharesReceived NoteShare[] @relation("ShareRecipient")
+  auditLogs      AuditLog[]
+}
+
+model Note {
+  id      String @id @default(cuid())
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  /// AES-GCM ciphertext (base64) of the JSON payload {title, content, tags}.
+  ciphertext        String
+  /// Unique 96-bit nonce (base64) for this ciphertext.
+  iv                String
+  /// Lets the client evolve the payload format without breaking old notes.
+  encryptionVersion Int    @default(1)
+  /// Human readable algorithm label, e.g. "AES-GCM-256".
+  algorithm         String @default("AES-GCM-256")
+  /// Length of the plaintext payload in bytes (metadata only, no content).
+  payloadBytes      Int    @default(0)
+
+  /// The per-note AES key, wrapped with the owner's master key.
+  wrappedNoteKey String
+  /// IV used when wrapping `wrappedNoteKey`.
+  noteKeyIv      String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shares    NoteShare[]
+  files     SecureFile[]
+  auditLogs AuditLog[]
+
+  @@index([ownerId])
+}
+
+/// A secure file attachment.
+///
+/// SECURITY INVARIANT: exactly like notes, the server never sees file
+/// plaintext. The browser encrypts the file with a fresh per-file AES-GCM-256
+/// key, wraps that key with the owner's master key, and uploads only the
+/// ciphertext. `wrappedFileKey` is opaque to the server.
+///
+/// Storage: the encrypted blob lives in private server-side storage
+/// (`server/storage/files/`, configurable) - never in a public bucket and
+/// never with a publicly guessable URL. Downloads go through
+/// `GET /api/files/:id/content`, which re-validates authentication and note
+/// access on every request.
+model SecureFile {
+  id      String @id @default(cuid())
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  /// The note this file is attached to. A file is only downloadable by users
+  /// who can access that note (owner or active share holder).
+  noteId String
+  note   Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  /// Random name generated server-side for the stored blob. Contains no
+  /// user input, so it cannot be used for path traversal.
+  storageKey   String @unique
+  /// Sanitised original filename, shown in the UI.
+  filename     String
+  /// MIME type reported by the browser at upload time.
+  mimeType     String
+  /// Exact byte length of the encrypted blob on disk.
+  encryptedBytes Int
+  /// Byte length of the original plaintext file (metadata only).
+  plaintextBytes Int
+  /// Optional lowercase extension, validated server-side.
+  extension    String?
+
+  /// The per-file AES key, wrapped with the owner's master key (AES-GCM).
+  wrappedFileKey String
+  /// IV used when wrapping `wrappedFileKey`.
+  fileKeyIv      String
+
+  /// The same file key, wrapped with the NOTE key. Every participant who can
+  /// decrypt the note (owner via master wrap, recipients via their RSA-wrapped
+  /// share) already holds the note key, so no extra file-sharing flow is
+  /// needed - the existing note share grants file access automatically.
+  wrappedForNoteKey String
+  noteKeyWrapIv     String
+
+  /// IV (base64) of the file ciphertext itself. Not secret, but required to
+  /// decrypt; the server holds it without being able to use it.
+  fileIv        String
+  encryptionVersion Int    @default(1)
+  algorithm         String @default("AES-GCM-256")
+
+  createdAt DateTime @default(now())
+  deletedAt DateTime?
+
+  @@index([noteId, deletedAt])
+  @@index([ownerId, createdAt])
+}
+
+model NoteShare {
+  id           String @id @default(cuid())
+  noteId       String
+  note         Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  ownerId      String
+  owner        User   @relation("ShareOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  sharedWithId String
+  sharedWith   User   @relation("ShareRecipient", fields: [sharedWithId], references: [id], onDelete: Cascade)
+
+  /// The note key, encrypted to the recipient with RSA-OAEP.
+  wrappedKey   String
+  keyAlgorithm String @default("RSA-OAEP-2048-SHA256")
+
+  createdAt DateTime  @default(now())
+  /// Soft revocation: a revoked share is kept for the audit trail but is
+  /// excluded from every authorization check.
+  revokedAt DateTime?
+
+  @@unique([noteId, sharedWithId])
+  @@index([sharedWithId])
+  @@index([noteId])
+}
+
+model AuditLog {
+  id         String  @id @default(cuid())
+  userId     String
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// One of the AuditAction values (see src/lib/audit.ts).
+  action     String
+  targetType String?
+  targetId   String?
+  /// Optional relation so a note's history can be queried directly.
+  noteId     String?
+  note       Note?   @relation(fields: [noteId], references: [id], onDelete: SetNull)
+  /// JSON string. Contains identifiers and counts only - never plaintext.
+  metadata   String?
+  ipAddress  String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action])
+}

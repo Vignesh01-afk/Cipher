@@ -1,0 +1,24 @@
+import { chromium } from 'playwright';
+const stamp = Date.now();
+const browser = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true });
+const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+const page = await context.newPage();
+await page.goto('http://localhost:5173/register', { waitUntil: 'networkidle' });
+await page.getByLabel('Display name').fill('Debug User');
+await page.getByLabel('Email address').fill(`dbg${stamp}@test.dev`);
+await page.getByLabel('Password', { exact: true }).fill('password123');
+await page.getByLabel('Confirm password').fill('password123');
+await page.getByRole('button', { name: /generate keys and create vault/i }).click();
+await page.waitForURL('**/dashboard', { timeout: 30000 });
+// reload -> unlock; unlock; then IMMEDIATELY goto /notes/new WITHOUT waiting on dashboard
+await page.reload({ waitUntil: 'networkidle' });
+await page.waitForTimeout(800);
+await page.getByLabel('Password').fill('password123');
+await page.getByRole('button', { name: /unlock vault/i }).click();
+await page.waitForTimeout(2500);
+console.log('post-unlock url:', page.url());
+await page.goto('http://localhost:5173/notes/new', { waitUntil: 'networkidle' });
+await page.waitForTimeout(1500);
+console.log('post-goto url:', page.url());
+console.log('labels:', await page.evaluate(() => [...document.querySelectorAll('label')].map(l => l.textContent).join(' | ')));
+await browser.close();

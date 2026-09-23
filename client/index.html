@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" sizes="256x256" />
+    <link rel="apple-touch-icon" href="/cipher-logo.png" />
+    <meta name="theme-color" content="#020617" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta
+      name="description"
+      content="CipherNote - end-to-end encrypted notes with revocable sharing. Notes are encrypted in your browser before they ever reach the server."
+    />
+    <title>CipherNote - End-to-End Encrypted Notes</title>
+    <script>
+      // Apply the stored theme before first paint to avoid a flash of the
+      // wrong colour scheme.
+      (function () {
+        try {
+          var stored = localStorage.getItem('ciphernote.theme');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var useDark = stored ? stored === 'dark' : prefersDark;
+          document.documentElement.classList.toggle('dark', useDark);
+          document.documentElement.style.colorScheme = useDark ? 'dark' : 'light';
+        } catch (error) {
+          /* localStorage unavailable - keep the default dark theme */
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
