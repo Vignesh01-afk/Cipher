@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { KeyRound, Search, Share2, ShieldOff, UserCheck, Users } from 'lucide-react';
+import { KeyRound, Search, Share2, ShieldOff, UserCheck, Users, Link, AlertCircle } from 'lucide-react';
 import { Modal } from './Modal';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Spinner } from './Spinner';
-import { ErrorState } from './States';
+import { ErrorState, InfoState } from './States';
 import { ApiError, api } from '../lib/api';
 import { buildWrappedKeyForRecipient, type DecryptedNote } from '../lib/notes';
-import { formatRelativeTime, truncate } from '../lib/format';
+import { formatRelativeTime, shortenId } from '../lib/format';
 import { useToast } from '../context/ToastContext';
 import type { PublicProfile, ShareDto } from '../lib/types';
 
@@ -90,8 +90,6 @@ export function ShareNoteModal({ open, note, onClose, onChanged }: ShareNoteModa
     setSharing(true);
     setError(null);
     try {
-      // The note key is unwrapped in memory already; wrap it to the recipient's
-      // public key right here so the key never leaves the browser in the clear.
       const wrappedKey = await buildWrappedKeyForRecipient(note, candidate.publicKey);
       await api.createShare(note.id, candidate.id, wrappedKey);
 
@@ -143,12 +141,12 @@ export function ShareNoteModal({ open, note, onClose, onChanged }: ShareNoteModa
         size="lg"
       >
         {!note ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">Select a note to share.</p>
+          <p className="text-sm text-stone-500 dark:text-stone-400">Select a note to share.</p>
         ) : (
           <div className="space-y-6">
             <section>
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                <Search className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+              <h3 className="flex items-center gap-2 text-sm font-semibold text-stone-800 dark:text-stone-100">
+                <Search className="h-4 w-4 text-orange-700 dark:text-orange-500" />
                 Grant access
               </h3>
 
@@ -187,10 +185,10 @@ export function ShareNoteModal({ open, note, onClose, onChanged }: ShareNoteModa
                   <div className="flex min-w-0 items-center gap-3">
                     <UserCheck className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      <p className="truncate text-sm font-semibold text-stone-800 dark:text-stone-100">
                         {candidate.displayName}
                       </p>
-                      <p className="truncate text-xs text-slate-500 dark:text-slate-400">{candidate.email}</p>
+                      <p className="truncate text-xs text-stone-500 dark:text-stone-400">{candidate.email}</p>
                     </div>
                   </div>
                   <button
@@ -200,7 +198,7 @@ export function ShareNoteModal({ open, note, onClose, onChanged }: ShareNoteModa
                     disabled={sharing}
                   >
                     {sharing ? <Spinner className="h-3.5 w-3.5" /> : <Share2 className="h-3.5 w-3.5" />}
-                    Encrypt key &amp; share
+                    Encrypt key & share
                   </button>
                 </div>
               ) : null}
@@ -213,30 +211,32 @@ export function ShareNoteModal({ open, note, onClose, onChanged }: ShareNoteModa
             </section>
 
             <section>
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                <Users className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
-                People with access
-                <span className="badge badge-slate">{activeShares.length}</span>
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-stone-800 dark:text-stone-100">
+                  <Users className="h-4 w-4 text-orange-700 dark:text-orange-500" />
+                  People with access
+                  <span className="badge badge-slate">{activeShares.length}</span>
+                </h3>
+              </div>
 
               {loadingShares ? (
-                <div className="mt-3 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                <div className="mt-3 flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400">
                   <Spinner /> Loading shares…
                 </div>
               ) : activeShares.length === 0 ? (
-                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                <p className="mt-3 text-sm text-stone-500 dark:text-stone-400">
                   This note has not been shared with anyone yet.
                 </p>
               ) : (
-                <ul className="mt-3 divide-y divide-slate-200 dark:divide-slate-800">
+                <ul className="mt-3 divide-y divide-stone-200 dark:divide-stone-800">
                   {activeShares.map((share) => (
                     <li key={share.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
+                        <p className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">
                           {share.recipient.displayName}
                         </p>
-                        <p className="truncate text-xs text-slate-500 dark:text-slate-400">{share.recipient.email}</p>
-                        <p className="mt-1 flex items-center gap-1 text-[11px] text-slate-400 dark:text-slate-500">
+                        <p className="truncate text-xs text-stone-500 dark:text-stone-400">{share.recipient.email}</p>
+                        <p className="mt-1 flex items-center gap-1 text-[11px] text-stone-400 dark:text-stone-500">
                           <KeyRound className="h-3 w-3" />
                           {share.keyAlgorithm} · granted {formatRelativeTime(share.createdAt)}
                         </p>
@@ -257,8 +257,8 @@ export function ShareNoteModal({ open, note, onClose, onChanged }: ShareNoteModa
 
             {revokedShares.length > 0 ? (
               <section>
-                <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Revoked access</h3>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-100">Revoked access</h3>
+                <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
                   Kept for the audit trail. These shares no longer authorise any request; a revoked recipient keeps
                   a copy of anything they already opened or exported before revocation.
                 </p>
@@ -266,13 +266,13 @@ export function ShareNoteModal({ open, note, onClose, onChanged }: ShareNoteModa
                   {revokedShares.map((share) => (
                     <li
                       key={share.id}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-800"
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-stone-200 px-3 py-2 dark:border-stone-800"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-sm text-slate-600 line-through dark:text-slate-400">
-                          {truncate(share.recipient.email, 42)}
+                        <p className="truncate text-sm text-stone-600 line-through dark:text-stone-400">
+                          {shortenId(share.recipient.email, 12)}
                         </p>
-                        <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                        <p className="text-[11px] text-stone-400 dark:text-stone-500">
                           revoked {share.revokedAt ? formatRelativeTime(share.revokedAt) : ''}
                         </p>
                       </div>
@@ -297,7 +297,7 @@ export function ShareNoteModal({ open, note, onClose, onChanged }: ShareNoteModa
         message={
           <div className="space-y-3">
             <p>
-              <strong className="font-semibold text-slate-800 dark:text-slate-100">
+              <strong className="font-semibold text-stone-800 dark:text-stone-100">
                 {revokeTarget?.recipient.displayName}
               </strong>{' '}
               will immediately stop being able to load this note. Every future request is rejected by the API and

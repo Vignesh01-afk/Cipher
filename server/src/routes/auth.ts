@@ -19,6 +19,12 @@ import {
 import { toKeyMaterial } from '../lib/serialize';
 import { signSessionToken } from '../lib/jwt';
 import { currentUserId, requireAuth } from '../middleware/auth';
+import { escrowWrap, isEscrowConfigured } from '../lib/otp';
+import { generateCipherId } from '../lib/cipherId';
+
+function fromBase64(value: string): Buffer {
+  return Buffer.from(value, 'base64');
+}
 
 export const authRouter = Router();
 
@@ -55,10 +61,19 @@ authRouter.post(
 
     const passwordHash = await hashPassword(input.password);
 
+    // Optional escrow of the raw master key (enables OTP-only password
+    // reset later). The key is wrapped with a server-side secret immediately
+    // and only the wrap is persisted; the raw bytes are never stored.
+    const escrow =
+      input.masterKeyRaw && isEscrowConfigured()
+        ? escrowWrap(fromBase64(input.masterKeyRaw))
+        : null;
+
     const user = await prisma.user.create({
       data: {
         email,
         displayName: input.displayName.trim(),
+        cipherId: await generateCipherId(),
         passwordHash,
         publicKey: input.publicKey,
         wrappedPrivateKey: input.wrappedPrivateKey,
@@ -67,6 +82,9 @@ authRouter.post(
         kdfIterations: input.kdfIterations,
         wrappedMasterKey: input.wrappedMasterKey,
         masterKeyIv: input.masterKeyIv,
+        ...(escrow
+          ? { escrowWrappedMasterKey: escrow.wrapped, escrowMasterKeyIv: escrow.iv, escrowUpdatedAt: new Date() }
+          : {}),
       },
     });
 
@@ -342,6 +360,15 @@ authRouter.post(
         // The private key is wrapped with the master key, which is unchanged,
         // so wrappedPrivateKey stays valid and is NOT touched here.
         recoveryKeyUsedAt: new Date(),
+        // Refresh the escrow copy too so the OTP path keeps working after a
+        // recovery-key reset (the master key itself is unchanged; re-wrapping
+        // simply re-encrypts it under the current escrow secret).
+        ...(input.masterKeyRaw && isEscrowConfigured()
+          ? (() => {
+              const wrap = escrowWrap(fromBase64(input.masterKeyRaw));
+              return { escrowWrappedMasterKey: wrap.wrapped, escrowMasterKeyIv: wrap.iv, escrowUpdatedAt: new Date() };
+            })()
+          : {}),
       },
     });
 

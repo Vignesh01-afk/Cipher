@@ -5,97 +5,92 @@ import { X } from 'lucide-react';
 interface ModalProps {
   open: boolean;
   onClose: () => void;
-  title: string;
+  title?: string;
   description?: string;
-  children: ReactNode;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   footer?: ReactNode;
-  size?: 'sm' | 'md' | 'lg';
+  children: ReactNode;
 }
 
-const SIZE_CLASSES: Record<NonNullable<ModalProps['size']>, string> = {
-  sm: 'max-w-md',
-  md: 'max-w-xl',
-  lg: 'max-w-3xl',
-};
+function useDialog(open: boolean, onClose: () => void, panelRef: React.RefObject<HTMLDivElement>) {
+  const previousFocus = useRef<HTMLElement | null>(null);
 
-/**
- * The overlay is portalled to document.body.
- *
- * Any ancestor with `backdrop-blur`, `transform` or `filter` (the topbar, for
- * example) becomes a containing block for `position: fixed` and would clip or
- * misplace a modal rendered inline. A portal guarantees the dialog is always
- * positioned against the real viewport.
- */
-export function Modal({
-  open,
-  onClose,
-  title,
-  description,
-  children,
-  footer,
-  size = 'md',
-}: ModalProps): JSX.Element | null {
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  // Close on Escape and stop the page behind the dialog from scrolling.
   useEffect(() => {
     if (!open) return;
+    previousFocus.current = document.activeElement as HTMLElement;
 
-    function onKeyDown(event: KeyboardEvent): void {
+    const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
-    }
+      if (event.key === 'Tab') {
+        const focusables = panelRef.current?.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        if (!focusables || focusables.length === 0) return;
+        const first = focusables[0] as HTMLElement;
+        const last = focusables[focusables.length - 1] as HTMLElement;
+        if (event.shiftKey && document.activeElement === first) {
+          last.focus();
+          event.preventDefault();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          first.focus();
+          event.preventDefault();
+        }
+      }
+    };
 
     document.addEventListener('keydown', onKeyDown);
-    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-
-    // Move focus into the dialog for keyboard and screen-reader users.
-    panelRef.current?.focus();
-
     return () => {
       document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = previousOverflow;
+      document.body.style.overflow = '';
     };
-  }, [open, onClose]);
+  }, [open, onClose, panelRef]);
+
+  return { previousFocus };
+}
+
+export function Modal({ open, onClose, title, description, size = 'md', footer, children }: ModalProps): JSX.Element | null {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const { previousFocus } = useDialog(open, onClose, panelRef);
+
+  useEffect(() => {
+    if (!open) return;
+    panelRef.current?.focus();
+  }, [open]);
 
   if (!open) return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm animate-fade-in sm:items-center"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-stone-950/50 p-4 backdrop-blur-sm animate-fade-in sm:items-center">
       <div
         ref={panelRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        tabIndex={-1}
-        className={`my-8 w-full ${SIZE_CLASSES[size]} rounded-xl border border-slate-200 bg-white shadow-2xl animate-scale-in dark:border-slate-800 dark:bg-slate-900`}
+        className={`w-full ${size === 'sm' ? 'max-w-sm' : size === 'md' ? 'max-w-xl' : size === 'lg' ? 'max-w-3xl' : 'max-w-4xl'} modal`}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-800">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">{title}</h2>
-            {description ? (
-              <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{description}</p>
-            ) : null}
+        {title ? (
+          <div className="modal-header">
+            <div>
+              <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">{title}</h2>
+              {description ? <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{description}</p> : null}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close dialog"
+              className="rounded-lg p-2 text-slate-400 transition hover:bg-white/60 hover:text-slate-600 dark:hover:bg-white/[0.08] dark:hover:text-slate-200"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn btn-ghost -mr-2 -mt-1 p-1.5"
-            aria-label="Close dialog"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
+        ) : null}
 
         <div className="px-5 py-4">{children}</div>
 
         {footer ? (
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-5 py-4 dark:border-slate-800">
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 px-5 py-4 dark:border-white/[0.08]">
             {footer}
           </div>
         ) : null}

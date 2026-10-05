@@ -30,12 +30,12 @@ export function PrivacySettingsPage(): JSX.Element {
       <section className="card p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand-600 dark:bg-brand/15 dark:text-brand-300">
               <EyeOff className="h-5 w-5" />
             </span>
             <div>
-              <h2 className="text-base font-semibold text-slate-900 dark:text-slate-50">Privacy Mode</h2>
-              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+              <h2 className="text-base font-semibold text-stone-900 dark:text-white">Privacy Mode</h2>
+              <p className="mt-0.5 text-sm text-stone-500 dark:text-stone-400">
                 Practical, browser-level protection against observation. Master switch for all behaviours below.
               </p>
             </div>
@@ -113,8 +113,8 @@ export function PrivacySettingsPage(): JSX.Element {
       </section>
 
       <section className="card p-5">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-50">
-          <ShieldCheck className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-stone-900 dark:text-white">
+          <ShieldCheck className="h-4 w-4 text-brand-600 dark:text-brand-300" />
           Security information
         </h2>
         <dl className="mt-4 space-y-3 text-xs">
@@ -126,8 +126,8 @@ export function PrivacySettingsPage(): JSX.Element {
             { term: 'Server-side plaintext', value: 'None - the API stores ciphertext only' },
           ].map((row) => (
             <div key={row.term} className="flex flex-col gap-0.5">
-              <dt className="font-semibold text-slate-700 dark:text-slate-200">{row.term}</dt>
-              <dd className="text-slate-500 dark:text-slate-400">{row.value}</dd>
+              <dt className="font-semibold text-stone-700 dark:text-stone-200">{row.term}</dt>
+              <dd className="text-stone-500 dark:text-stone-400">{row.value}</dd>
             </div>
           ))}
         </dl>
@@ -145,11 +145,11 @@ export function PrivacySettingsPage(): JSX.Element {
       </section>
 
       <section className="card p-5">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-50">
-          <KeyRound className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-stone-900 dark:text-white">
+          <KeyRound className="h-4 w-4 text-brand-600 dark:text-brand-300" />
           Recovery key
         </h2>
-        <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-xs leading-5 text-stone-500 dark:text-stone-400">
           The single-use key that can reset a forgotten password. Shown once at registration; the server stores a
           wrapped copy of your master key under it, but never the key itself.
         </p>
@@ -157,8 +157,8 @@ export function PrivacySettingsPage(): JSX.Element {
           Generate a new recovery key
         </button>
         {newKey ? (
-          <div className="mt-3 rounded-lg border border-cyan-200 bg-cyan-50/70 p-3 dark:border-cyan-500/30 dark:bg-cyan-500/5">
-            <p className="select-all break-all font-mono text-xs font-semibold text-cyan-900 dark:text-cyan-100">{newKey}</p>
+          <div className="mt-3 rounded-xl border border-brand/25 bg-brand/[0.06] p-3 dark:border-brand/25 dark:bg-brand/[0.08]">
+            <p className="select-all break-all font-mono text-xs font-semibold text-stone-800 dark:text-stone-100">{newKey}</p>
             <p className="mt-2 text-[11px] text-amber-700 dark:text-amber-300">
               Shown once. Copy it to a safe place - the previous key is now invalid.
             </p>
@@ -201,7 +201,7 @@ export function PrivacySettingsPage(): JSX.Element {
         message="A new single-use recovery key will replace the current one. Your notes, files and shares are unaffected."
       />
 
-      <section className="rounded-xl border border-amber-300 bg-amber-50/70 p-5 dark:border-amber-500/30 dark:bg-amber-500/5">
+      <section className="rounded-2xl border border-amber-300 bg-amber-50/70 p-5 dark:border-amber-500/30 dark:bg-amber-500/5">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
           What Privacy Mode cannot do
         </h2>

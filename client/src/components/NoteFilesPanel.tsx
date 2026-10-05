@@ -123,8 +123,8 @@ export function NoteFilesPanel({ noteId, noteKey }: { noteId: string; noteKey?: 
   return (
     <section className="card p-5">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-50">
-          <ShieldCheck className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-stone-900 dark:text-stone-50">
+          <ShieldCheck className="h-4 w-4 text-orange-700 dark:text-orange-500" />
           Secure files
         </h2>
         <button
@@ -148,18 +148,18 @@ export function NoteFilesPanel({ noteId, noteKey }: { noteId: string; noteKey?: 
         />
       </div>
 
-      <p className="mt-1.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
+      <p className="mt-1.5 text-xs leading-5 text-stone-500 dark:text-stone-400">
         Files are sealed with AES-GCM-256 in this browser before upload. The server stores ciphertext only.
       </p>
 
       {/* Upload experience */}
       {phase !== 'idle' ? (
-        <div className="mt-4 rounded-lg border border-cyan-200 bg-cyan-50/60 p-4 dark:border-cyan-500/30 dark:bg-cyan-500/5">
+        <div className="mt-4 rounded-lg border border-orange-200 bg-orange-50/60 p-4 dark:border-orange-600/30 dark:bg-orange-600/5">
           <div className="flex items-center gap-3">
-            <UploadCloud className="h-4 w-4 shrink-0 text-cyan-600 dark:text-cyan-400" />
+            <UploadCloud className="h-4 w-4 shrink-0 text-orange-700 dark:text-orange-500" />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">{pendingName}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{pendingName}</p>
+              <p className="text-xs text-stone-500 dark:text-stone-400">
                 {phase === 'preparing' && 'Preparing file…'}
                 {phase === 'encrypting' && 'Encrypting locally…'}
                 {phase === 'uploading' && `Uploading encrypted file… ${Math.round(progress * 100)}%`}
@@ -169,9 +169,9 @@ export function NoteFilesPanel({ noteId, noteKey }: { noteId: string; noteKey?: 
             {phase === 'done' ? <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-500" /> : null}
           </div>
           {phase === 'uploading' ? (
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800">
               <div
-                className="h-full rounded-full bg-cyan-500 transition-[width] duration-150"
+                className="h-full rounded-full bg-orange-600 transition-[width] duration-150"
                 style={{ width: `${Math.round(progress * 100)}%` }}
               />
             </div>
@@ -188,28 +188,28 @@ export function NoteFilesPanel({ noteId, noteKey }: { noteId: string; noteKey?: 
       {loadError ? (
         <p className="mt-3 text-xs text-rose-600 dark:text-rose-400">{loadError}</p>
       ) : loading ? (
-        <p className="mt-4 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-4 flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading files…
         </p>
       ) : files.length === 0 ? (
-        <p className="mt-4 text-sm text-slate-500 dark:text-slate-400">No files attached yet.</p>
+        <p className="mt-4 text-sm text-stone-500 dark:text-stone-400">No files attached yet.</p>
       ) : (
-        <ul className="mt-4 divide-y divide-slate-200 dark:divide-slate-800">
+        <ul className="mt-4 divide-y divide-stone-200 dark:divide-stone-800">
           {files.map((file) => (
             <li key={file.id} className="flex items-center gap-3 py-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">
                 <FileKindIcon mime={file.mimeType} />
               </span>
               <div className="min-w-0 flex-1">
                 <button
                   type="button"
-                  className="block w-full truncate text-left text-sm font-medium text-slate-800 hover:text-cyan-700 dark:text-slate-100 dark:hover:text-cyan-300"
+                  className="block w-full truncate text-left text-sm font-medium text-stone-800 hover:text-orange-800 dark:text-stone-100 dark:hover:text-orange-400"
                   onClick={() => setPreviewFile(file)}
                   title="Open secure preview"
                 >
                   {file.filename}
                 </button>
-                <p className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500">
+                <p className="flex items-center gap-2 text-[11px] text-stone-400 dark:text-stone-500">
                   <Lock className="h-3 w-3" />
                   {formatBytes(file.plaintextBytes)} · {formatRelativeTime(file.createdAt)} · {file.algorithm}
                 </p>

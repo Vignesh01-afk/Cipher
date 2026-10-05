@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { KeyRound, Lock, Mail, ShieldCheck } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertCircle, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { Spinner } from '../components/Spinner';
-import { ErrorState } from '../components/States';
-import { KeyUnlockError } from '../lib/crypto';
+import { AuthShell } from './AuthShell';
+import { Button } from '../components/Button';
+import { Input } from '../components/Input';
+import { GoogleIcon } from '../lib/passwordStrength';
 
 export function LoginPage(): JSX.Element {
   const { login } = useAuth();
@@ -14,121 +15,145 @@ export function LoginPage(): JSX.Element {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     if (busy) return;
-
     setBusy(true);
     setError(null);
-
     try {
-      await login(email.trim(), password);
+      await login(email.trim(), password, { remember });
       toast.success('Signed in', 'Your encrypted key material was unlocked locally.');
       navigate('/dashboard', { replace: true });
     } catch (loginError) {
-      if (loginError instanceof KeyUnlockError) {
-        setError(
-          'Your password was accepted but the stored key material could not be unwrapped. The account may have been created with a different password or the data is damaged.',
-        );
-      } else {
-        setError(loginError instanceof Error ? loginError.message : 'Sign-in failed.');
-      }
+      setError(
+        loginError instanceof Error
+          ? loginError.message
+          : 'Sign-in failed. Please check your email and password and try again.',
+      );
     } finally {
       setBusy(false);
     }
   }
 
+  async function onGoogleSignIn(): Promise<void> {
+    setError(null);
+    try {
+      const { api } = await import('../lib/api');
+      const { url } = await api.getGoogleAuthUrl();
+      window.location.href = url;
+    } catch (googleError) {
+      setError(
+        googleError instanceof Error
+          ? googleError.message
+          : 'Could not start Google sign-in. It may not be configured on this server.',
+      );
+    }
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12 dark:bg-slate-950">
-      <div className="w-full max-w-md">
-        <div className="mb-6 flex flex-col items-center text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-600 text-white">
-            <ShieldCheck className="h-6 w-6" />
+    <AuthShell>
+      <div className="space-y-5">
+        <div className="flex flex-col items-center text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_12px_30px_-10px_rgba(122,88,247,0.9)]">
+            <Lock className="h-6 w-6" />
           </span>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
-            Welcome back to CipherNote
-          </h1>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Your password both authenticates you and unlocks the keys that decrypt your notes.
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-stone-900 dark:text-white">Welcome back</h1>
+          <p className="mt-1 text-sm leading-6 text-stone-500 dark:text-stone-400">
+            Sign in to access your encrypted notes.
           </p>
         </div>
 
-        <div className="card p-6">
-          {error ? (
-            <div className="mb-4">
-              <ErrorState title="Could not sign you in" message={error} />
+        {error ? (
+          <div className="card-interactive flex items-start gap-3 rounded-2xl border border-rose-200/80 bg-rose-50/40 p-4 dark:border-rose-500/20 dark:bg-rose-500/5">
+            <AlertCircle className="h-5 w-5 shrink-0 text-rose-500" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-rose-800 dark:text-rose-200">Incorrect password</p>
+              <p className="mt-0.5 text-sm leading-6 text-rose-700/90 dark:text-rose-200/80">{error}</p>
             </div>
-          ) : null}
+          </div>
+        ) : null}
 
-          <form onSubmit={onSubmit} className="space-y-4" noValidate>
-            <div>
-              <label htmlFor="email" className="label">
-                Email address
-              </label>
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className="input pl-9"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  disabled={busy}
-                />
-              </div>
+        <form onSubmit={onSubmit} className="space-y-4" noValidate>
+          <Input
+            label="Email address"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={busy}
+            leftAddon={<User className="h-4 w-4" />}
+          />
+          <div className="mt-1">
+            <label className="label" htmlFor="password">Password</label>
+            <div className="relative">
+              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                required
+                className="input-auth pr-11"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={busy}
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
             </div>
+          </div>
 
-            <div>
-              <label htmlFor="password" className="label">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="input pl-9"
-                  placeholder="Your password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  disabled={busy}
-                />
-              </div>
-            </div>
-
-            <button type="submit" className="btn btn-primary w-full" disabled={busy || !email || !password}>
-              {busy ? <Spinner /> : <KeyRound className="h-4 w-4" />}
-              {busy ? 'Verifying and unwrapping keys…' : 'Sign in and unlock vault'}
-            </button>
-          </form>
-
-          <p className="mt-4 text-center text-sm text-slate-500 dark:text-slate-400">
+          <div className="flex items-center justify-between gap-3">
+            <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                disabled={busy}
+                className="h-4 w-4 cursor-pointer rounded border-slate-300 text-brand-500 focus:ring-brand-500"
+              />
+              Remember me
+            </label>
             <Link to="/forgot-password" className="link">
-              Forgot your password?
+              Forgot password?
             </Link>
-          </p>
+          </div>
 
-          <p className="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
-            No account yet?{' '}
-            <Link to="/register" className="link">
-              Create one
-            </Link>
-          </p>
+          <Button type="submit" className="w-full" disabled={busy || !email || !password}>
+            {busy ? 'Signing in…' : 'Sign In'}
+          </Button>
+        </form>
+
+        <div className="my-5 flex items-center gap-3">
+          <span className="h-px flex-1 bg-white/10" />
+          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-400 dark:text-stone-500">or</span>
+          <span className="h-px flex-1 bg-white/10" />
         </div>
 
-        <p className="mt-4 text-center text-xs leading-5 text-slate-500 dark:text-slate-400">
-          The server compares a bcrypt hash of your password. The password-derived key that actually decrypts your
-          notes is computed in this browser with PBKDF2 and never leaves it.
+        <Button variant="secondary" className="w-full" onClick={() => onGoogleSignIn()} disabled={busy}>
+          <GoogleIcon />
+          {busy ? 'Redirecting…' : 'Sign in with Google'}
+        </Button>
+
+        <p className="mt-5 text-center text-sm text-stone-500 dark:text-stone-400">
+          Don&apos;t have an account?{' '}
+          <Link to="/register" className="link font-semibold text-brand-600 dark:text-brand-300">
+            Create account
+          </Link>
         </p>
       </div>
-    </div>
+    </AuthShell>
   );
 }

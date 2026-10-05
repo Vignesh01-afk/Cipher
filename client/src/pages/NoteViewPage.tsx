@@ -44,8 +44,6 @@ export function NoteViewPage(): JSX.Element {
     setError(null);
     try {
       const remote = await api.getNote(noteId);
-      // The server tells us which side of the share we are on; decrypt
-      // accordingly with the owner's master key or our RSA private key.
       const decrypted =
         remote.role === 'owner'
           ? await decryptOwnNote(remote, keys)
@@ -120,10 +118,7 @@ export function NoteViewPage(): JSX.Element {
         </Link>
         <ErrorState
           title={accessDenied ? 'Access denied' : 'Could not open this note'}
-          message={
-            error?.message ??
-            'This note is unavailable.'
-          }
+          message={error?.message ?? 'This note is unavailable.'}
           onRetry={() => void load()}
         >
           {accessDenied ? (
@@ -196,11 +191,11 @@ export function NoteViewPage(): JSX.Element {
           ) : null}
         </div>
 
-        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
+        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900 dark:text-white">
           {note.title || 'Untitled note'}
         </h1>
 
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
           <span className="inline-flex items-center gap-1.5">
             <UserRound className="h-3.5 w-3.5" />
             {note.owner.displayName} · {note.owner.email}
@@ -226,8 +221,8 @@ export function NoteViewPage(): JSX.Element {
 
         <div className="divider" />
 
-        <div className="whitespace-pre-wrap break-words font-mono text-[13px] leading-7 text-slate-700 dark:text-slate-200">
-          {note.content || <span className="text-slate-400 dark:text-slate-500">This note is empty.</span>}
+        <div className="whitespace-pre-wrap break-words font-mono text-[13px] leading-7 text-stone-700 dark:text-stone-200">
+          {note.content || <span className="text-stone-400 dark:text-stone-500">This note is empty.</span>}
         </div>
       </article>
 
@@ -236,23 +231,23 @@ export function NoteViewPage(): JSX.Element {
 
         <aside className="space-y-5">
           <section className="card p-5">
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Encryption information</h2>
+            <h2 className="text-sm font-semibold text-stone-900 dark:text-white">Encryption information</h2>
             <dl className="mt-3 space-y-2.5 text-xs">
               <div>
-                <dt className="font-semibold text-slate-700 dark:text-slate-200">Cipher</dt>
-                <dd className="text-slate-500 dark:text-slate-400">
+                <dt className="font-semibold text-stone-700 dark:text-stone-200">Cipher</dt>
+                <dd className="text-stone-500 dark:text-stone-400">
                   {note.algorithm} · payload v{note.encryptionVersion}
                 </dd>
               </div>
               <div>
-                <dt className="font-semibold text-slate-700 dark:text-slate-200">Your access</dt>
-                <dd className="text-slate-500 dark:text-slate-400">
+                <dt className="font-semibold text-stone-700 dark:text-stone-200">Your access</dt>
+                <dd className="text-stone-500 dark:text-stone-400">
                   {isOwner ? 'Owner - master key unwrap' : 'Recipient - RSA-OAEP wrapped note key'}
                 </dd>
               </div>
               <div>
-                <dt className="font-semibold text-slate-700 dark:text-slate-200">File keys</dt>
-                <dd className="text-slate-500 dark:text-slate-400">
+                <dt className="font-semibold text-stone-700 dark:text-stone-200">File keys</dt>
+                <dd className="text-stone-500 dark:text-stone-400">
                   Wrapped with the note key, so every participant can decrypt attachments
                 </dd>
               </div>
@@ -260,8 +255,8 @@ export function NoteViewPage(): JSX.Element {
           </section>
 
           <section className="card p-5">
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50">Conversation</h2>
-            <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+            <h2 className="text-sm font-semibold text-stone-900 dark:text-white">Conversation</h2>
+            <p className="mt-2 text-xs leading-5 text-stone-500 dark:text-stone-400">
               {isOwner
                 ? activeShares.length === 0
                   ? 'This note is private. Share it to start an encrypted conversation; recipients will see the files too.'
@@ -272,7 +267,7 @@ export function NoteViewPage(): JSX.Element {
         </aside>
       </div>
 
-      <div className="rounded-xl border border-cyan-200 bg-cyan-50/60 p-4 text-xs leading-5 text-cyan-900 dark:border-cyan-500/30 dark:bg-cyan-500/5 dark:text-cyan-100/90">
+      <div className="rounded-xl border border-orange-200 bg-orange-50/60 p-4 text-xs leading-5 text-orange-950 dark:border-orange-600/30 dark:bg-orange-600/5 dark:text-orange-100/90">
         This plaintext exists only in your browser's memory. The server held the ciphertext shown in the security
         inspector, never the text above.
       </div>

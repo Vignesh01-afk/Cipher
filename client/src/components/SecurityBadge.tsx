@@ -35,7 +35,7 @@ export function SecurityBadge({ compact = false }: { compact?: boolean }): JSX.E
         description="Only claims that are true of this implementation are listed here."
         size="md"
       >
-        <div className="space-y-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
+        <div className="space-y-4 text-sm leading-6 text-stone-600 dark:text-stone-300">
           <p className="flex items-start gap-2">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
             Your messages and notes are encrypted with AES-GCM-256 <em>before transmission</em>. The server stores

@@ -8,6 +8,7 @@ import {
   Trash2,
   Unlock,
   Users,
+  type LucideIcon,
 } from 'lucide-react';
 import type { DecryptedNote } from '../lib/notes';
 import { notePreview } from '../lib/notes';
@@ -20,31 +21,38 @@ interface NoteCardProps {
   onShare?: () => void;
   onDelete?: () => void;
   onInspect?: () => void;
+  /** Optional trailing action, e.g. "Chat with collaborator" on shared notes. */
+  extraAction?: { label: string; icon: LucideIcon; onClick: () => void; title?: string };
 }
 
-export function NoteCard({ note, onOpen, onEdit, onShare, onDelete, onInspect }: NoteCardProps): JSX.Element {
+export function NoteCard({ note, onOpen, onEdit, onShare, onDelete, onInspect, extraAction }: NoteCardProps): JSX.Element {
   const isOwner = note.role === 'owner';
   const activeShares = note.shares.filter((share) => share.isActive);
 
   return (
-    <article className="card-interactive flex h-full flex-col p-5">
+    <article
+      className={`card-interactive flex h-full flex-col p-5 ${
+        isOwner ? 'rounded-br-md' : 'rounded-bl-md'
+      }`}
+    >
+      {/* Chat-style tail accent: echoes the message-bubble corner. */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           {isOwner ? (
-            <Lock className="h-4 w-4 shrink-0 text-cyan-600 dark:text-cyan-400" aria-hidden="true" />
+            <Lock className="h-4 w-4 shrink-0 text-orange-700 dark:text-orange-500" aria-hidden="true" />
           ) : (
-            <Unlock className="h-4 w-4 shrink-0 text-violet-600 dark:text-violet-400" aria-hidden="true" />
+            <Unlock className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
           )}
-          <h3 className="truncate text-base font-semibold text-slate-900 dark:text-slate-50" title={note.title}>
+          <h3 className="truncate text-base font-semibold text-stone-900 dark:text-stone-50" title={note.title}>
             {note.title || 'Untitled note'}
           </h3>
         </div>
         <span className={`badge shrink-0 ${isOwner ? 'badge-cyan' : 'badge-amber'}`}>
-          {isOwner ? 'Owner' : 'Shared with me'}
+          {isOwner ? 'You' : 'Shared with me'}
         </span>
       </div>
 
-      <p className="mt-3 line-clamp-4 flex-1 text-sm leading-6 text-slate-600 dark:text-slate-400">
+      <p className="mt-3 line-clamp-4 flex-1 text-sm leading-6 text-stone-600 dark:text-stone-400">
         {notePreview(note.content) || 'This note has no content yet.'}
       </p>
 
@@ -62,7 +70,7 @@ export function NoteCard({ note, onOpen, onEdit, onShare, onDelete, onInspect }:
         </div>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+      <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
         <span title={new Date(note.updatedAt).toString()}>Updated {formatRelativeTime(note.updatedAt)}</span>
         {isOwner ? (
           <span className="inline-flex items-center gap-1">
@@ -79,7 +87,7 @@ export function NoteCard({ note, onOpen, onEdit, onShare, onDelete, onInspect }:
         <span className="inline-flex items-center gap-1">v{note.encryptionVersion}</span>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-slate-200 pt-4 dark:border-slate-800">
+      <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-stone-200 pt-4 dark:border-stone-800">
         <button type="button" className="btn btn-secondary btn-sm" onClick={onOpen}>
           <Eye className="h-3.5 w-3.5" />
           Open
@@ -108,6 +116,18 @@ export function NoteCard({ note, onOpen, onEdit, onShare, onDelete, onInspect }:
           >
             <ShieldCheck className="h-3.5 w-3.5" />
             Inspect
+          </button>
+        ) : null}
+
+        {extraAction ? (
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            onClick={extraAction.onClick}
+            title={extraAction.title ?? extraAction.label}
+          >
+            <extraAction.icon className="h-3.5 w-3.5" />
+            {extraAction.label}
           </button>
         ) : null}
 

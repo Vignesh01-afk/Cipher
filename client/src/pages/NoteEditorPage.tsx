@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Lock, RefreshCw, Save, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Lock, RefreshCw, Save, ShieldCheck, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { ApiError, api } from '../lib/api';
@@ -38,7 +38,6 @@ export function NoteEditorPage({ mode }: NoteEditorPageProps): JSX.Element {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [lastPayloadBytes, setLastPayloadBytes] = useState<number>(0);
 
-  // Load and decrypt the existing note when editing.
   useEffect(() => {
     if (mode !== 'edit' || !noteId || !keys) return;
     let cancelled = false;
@@ -90,13 +89,9 @@ export function NoteEditorPage({ mode }: NoteEditorPageProps): JSX.Element {
       const payload = { title: title.trim() || 'Untitled note', content, tags };
 
       if (mode === 'create') {
-        // 1. Fresh AES-GCM key for this note.
         const { key: noteKey, raw: noteKeyRaw } = await generateAesKey();
-        // 2. Seal the payload in the browser.
         const sealed = await encryptNotePayload(noteKey, payload);
-        // 3. Wrap the note key with the owner's master key.
         const wrapped = await wrapNoteKeyForStorage(keys.masterKey, noteKeyRaw);
-        // 4. The API only ever receives the blobs below.
         const created = await api.createNote({
           ciphertext: sealed.ciphertext,
           iv: sealed.iv,
@@ -119,9 +114,6 @@ export function NoteEditorPage({ mode }: NoteEditorPageProps): JSX.Element {
         throw new Error('This note has no wrapped key material, so it cannot be re-encrypted here.');
       }
 
-      // The ciphertext is replaced wholesale. The existing note key is reused on
-      // purpose: that keeps every share created earlier valid, because each
-      // recipient's copy of the key still matches the note.
       const noteKey = await unwrapNoteKeyFromStorage(
         keys.masterKey,
         existing.wrappedNoteKey,
@@ -147,7 +139,7 @@ export function NoteEditorPage({ mode }: NoteEditorPageProps): JSX.Element {
   if (mode === 'edit' && (loading || loadError)) {
     return (
       <div className="space-y-4">
-        <Link to="/notes" className="btn btn-ghost btn-sm self-start">
+        <Link to="/notes" className="btn btn-ghost btn-sm">
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to notes
         </Link>
@@ -172,10 +164,10 @@ export function NoteEditorPage({ mode }: NoteEditorPageProps): JSX.Element {
       <div className="card p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-50">
+            <h2 className="text-lg font-semibold tracking-tight text-stone-900 dark:text-white">
               {mode === 'create' ? 'Create an encrypted note' : 'Edit note'}
             </h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
               The title, body and tags are sealed together. Only the ciphertext, nonce and wrapped key are stored.
             </p>
           </div>
@@ -220,7 +212,7 @@ export function NoteEditorPage({ mode }: NoteEditorPageProps): JSX.Element {
               onChange={(event) => setContent(event.target.value)}
               disabled={saving}
             />
-            <p className="mt-1.5 text-xs text-slate-400 dark:text-slate-500">
+            <p className="mt-1.5 text-xs text-stone-400 dark:text-stone-500">
               {content.length} characters · {content.trim() ? content.trim().split(/\s+/).length : 0} words
               {lastPayloadBytes > 0 ? ` · last stored payload ${formatBytes(lastPayloadBytes)}` : ''}
             </p>
@@ -231,9 +223,9 @@ export function NoteEditorPage({ mode }: NoteEditorPageProps): JSX.Element {
             <TagInput value={tags} onChange={setTags} disabled={saving} />
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/60">
-            <p className="flex items-start gap-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
-              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-600 dark:text-cyan-400" />
+          <div className="rounded-lg border border-stone-200 bg-stone-50/70 p-3 dark:border-stone-800 dark:bg-stone-900/60">
+            <p className="flex items-start gap-2 text-xs leading-5 text-stone-500 dark:text-stone-400">
+              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-orange-700 dark:text-orange-500" />
               On save, a payload is built, sealed with AES-GCM using a unique nonce, and the key is wrapped with your
               master key. {mode === 'edit' ? 'Sharing stays intact because the same note key is reused.' : ''}
             </p>

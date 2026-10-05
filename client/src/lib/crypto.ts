@@ -306,7 +306,7 @@ export interface CryptoSession {
  */
 export async function createUserKeyMaterial(
   password: string,
-): Promise<{ material: UserKeyMaterial; session: CryptoSession }> {
+): Promise<{ material: UserKeyMaterial; session: CryptoSession; masterKeyRaw: Uint8Array }> {
   const salt = randomBytes(SALT_BYTES);
   const iterations = DEFAULT_KDF_ITERATIONS;
 
@@ -314,7 +314,6 @@ export async function createUserKeyMaterial(
 
   const { key: masterKey, raw: masterKeyRaw } = await generateAesKey();
   const wrappedMaster = await encryptBytes(kek, masterKeyRaw);
-  wipe(masterKeyRaw);
 
   const { publicKeySpki, privateKeyPkcs8, privateKey } = await generateUserKeyPair();
   const wrappedPrivate = await encryptBytes(masterKey, privateKeyPkcs8);
@@ -331,6 +330,10 @@ export async function createUserKeyMaterial(
       masterKeyIv: wrappedMaster.iv,
     },
     session: { masterKey, privateKey },
+    // A copy for the server-side escrow wrap (enables OTP password reset).
+    // The caller sends it once over TLS; the server stores only its own
+    // AES-GCM wrap of these bytes, never the bytes themselves.
+    masterKeyRaw: new Uint8Array(masterKeyRaw),
   };
 }
 
@@ -478,10 +481,8 @@ export async function unwrapMasterKeyWithRecoveryKey(
 }
 
 /**
- * Forgot-password flow, step 2: rebuild the whole key hierarchy under a NEW
- * password without the server ever seeing a key. The master key raw bytes
- * become the new password's wrapped master key; the private key is re-wrapped
- * under the (unchanged) master key with a fresh nonce.
+ * Forgot-password flow (recovery-key path), step 2: rebuild the whole key
+ * hierarchy under a NEW password without the server ever seeing a key.
  */
 export async function buildResetMaterial(
   newPassword: string,
@@ -512,6 +513,41 @@ export async function buildResetMaterial(
     masterKeyIv: wrappedMaster.iv,
     wrappedPrivateKey: wrappedPrivate.ciphertext,
     privateKeyIv: wrappedPrivate.iv,
+    masterKey,
+  };
+}
+
+/**
+ * Forgot-password flow (email-OTP path): the server has just verified the
+ * code and returned the escrow-unwrapped master key. Rebuild the key
+ * hierarchy under the new password; the result is sent with the reset token
+ * to complete the reset.
+ */
+export async function buildOtpResetMaterial(
+  newPassword: string,
+  masterKeyRawBase64: string,
+): Promise<{
+  kdfSalt: string;
+  kdfIterations: number;
+  wrappedMasterKey: string;
+  masterKeyIv: string;
+  masterKey: CryptoKey;
+}> {
+  const masterKeyRaw = fromBase64(masterKeyRawBase64);
+
+  const salt = randomBytes(16);
+  const iterations = DEFAULT_KDF_ITERATIONS;
+  const kek = await deriveKeyEncryptionKey(newPassword, salt, iterations);
+
+  const wrappedMaster = await encryptBytes(kek, masterKeyRaw);
+  const masterKey = await importAesKey(masterKeyRaw, false);
+  wipe(masterKeyRaw);
+
+  return {
+    kdfSalt: toBase64(salt),
+    kdfIterations: iterations,
+    wrappedMasterKey: wrappedMaster.ciphertext,
+    masterKeyIv: wrappedMaster.iv,
     masterKey,
   };
 }

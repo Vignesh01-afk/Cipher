@@ -1,39 +1,46 @@
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-export type StatTone = 'cyan' | 'emerald' | 'amber' | 'violet' | 'slate';
+export type StatTone = 'cyan' | 'emerald' | 'amber' | 'violet' | 'magenta' | 'slate';
 
+/** Gradient icon tiles, per the dashboard mockup. */
 const TONE_CLASSES: Record<StatTone, string> = {
-  cyan: 'bg-cyan-50 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400',
-  emerald: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400',
-  amber: 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400',
-  violet: 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400',
-  slate: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+  cyan: 'bg-gradient-to-br from-[#4A6CF7] to-[#7C5CF6] text-white',
+  violet: 'bg-gradient-to-br from-[#7C5CF6] to-[#8B5CF6] text-white',
+  magenta: 'bg-gradient-to-br from-[#8B5CF6] to-[#D946EF] text-white',
+  emerald: 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white',
+  amber: 'bg-gradient-to-br from-amber-500 to-orange-500 text-white',
+  slate: 'bg-gradient-to-br from-stone-500 to-stone-600 text-white',
 };
 
 interface StatCardProps {
   icon: LucideIcon;
   label: string;
   value: ReactNode;
+  /** Small caption under the value (e.g. "+2 this week"). */
+  suffix?: string;
   hint?: string;
   tone?: StatTone;
 }
 
-export function StatCard({ icon: Icon, label, value, hint, tone = 'cyan' }: StatCardProps): JSX.Element {
+export function StatCard({ icon: Icon, label, value, suffix, hint, tone = 'cyan' }: StatCardProps): JSX.Element {
   return (
     <div className="card p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
             {label}
           </p>
-          <p className="mt-2 text-2xl font-semibold tabular-nums text-slate-900 dark:text-slate-50">{value}</p>
+          <p className="mt-2 text-2xl font-bold tabular-nums text-stone-900 dark:text-stone-50">{value}</p>
+          {suffix ? <p className="mt-0.5 text-[11px] font-medium text-stone-400 dark:text-stone-500">{suffix}</p> : null}
         </div>
-        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${TONE_CLASSES[tone]}`}>
+        <span
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl shadow-[0_10px_24px_-12px_rgba(122,88,247,0.8)] ${TONE_CLASSES[tone]}`}
+        >
           <Icon className="h-5 w-5" />
         </span>
       </div>
-      {hint ? <p className="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">{hint}</p> : null}
+      {hint ? <p className="mt-3 text-xs leading-5 text-stone-500 dark:text-stone-400">{hint}</p> : null}
     </div>
   );
 }

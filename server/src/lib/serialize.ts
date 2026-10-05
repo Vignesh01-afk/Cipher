@@ -15,6 +15,10 @@ export interface KeyMaterialResponse {
   email: string;
   displayName: string;
   createdAt: string;
+  /** Public chat handle (CN-XXXXXX) - addressing only, never a secret. */
+  cipherId: string;
+  /** Public @username for chat addressing, when chosen. */
+  username: string | null;
   /** Opaque blobs the browser needs in order to unlock the user's keys. */
   publicKey: string;
   wrappedPrivateKey: string;
@@ -32,6 +36,8 @@ export function toKeyMaterial(user: User): KeyMaterialResponse {
     email: user.email,
     displayName: user.displayName,
     createdAt: user.createdAt.toISOString(),
+    cipherId: user.cipherId,
+    username: user.username,
     publicKey: user.publicKey,
     wrappedPrivateKey: user.wrappedPrivateKey,
     privateKeyIv: user.privateKeyIv,

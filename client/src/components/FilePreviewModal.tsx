@@ -91,17 +91,20 @@ export function FilePreviewModal({
   if (!file) return null;
 
   const mime = file.mimeType || 'application/octet-stream';
-  const kind: 'image' | 'video' | 'audio' | 'pdf' | 'text' | 'other' = mime.startsWith('image/')
+  // SECURITY: `file.mimeType` is attacker-controllable metadata (set by the
+  // uploader). It must never select a same-origin rendering context that can
+  // execute script. Only image/audio/video render natively in the browser
+  // (they cannot execute JS); PDFs and text/* are NOT rendered in an iframe
+  // because a malicious uploader could label an HTML/SVG payload as PDF or
+  // text/plain and get same-origin script execution. Those fall back to the
+  // safe "no in-app preview" card below.
+  const kind: 'image' | 'video' | 'audio' | 'other' = mime.startsWith('image/')
     ? 'image'
     : mime.startsWith('video/')
       ? 'video'
       : mime.startsWith('audio/')
         ? 'audio'
-        : mime === 'application/pdf'
-          ? 'pdf'
-          : mime.startsWith('text/')
-            ? 'text'
-            : 'other';
+        : 'other';
 
   return (
     <Modal
@@ -126,14 +129,14 @@ export function FilePreviewModal({
       }
     >
       {loading ? (
-        <div className="flex flex-col items-center gap-3 py-10 text-sm text-slate-500 dark:text-slate-400">
+        <div className="flex flex-col items-center gap-3 py-10 text-sm text-stone-500 dark:text-stone-400">
           <Spinner className="h-5 w-5" />
           Downloading and decrypting in memory…
         </div>
       ) : error ? (
         <ErrorState title="Could not open this file" message={error} />
       ) : blobUrl && kind === 'image' ? (
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-950/5 dark:border-slate-800 dark:bg-slate-950/40">
+        <div className="overflow-hidden rounded-lg border border-stone-200 bg-stone-950/5 dark:border-stone-800 dark:bg-stone-950/40">
           <img
             src={blobUrl}
             alt={file.filename}
@@ -146,25 +149,21 @@ export function FilePreviewModal({
         <video src={blobUrl} controls className="mx-auto max-h-[60vh] w-full rounded-lg" />
       ) : blobUrl && kind === 'audio' ? (
         <audio src={blobUrl} controls className="w-full" />
-      ) : blobUrl && kind === 'pdf' ? (
-        <iframe title={file.filename} src={blobUrl} className="h-[60vh] w-full rounded-lg border border-slate-200 dark:border-slate-800" />
-      ) : blobUrl && kind === 'text' ? (
-        <iframe title={file.filename} src={blobUrl} className="h-[50vh] w-full rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950" />
       ) : blobUrl ? (
         <div className="flex flex-col items-center gap-3 py-10 text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">
             <FileIcon className="h-6 w-6" />
           </span>
-          <p className="text-sm text-slate-600 dark:text-slate-300">
+          <p className="text-sm text-stone-600 dark:text-stone-300">
             No in-app preview is available for <span className="font-mono text-xs">{mime}</span>.
           </p>
-          <p className="max-w-sm text-xs text-slate-500 dark:text-slate-400">
+          <p className="max-w-sm text-xs text-stone-500 dark:text-stone-400">
             Export is disabled for security: the decrypted bytes only exist in this tab's memory and are never written to disk.
           </p>
         </div>
       ) : null}
 
-      <p className="mt-4 flex items-start gap-2 rounded-lg border border-cyan-200 bg-cyan-50/60 p-3 text-xs leading-5 text-cyan-900 dark:border-cyan-500/30 dark:bg-cyan-500/5 dark:text-cyan-100/90">
+      <p className="mt-4 flex items-start gap-2 rounded-lg border border-orange-200 bg-orange-50/60 p-3 text-xs leading-5 text-orange-950 dark:border-orange-600/30 dark:bg-orange-600/5 dark:text-orange-100/90">
         <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         This preview came from ciphertext that was decrypted inside your browser. The server never saw the plaintext.
       </p>

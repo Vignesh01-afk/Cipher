@@ -22,6 +22,22 @@ model User {
   displayName  String
   passwordHash String
 
+  // ---- Google sign-in ------------------------------------------------------
+  /// Google account subject (`sub` claim) when the account is linked.
+  googleId String? @unique
+
+  // ---- Master-key escrow (OTP password reset) ------------------------------
+  // OTP-only reset model: the client uploads the raw master key ONCE over TLS
+  // at registration (and again after a recovery reset), and the server wraps
+  // it with a server-side secret (AES-256-GCM). This blob is NOT zero
+  // knowledge - it exists so a verified Gmail OTP can recover the vault.
+  /// Master key wrapped under the server escrow secret (AES-GCM, base64).
+  escrowWrappedMasterKey String?
+  /// IV for `escrowWrappedMasterKey`.
+  escrowMasterKeyIv      String?
+  /// Set when the escrow copy is re-stored after a recovery-key reset.
+  escrowUpdatedAt        DateTime?
+
   // ---- Client-side key material (all opaque to the server) ----------------
   /// RSA-OAEP public key, SPKI, base64. Safe to publish to other users.
   publicKey         String
@@ -59,13 +75,46 @@ model User {
   /// Set when the recovery key is used, so a key cannot be reused.
   recoveryKeyUsedAt         DateTime?
 
+  // ---- Chat identity (public handle, NOT a secret / NOT an encryption key) -
+  /// Unique public chat handle, e.g. CN-7F4K29. Random, rotatable, and purely
+  /// an addressing identifier: it never derives, wraps or unlocks any key.
+  cipherId  String  @unique
+  /// Unique public @username for chat addressing. Lowercase, 3-24 chars.
+  username  String? @unique
+
   createdAt DateTime @default(now())
 
-  notes          Note[]
-  files          SecureFile[]
-  sharesGiven    NoteShare[] @relation("ShareOwner")
-  sharesReceived NoteShare[] @relation("ShareRecipient")
-  auditLogs      AuditLog[]
+  notes             Note[]
+  files             SecureFile[]
+  sharesGiven       NoteShare[]           @relation("ShareOwner")
+  sharesReceived    NoteShare[]           @relation("ShareRecipient")
+  auditLogs         AuditLog[]
+  otpTokens         OtpToken[]
+  conversationLinks ConversationMember[]
+  messagesSent      EncryptedMessage[]    @relation("MessageSender")
+  blocksIssued      ChatBlock[]           @relation("Blocker")
+  blocksReceived    ChatBlock[]           @relation("BlockedUser")
+}
+
+/// One-time codes emailed to the account address for password reset./// Codes are stored as SHA-256 hashes; a plain code never touches the DB.
+model OtpToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// SHA-256(code), hex. Deliberately not bcrypt: the code is 8 digits of
+  /// entropy, so hashing must be cheap enough to verify quickly yet the
+  /// lookup is always scoped by userId and consumed on first use.
+  codeHash  String
+  purpose   String   @default("PASSWORD_RESET")
+  expiresAt DateTime
+  usedAt    DateTime?
+  /// Monotonic counter of emails sent for this purpose, for simple throttling.
+  sentAt    DateTime
+  attempts  Int      @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, purpose])
 }
 
 model Note {
@@ -181,6 +230,102 @@ model NoteShare {
   @@unique([noteId, sharedWithId])
   @@index([sharedWithId])
   @@index([noteId])
+}
+
+// ============================================================================
+// Chat
+//
+// SECURITY INVARIANT: identical to notes - the server stores chat ciphertext
+// and wrapped key material only. `EncryptedMessage.ciphertext` is produced in
+// the browser with AES-GCM-256 under a per-conversation key that the server
+// never holds in unwrapped form (it receives that key RSA-OAEP-wrapped to
+// each member's public key, exactly like a note key on a share).
+// ============================================================================
+
+/// A chat conversation. 1:1 DMs today; the member model already supports more.
+model Conversation {
+  id   String @id @default(cuid())
+  /// Optional note context: the conversation was started from a shared note.
+  /// No FK on purpose - deleting the note must not delete the conversation.
+  contextNoteId String?
+  /// Denormalised note title is NOT stored (would be plaintext metadata
+  /// leakage); the client resolves the title from the note it can decrypt.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members  ConversationMember[]
+  messages EncryptedMessage[]
+
+  @@index([updatedAt])
+}
+
+/// Membership join table with per-member chat key wrap + read state.
+model ConversationMember {
+  id             String @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// The conversation's AES-256-GCM key, RSA-OAEP-wrapped with THIS member's
+  /// public key. Opaque to the server, exactly like a NoteShare.wrappedKey.
+  wrappedConversationKey String
+  keyAlgorithm           String @default("RSA-OAEP-2048-SHA256")
+
+  /// Soft-hide for the member ("clear local chat" / hide conversation).
+  hiddenAt DateTime?
+  /// When the member last read the conversation (unread counts, receipts).
+  lastReadAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+/// One encrypted chat message. SERVER CANNOT DECRYPT THIS.
+model EncryptedMessage {
+  id             String @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  /// AES-GCM-256 ciphertext (base64) of the JSON payload {type, text, ...}.
+  ciphertext String
+  /// 96-bit nonce (base64) for this ciphertext.
+  iv         String
+  encryptionVersion Int @default(1)
+  algorithm  String @default("AES-GCM-256")
+  /// Ciphertext byte length (metadata only, for stats/limits).
+  payloadBytes Int @default(0)
+
+  /// Client message id (uuid) for optimistic-send deduplication.
+  clientId String?
+
+  deliveredAt DateTime?
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@unique([conversationId, senderId, clientId])
+  @@index([conversationId, createdAt])
+  @@index([senderId, createdAt])
+}
+
+/// A user-blocks-user record. Blocking hides new traffic; the server enforces
+/// it on send, so a blocked sender's messages are rejected server-side.
+model ChatBlock {
+  id        String @id @default(cuid())
+  blockerId String
+  blocker   User   @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockedId String
+  blocked   User   @relation("BlockedUser", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
 }
 
 model AuditLog {

@@ -29,3 +29,10 @@ Thumbs.db
 .vercel
 .env*
 storage/
+.test-artifacts/
+
+# Playwright E2E artifacts (generated, never committed)
+.e2e-state/
+playwright-report/
+test-results/
+playwright/.cache/

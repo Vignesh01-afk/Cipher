@@ -4,6 +4,9 @@ import { AlertTriangle, KeyRound, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { Spinner } from '../components/Spinner';
 import { ErrorState } from '../components/States';
+import { AuthShell } from './AuthShell';
+import { Button } from '../components/Button';
+import { Input } from '../components/Input';
 import { ApiError, api } from '../lib/api';
 import {
   buildResetMaterial,
@@ -128,156 +131,128 @@ export function ForgotPasswordPage(): JSX.Element {
 
   if (done) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12 dark:bg-slate-950">
-        <div className="w-full max-w-md">
-          <div className="card p-6 text-center">
-            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <ShieldCheck className="h-6 w-6" />
-            </span>
-            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
-              Password reset
-            </h1>
-            <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-              The password for <span className="font-medium">{resetEmail}</span> was changed and your keys were
-              re-wrapped under the new password. The recovery key has been burned and cannot be used again.
-            </p>
-            <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">Redirecting to sign in…</p>
-          </div>
+      <AuthShell>
+        <div className="flex flex-col items-center text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <ShieldCheck className="h-6 w-6" />
+          </span>
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-stone-900 dark:text-white">
+            Password reset
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-stone-500 dark:text-stone-400">
+            The password for <span className="font-medium text-stone-700 dark:text-stone-200">{resetEmail}</span> was
+            changed and your keys were re-wrapped under the new password. The recovery key has been burned and cannot be
+            used again.
+          </p>
+          <p className="mt-3 text-xs text-stone-400 dark:text-stone-500">Redirecting to sign in…</p>
         </div>
-      </div>
+      </AuthShell>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-12 dark:bg-slate-950">
-      <div className="w-full max-w-lg">
-        <div className="mb-6 flex flex-col items-center text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-cyan-600 text-white">
+    <AuthShell width="lg">
+      <div className="space-y-5">
+        <div className="flex flex-col items-center text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_12px_30px_-10px_rgba(122,88,247,0.9)]">
             <ShieldCheck className="h-6 w-6" />
           </span>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-stone-900 dark:text-white">
             Reset your password
           </h1>
-          <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-sm leading-6 text-stone-500 dark:text-stone-400">
             Your recovery key re-encrypts your vault keys under a new password - inside this browser. The server never
             sees any key.
           </p>
         </div>
 
-        <div className="card p-6">
-          {error ? (
-            <div className="mb-4">
-              <ErrorState title="Could not reset your password" message={error} />
-            </div>
-          ) : null}
+        {error ? <ErrorState title="Could not reset your password" message={error} /> : null}
 
-          <form onSubmit={onSubmit} className="space-y-4" noValidate>
-            <div>
-              <label htmlFor="email" className="label">
-                Account email
-              </label>
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className="input pl-9"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  disabled={busy}
-                />
-              </div>
-            </div>
+        <form onSubmit={onSubmit} className="space-y-4" noValidate>
+          <Input
+            id="email"
+            label="Account email"
+            type="email"
+            autoComplete="email"
+            required
+            placeholder="you@example.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            disabled={busy}
+            leftAddon={<Mail className="h-4 w-4" />}
+          />
 
-            <div>
-              <label htmlFor="recoveryKey" className="label">
-                Recovery key
-              </label>
-              <textarea
-                id="recoveryKey"
-                required
-                rows={2}
-                spellCheck={false}
-                className="input font-mono text-xs"
-                placeholder="RCVR-…"
-                value={recoveryKey}
-                onChange={(event) => setRecoveryKey(event.target.value)}
-                disabled={busy}
-              />
-              <p className="mt-1.5 text-xs text-slate-400 dark:text-slate-500">
-                The <span className="font-mono">RCVR-…</span> key you saved when creating your account (or from Settings
-                → Recovery). It is single-use.
-              </p>
-            </div>
+          <div>
+            <label htmlFor="recoveryKey" className="label">
+              Recovery key
+            </label>
+            <textarea
+              id="recoveryKey"
+              required
+              rows={2}
+              spellCheck={false}
+              className="textarea font-mono text-xs"
+              placeholder="RCVR-…"
+              value={recoveryKey}
+              onChange={(event) => setRecoveryKey(event.target.value)}
+              disabled={busy}
+            />
+            <p className="mt-1.5 text-xs text-stone-400 dark:text-stone-500">
+              The <span className="font-mono">RCVR-…</span> key you saved when creating your account (or from Settings →
+              Recovery). It is single-use.
+            </p>
+          </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label htmlFor="newPassword" className="label">
-                  New password
-                </label>
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input
-                    id="newPassword"
-                    type="password"
-                    autoComplete="new-password"
-                    required
-                    minLength={8}
-                    className="input pl-9"
-                    placeholder="At least 8 characters"
-                    value={newPassword}
-                    onChange={(event) => setNewPassword(event.target.value)}
-                    disabled={busy}
-                  />
-                </div>
-              </div>
-              <div>
-                <label htmlFor="confirmNewPassword" className="label">
-                  Confirm new password
-                </label>
-                <input
-                  id="confirmNewPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  className="input"
-                  placeholder="Repeat new password"
-                  value={confirmPassword}
-                  onChange={(event) => setConfirmPassword(event.target.value)}
-                  disabled={busy}
-                />
-              </div>
-            </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Input
+              id="newPassword"
+              label="New password"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={8}
+              placeholder="At least 8 characters"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              disabled={busy}
+              leftAddon={<Lock className="h-4 w-4" />}
+            />
+            <Input
+              id="confirmNewPassword"
+              label="Confirm new password"
+              type="password"
+              autoComplete="new-password"
+              required
+              placeholder="Repeat new password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              disabled={busy}
+            />
+          </div>
 
-            <div className="rounded-lg border border-amber-300 bg-amber-50/70 p-3 dark:border-amber-500/30 dark:bg-amber-500/5">
-              <p className="flex items-start gap-2 text-xs leading-5 text-amber-900 dark:text-amber-100/90">
-                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                Without your recovery key the password cannot be reset - this is a property of end-to-end encryption.
-                Resetting retires the recovery key: generate a new one from Settings after signing in.
-              </p>
-            </div>
+          <div className="rounded-xl border border-amber-300 bg-amber-50/70 p-3 dark:border-amber-500/30 dark:bg-amber-500/5">
+            <p className="flex items-start gap-2 text-xs leading-5 text-amber-900 dark:text-amber-100/90">
+              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              Without your recovery key the password cannot be reset - this is a property of end-to-end encryption.
+              Resetting retires the recovery key: generate a new one from Settings after signing in.
+            </p>
+          </div>
 
-            <button
-              type="submit"
-              className="btn btn-primary w-full"
-              disabled={busy || !email || !recoveryKey || newPassword.length < 8 || newPassword !== confirmPassword}
-            >
-              {busy ? <Spinner /> : <KeyRound className="h-4 w-4" />}
-              {busy ? 'Re-wrapping your keys locally…' : 'Reset password with recovery key'}
-            </button>
-          </form>
-
-          <p className="mt-5 text-center text-sm text-slate-500 dark:text-slate-400">
-            Remembered it?{' '}
-            <Link to="/login" className="link">
-              Sign in
-            </Link>
-          </p>
-        </div>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={busy || !email || !recoveryKey || newPassword.length < 8 || newPassword !== confirmPassword}
+          >
+            {busy ? <Spinner /> : <KeyRound className="h-4 w-4" />}
+            {busy ? 'Re-wrapping your keys locally…' : 'Reset password with recovery key'}
+          </Button>
+        </form><p className="text-center text-sm text-stone-500 dark:text-stone-400">
+          Remembered it?{' '}
+          <Link to="/login" className="link font-semibold text-brand-600 dark:text-brand-300">
+            Sign in
+          </Link>
+        </p>
       </div>
-    </div>
+    </AuthShell>
   );
 }

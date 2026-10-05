@@ -1,54 +1,197 @@
-import { useEffect, useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Search, Bell, Moon, Sun, ChevronDown, LogOut, User, Settings, Shield, Lock, ArrowLeft, Home, MessageSquare, FileText, Users, Sparkles } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { Avatar } from './Avatar';
+import { Dropdown, DropdownMenu, type DropdownItem } from './Dropdown';
 import { Sidebar } from './Sidebar';
-import { Topbar } from './Topbar';
 
-/** Route prefix -> page heading shown in the top bar. */
-const PAGE_TITLES: Array<{ prefix: string; title: string; subtitle: string }> = [
-  { prefix: '/dashboard', title: 'Dashboard', subtitle: 'Your encrypted workspace at a glance' },
-  { prefix: '/notes/new', title: 'Create Note', subtitle: 'Encrypted in this browser before it is stored' },
-  { prefix: '/notes/', title: 'Note', subtitle: 'Decrypted locally in this tab' },
-  { prefix: '/notes', title: 'My Notes', subtitle: 'Search, edit and share your encrypted notes' },
-  { prefix: '/shared', title: 'Shared With Me', subtitle: 'Notes other people wrapped for your key' },
-  { prefix: '/activity', title: 'Activity & Audit Log', subtitle: 'Security-relevant events on your account' },
-  { prefix: '/inspector', title: 'Security Inspector', subtitle: 'Technical metadata - never keys or passwords' },
-];
-
-function resolveHeading(pathname: string): { title: string; subtitle: string } {
-  const match = PAGE_TITLES.find((entry) => pathname.startsWith(entry.prefix));
-  return match ?? { title: 'CipherNote', subtitle: '' };
+interface TopbarProps {
+  onOpenSidebar?: () => void;
+  actions?: ReactNode;
 }
 
-export function AppLayout(): JSX.Element {
+export function Topbar({ onOpenSidebar, actions }: TopbarProps): JSX.Element {
+  const { theme, toggleTheme, setTheme } = useTheme();
+  const { status, user, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+
+  const handleThemeChange = (next: 'light' | 'dark') => {
+    setTheme(next);
+    toggleTheme();
+  };
+
+  const onSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) navigate(`/notes?q=${encodeURIComponent(searchQuery.trim())}`);
+    setSearchOpen(false);
+  };
+
+  const profileItems: DropdownItem[] = [
+    { label: 'Profile', icon: <User className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/privacy'); } },
+    { label: 'Settings', icon: <Settings className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/settings'); } },
+    { label: 'Security', icon: <Shield className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/inspector'); } },
+    { label: 'Log out', icon: <LogOut className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); void logout(); } },
+  ];
+
+  const onChatThread = location.pathname.startsWith('/chat') && location.pathname !== '/chat';
+  const onNoteEditor = location.pathname.startsWith('/notes/') && location.pathname.endsWith('/edit');
+  const onNoteView = location.pathname.startsWith('/notes/') && !location.pathname.endsWith('/edit');
+  const onShared = location.pathname === '/shared';
+  const inChatList = location.pathname === '/chat';
+
+  return (
+    <header className="topbar">
+      <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
+        {onChatThread ? (
+          <button
+            type="button"
+            className="btn btn-ghost p-2"
+            onClick={() => navigate('/chat')}
+            aria-label="Back to conversations"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+        ) : onOpenSidebar ? (
+          <button type="button" className="btn btn-ghost p-2" onClick={onOpenSidebar} aria-label="Open navigation">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        ) : null}
+
+        {!onNoteEditor ? (
+          <form className="topbar-search" onSubmit={onSearch}>
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <input
+              type="search"
+              className="input pl-11"
+              placeholder="Search notes, chats, or users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchOpen(true)}
+              aria-label="Search notes, chats, or users"
+            />
+          </form>
+        ) : null}
+
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className="relative flex h-2 w-2">
+            <Bell className="h-2.5 w-2.5" />
+            <span className="notification-ring" />
+            <span className="notification-dot" />
+          </span>
+
+          {actions}
+
+          <span className={`hidden h-9 w-9 items-center justify-center rounded-full sm:inline-flex ${status === 'unlocked' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
+            <Lock className="h-4 w-4" />
+          </span>
+
+          <button
+            type="button"
+            className="btn btn-ghost p-2"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+
+          <Dropdown align="right" trigger={<Avatar name={user?.displayName ?? 'User'} />}>
+            <DropdownMenu items={profileItems} />
+          </Dropdown>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+export function AppLayout({ children }: { children?: ReactNode }): JSX.Element {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Close the mobile drawer whenever the route changes.
   useEffect(() => {
     setSidebarOpen(false);
   }, [location.pathname]);
 
-  const heading = resolveHeading(location.pathname);
+  const isFullBleed =
+    location.pathname.startsWith('/chat') ||
+    location.pathname.startsWith('/notes') ||
+    location.pathname === '/shared';
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <div className="thumb-layout">
+      <Sidebar open={sidebarOpen || false} onClose={() => setSidebarOpen(false)} />
 
-      <div className="lg:pl-72">
-        <Topbar
-          title={heading.title}
-          subtitle={heading.subtitle}
-          onOpenSidebar={() => setSidebarOpen(true)}
-        />
+      <div className="flex min-h-screen flex-col lg:pl-72">
+        <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
 
-        <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
-          <Outlet />
+        <main className="flex flex-1 flex-col overflow-hidden">
+          {isFullBleed ? (
+            <Outlet />
+          ) : (
+            <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
+              <Outlet />
+            </div>
+          )}
         </main>
 
-        <footer className="mx-auto w-full max-w-7xl px-4 pb-8 text-xs text-slate-400 dark:text-slate-600 sm:px-6">
-          CipherNote · SYNCSQUAD · notes and files are encrypted with AES-GCM in your browser and are never sent in
-          plaintext.
-        </footer>
+        {/* Mobile bottom navigation *always* visible so the nav targets stay consistent */}
+        <nav className="bottom-nav" aria-label="Mobile primary">
+          <button
+            type="button"
+            className={`bottom-nav-link ${location.pathname === '/dashboard' ? 'bottom-nav-link-active' : ''}`}
+            onClick={() => navigate('/dashboard')}
+            aria-label="Go to Home"
+          >
+            <Home className="h-5 w-5" />
+            Home
+          </button>
+          <button
+            type="button"
+            className={`bottom-nav-link ${location.pathname === '/notes' ? 'bottom-nav-link-active' : ''}`}
+            onClick={() => navigate('/notes')}
+            aria-label="Go to Notes"
+          >
+            <FileText className="h-5 w-5" />
+            Notes
+          </button>
+          <button
+            type="button"
+            className={`bottom-nav-link ${location.pathname === '/chat' || location.pathname.startsWith('/chat/') ? 'bottom-nav-link-active' : ''}`}
+            onClick={() => navigate('/chat')}
+            aria-label="Go to Chat"
+          >
+            <MessageSquare className="h-5 w-5" />
+            Chat
+          </button>
+          <button
+            type="button"
+            className={`bottom-nav-link ${location.pathname === '/shared' ? 'bottom-nav-link-active' : ''}`}
+            onClick={() => navigate('/shared')}
+            aria-label="Go to Shared"
+          >
+            <Users className="h-5 w-5" />
+            Shared
+          </button>
+          <button
+            type="button"
+            className={`bottom-nav-link ${location.pathname === '/privacy' || location.pathname === '/settings' ? 'bottom-nav-link-active' : ''}`}
+            onClick={() => navigate('/privacy')}
+            aria-label="Go to Settings"
+          >
+            <Sparkles className="h-5 w-5" />
+            Settings
+          </button>
+        </nav>
       </div>
     </div>
   );

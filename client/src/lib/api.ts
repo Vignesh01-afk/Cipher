@@ -1,13 +1,22 @@
 import type {
   AuditLogDto,
   AuthResponse,
+  GoogleAuthOutcome,
+  GoogleUrlResponse,
   KeyMaterial,
   NoteDto,
+  OtpRequestResponse,
+  OtpResetResponse,
+  OtpVerifyResponse,
   PublicProfile,
   RecoveryChallengeResponse,
   SecureFileDto,
   ShareDto,
   SharedNoteDto,
+  ChatUserDto,
+  ConversationDto,
+  ConversationDetailDto,
+  ChatMessageDto,
 } from './types';
 
 /**
@@ -20,6 +29,14 @@ import type {
 
 const TOKEN_STORAGE_KEY = 'ciphernote.session.token';
 
+/**
+ * API base URL.
+ *
+ * Defaults to the relative `/api`, which is correct in both environments:
+ *  - local dev: Vite proxies /api -> http://localhost:4000 (see vite.config.ts)
+ *  - deployed:  Vercel serves the API as a same-origin function at /api
+ * Set VITE_API_BASE_URL only to point the client at a different origin.
+ */
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '');
 
 export class ApiError extends Error {
@@ -41,9 +58,13 @@ export class ApiError extends Error {
   }
 }
 
+const REMEMBER_STORAGE_KEY = 'ciphernote.session.remember';
+
 function readStoredToken(): string | null {
   try {
-    return localStorage.getItem(TOKEN_STORAGE_KEY);
+    // "Remember me" sessions live in localStorage; unchecked sessions are
+    // scoped to the tab (sessionStorage) and end when it closes.
+    return localStorage.getItem(TOKEN_STORAGE_KEY) ?? sessionStorage.getItem(TOKEN_STORAGE_KEY);
   } catch {
     return null;
   }
@@ -55,13 +76,48 @@ export function getAuthToken(): string | null {
   return authToken;
 }
 
-export function setAuthToken(token: string | null): void {
+/**
+ * Persists (or clears) the session token.
+ *
+ * `remember` mirrors the "Remember me" checkbox on the sign-in screen:
+ * true keeps the session across browser restarts (localStorage), false keeps
+ * it only for this tab (sessionStorage).
+ */
+export function setAuthToken(token: string | null, options: { remember?: boolean } = {}): void {
+  const remember = options.remember ?? true;
   authToken = token;
   try {
-    if (token) localStorage.setItem(TOKEN_STORAGE_KEY, token);
-    else localStorage.removeItem(TOKEN_STORAGE_KEY);
+    if (token) {
+      if (remember) {
+        localStorage.setItem(TOKEN_STORAGE_KEY, token);
+        sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+      } else {
+        sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
+      }
+    } else {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+    }
   } catch {
     /* storage unavailable - the session stays in memory only */
+  }
+}
+
+/** Last "Remember me" choice, used as the sign-in form default. */
+export function getRememberPreference(): boolean {
+  try {
+    return localStorage.getItem(REMEMBER_STORAGE_KEY) !== '0';
+  } catch {
+    return true;
+  }
+}
+
+export function setRememberPreference(remember: boolean): void {
+  try {
+    localStorage.setItem(REMEMBER_STORAGE_KEY, remember ? '1' : '0');
+  } catch {
+    /* storage unavailable - keep the in-memory default */
   }
 }
 
@@ -127,6 +183,23 @@ export interface RegisterPayload {
   kdfIterations: number;
   wrappedMasterKey: string;
   masterKeyIv: string;
+  /** Raw master key (base64) for the server-side escrow wrap (OTP reset). */
+  masterKeyRaw?: string;
+}
+
+export interface GoogleRegisterPayload {
+  signupToken: string;
+  displayName: string;
+  password: string;
+  publicKey: string;
+  wrappedPrivateKey: string;
+  privateKeyIv: string;
+  kdfSalt: string;
+  kdfIterations: number;
+  wrappedMasterKey: string;
+  masterKeyIv: string;
+  /** Raw master key (base64) for the server-side escrow wrap (OTP reset). */
+  masterKeyRaw?: string;
 }
 
 export interface CreateNotePayload {
@@ -259,8 +332,127 @@ export const api = {
     kdfIterations: number;
     wrappedMasterKey: string;
     masterKeyIv: string;
+    masterKeyRaw?: string;
   }): Promise<AuthResponse> {
     return request<AuthResponse>('/auth/recovery/reset', { method: 'POST', body: payload });
+  },
+
+  // --- Email OTP password reset ----------------------------------------------
+
+  async requestPasswordResetCode(email: string): Promise<OtpRequestResponse> {
+    return request<OtpRequestResponse>('/auth/password/request-code', {
+      method: 'POST',
+      body: { email },
+    });
+  },
+
+  async verifyPasswordResetCode(email: string, code: string): Promise<OtpVerifyResponse> {
+    return request<OtpVerifyResponse>('/auth/password/verify-code', {
+      method: 'POST',
+      body: { email, code },
+    });
+  },
+
+  async resetPasswordWithOtp(payload: {
+    resetToken: string;
+    newPassword: string;
+    kdfSalt: string;
+    kdfIterations: number;
+    wrappedMasterKey: string;
+    masterKeyIv: string;
+  }): Promise<OtpResetResponse> {
+    return request<OtpResetResponse>('/auth/password/reset', { method: 'POST', body: payload });
+  },
+
+  // --- Google sign-in ----------------------------------------------------------
+
+  async getGoogleAuthUrl(): Promise<GoogleUrlResponse> {
+    return request<GoogleUrlResponse>('/auth/google/url');
+  },
+
+  async googleSignIn(code: string, state: string): Promise<GoogleAuthOutcome> {
+    return request<GoogleAuthOutcome>('/auth/google', { method: 'POST', body: { code, state } });
+  },
+
+  async googleRegister(payload: GoogleRegisterPayload): Promise<AuthResponse> {
+    return request<AuthResponse>('/auth/google/register', { method: 'POST', body: payload });
+  },
+
+  // --- Chat -------------------------------------------------------------------
+
+  async searchUsers(q: string): Promise<{ users: ChatUserDto[] }> {
+    return request<{ users: ChatUserDto[] }>(`/chat/users/search?q=${encodeURIComponent(q)}`);
+  },
+
+  async listConversations(): Promise<{ conversations: ConversationDto[] }> {
+    return request<{ conversations: ConversationDto[] }>('/chat/conversations');
+  },
+
+  async getConversation(conversationId: string): Promise<{ conversation: ConversationDetailDto }> {
+    return request<{ conversation: ConversationDetailDto }>(
+      `/chat/conversations/${encodeURIComponent(conversationId)}`,
+    );
+  },
+
+  async startConversation(payload: {
+    recipientId: string;
+    contextNoteId?: string;
+    wrappedKeys: Record<string, string>;
+  }): Promise<{ conversation: { id: string; wrappedConversationKey: string | null; reused: boolean; contextNoteId: string | null } }> {
+    return request('/chat/conversations', { method: 'POST', body: payload });
+  },
+
+  async listMessages(
+    conversationId: string,
+    options: { cursor?: string; limit?: number } = {},
+  ): Promise<{ messages: ChatMessageDto[]; nextCursor: string | null }> {
+    const params = new URLSearchParams();
+    if (options.cursor) params.set('cursor', options.cursor);
+    if (options.limit) params.set('limit', String(options.limit));
+    const query = params.toString();
+    return request(`/chat/conversations/${encodeURIComponent(conversationId)}/messages${query ? `?${query}` : ''}`);
+  },
+
+  async sendMessage(
+    conversationId: string,
+    payload: {
+      ciphertext: string;
+      iv: string;
+      clientId: string;
+      payloadBytes: number;
+      wrappedConversationKeys: Record<string, string>;
+      kind?: 'note-share';
+      noteId?: string;
+    },
+  ): Promise<{ message: ChatMessageDto }> {
+    return request(`/chat/conversations/${encodeURIComponent(conversationId)}/messages`, {
+      method: 'POST',
+      body: payload,
+    });
+  },
+
+  async markConversationRead(conversationId: string): Promise<void> {
+    await request(`/chat/conversations/${encodeURIComponent(conversationId)}/read`, { method: 'POST' });
+  },
+
+  async hideConversation(conversationId: string): Promise<void> {
+    await request(`/chat/conversations/${encodeURIComponent(conversationId)}/hide`, { method: 'POST' });
+  },
+
+  async deleteConversation(conversationId: string): Promise<void> {
+    await request(`/chat/conversations/${encodeURIComponent(conversationId)}`, { method: 'DELETE' });
+  },
+
+  async listBlocked(): Promise<{ blocks: ChatUserDto[] }> {
+    return request<{ blocks: ChatUserDto[] }>('/chat/blocks');
+  },
+
+  async blockUser(userId: string): Promise<void> {
+    await request('/chat/blocks', { method: 'POST', body: { userId } });
+  },
+
+  async unblockUser(userId: string): Promise<void> {
+    await request(`/chat/blocks/${encodeURIComponent(userId)}`, { method: 'DELETE' });
   },
 
   // --- Secure files ---------------------------------------------------------

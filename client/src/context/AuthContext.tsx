@@ -8,13 +8,15 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { ApiError, api, getAuthToken, setAuthToken } from '../lib/api';
+import { ApiError, api, getAuthToken, setAuthToken, setRememberPreference } from '../lib/api';
 import {
   buildRecoverySetup,
   createUserKeyMaterial,
   generateRecoveryKey,
   isWebCryptoAvailable,
+  toBase64,
   unlockUserKeyMaterial,
+  wipe,
   type CryptoSession,
   type UserKeyMaterial,
 } from '../lib/crypto';
@@ -36,18 +38,38 @@ export interface RegisterInput {
   password: string;
 }
 
+export interface GoogleRegisterInput {
+  signupToken: string;
+  email: string;
+  displayName: string;
+  password: string;
+}
+
 interface AuthContextValue {
   status: AuthStatus;
   user: KeyMaterial | null;
   keys: CryptoSession | null;
   isWebCryptoSupported: boolean;
   register: (input: RegisterInput) => Promise<string | null>;
-  login: (email: string, password: string) => Promise<void>;
+  /**
+   * Completes sign-up for a Google-verified identity: creates the key
+   * hierarchy under the chosen vault password and registers the account with
+   * the Google ID already linked. Returns the one-time recovery key (or null).
+   */
+  registerWithGoogle: (input: GoogleRegisterInput) => Promise<string | null>;
+  /** `remember` mirrors the sign-in checkbox: keep the session across restarts. */
+  login: (email: string, password: string, options?: { remember?: boolean }) => Promise<void>;
   unlock: (password: string) => Promise<void>;
   lock: () => void;
   logout: () => Promise<void>;
   /** Generates a recovery key, wraps the master key under it and stores it. */
   setupRecoveryKey: () => Promise<string>;
+  /**
+   * Adopts a session created without a local password (Google sign-in):
+   * stores the token + user and puts the app in the `locked` state so the
+   * vault password is requested to derive keys locally.
+   */
+  adoptSession: (result: { token: string; user: KeyMaterial }) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -114,11 +136,35 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
   }, []);
 
   /**
+   * Shared tail of both registration paths: adopts the fresh session, flips
+   * to `unlocked`, then wraps the master key under a one-time recovery key.
+   * Returns the recovery key to show exactly once, or null when its setup
+   * failed (a key can be generated later from Settings).
+   */
+  const adoptNewAccount = useCallback(
+    async (result: { token: string; user: KeyMaterial }, session: CryptoSession): Promise<string | null> => {
+      setAuthToken(result.token);
+      setUser(result.user);
+      setKeys(session);
+      setStatus('unlocked');
+
+      // Recovery setup uses the in-hand `session` (NOT React state, which
+      // would still be stale within this closure).
+      try {
+        const recoveryKey = generateRecoveryKey();
+        const setup = await buildRecoverySetup(recoveryKey, session.masterKey);
+        await api.setupRecovery(setup);
+        return recoveryKey;
+      } catch {
+        return null;
+      }
+    },
+    [],
+  );
+
+  /**
    * Registers the account and immediately wraps the fresh master key under a
    * one-time recovery key - using the in-hand session, so no state race.
-   * Returns the recovery key to show to the user exactly once, or null when
-   * the setup call failed (the account still works; a key can be generated
-   * later from Settings).
    */
   const register = useCallback(
     async ({ email, displayName, password }: RegisterInput): Promise<string | null> => {
@@ -128,25 +174,21 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
 
       // Everything below happens locally: the key hierarchy is generated on
       // this device before any network call is made.
-      const { material, session } = await createUserKeyMaterial(password);
+      const { material, session, masterKeyRaw } = await createUserKeyMaterial(password);
 
       try {
-        const result = await api.register({ email, displayName, password, ...material });
-        setAuthToken(result.token);
-        setUser(result.user);
-        setKeys(session);
-        setStatus('unlocked');
-
-        // Recovery setup uses the in-hand `session` (NOT React state, which
-        // would still be stale within this closure).
-        try {
-          const recoveryKey = generateRecoveryKey();
-          const setup = await buildRecoverySetup(recoveryKey, session.masterKey);
-          await api.setupRecovery(setup);
-          return recoveryKey;
-        } catch {
-          return null;
-        }
+        // masterKeyRaw enables the server-side escrow wrap used by the
+        // email-OTP password reset. Sent once over TLS; the server stores
+        // only its own encrypted wrap of it.
+        const result = await api.register({
+          email,
+          displayName,
+          password,
+          ...material,
+          masterKeyRaw: toBase64(masterKeyRaw),
+        });
+        wipe(masterKeyRaw);
+        return await adoptNewAccount(result, session);
       } catch (error) {
         // Do not leave a half-authenticated state behind.
         setAuthToken(null);
@@ -154,17 +196,58 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
         throw error;
       }
     },
-    [isWebCryptoSupported],
+    [isWebCryptoSupported, adoptNewAccount],
   );
 
+  /**
+   * Google sign-up path: identical key generation to `register`, but the
+   * email comes from the server-verified signup token and the Google ID is
+   * linked server-side in the same call.
+   */
+  const registerWithGoogle = useCallback(
+    async ({ signupToken, displayName, password }: GoogleRegisterInput): Promise<string | null> => {
+      if (!isWebCryptoSupported) {
+        throw new Error('This browser cannot provide Web Crypto, so CipherNote cannot encrypt notes here.');
+      }
+
+      const { material, session, masterKeyRaw } = await createUserKeyMaterial(password);
+
+      try {
+        const result = await api.googleRegister({
+          signupToken,
+          displayName,
+          password,
+          ...material,
+          masterKeyRaw: toBase64(masterKeyRaw),
+        });
+        wipe(masterKeyRaw);
+        return await adoptNewAccount(result, session);
+      } catch (error) {
+        setAuthToken(null);
+        setKeys(null);
+        throw error;
+      }
+    },
+    [isWebCryptoSupported, adoptNewAccount],
+  );
+
+  /** Google sign-in path: session adopted, vault stays locked until unlock(). */
+  const adoptSession = useCallback((result: { token: string; user: KeyMaterial }) => {
+    setAuthToken(result.token);
+    setUser(result.user);
+    setKeys(null);
+    setStatus('locked');
+  }, []);
+
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, options: { remember?: boolean } = {}) => {
       if (!isWebCryptoSupported) {
         throw new Error('This browser cannot provide Web Crypto, so CipherNote cannot decrypt notes here.');
       }
 
       const result = await api.login(email, password);
-      setAuthToken(result.token);
+      setAuthToken(result.token, { remember: options.remember ?? true });
+      setRememberPreference(options.remember ?? true);
 
       // The server said the password is correct; derive the KEK locally to
       // unwrap the master key and private key.
@@ -227,11 +310,13 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
       keys,
       isWebCryptoSupported,
       register,
+      registerWithGoogle,
       login,
       unlock,
       lock,
       logout,
       setupRecoveryKey,
+      adoptSession,
     }),
     [
       status,
@@ -239,11 +324,13 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
       keys,
       isWebCryptoSupported,
       register,
+      registerWithGoogle,
       login,
       unlock,
       lock,
       logout,
       setupRecoveryKey,
+      adoptSession,
     ],
   );
 

@@ -1,249 +1,102 @@
 import { Link } from 'react-router-dom';
-import {
-  ArrowRight,
-  EyeOff,
-  FileText,
-  Fingerprint,
-  FolderLock,
-  Github,
-  KeyRound,
-  Lock,
-  Moon,
-  Search,
-  ServerOff,
-  ShieldCheck,
-  UserX,
-} from 'lucide-react';
+import { ArrowRight, Lock, ShieldCheck, Users, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
-
-const FEATURES = [
-  {
-    icon: FileText,
-    title: 'Encrypted before it leaves the tab',
-    body: 'Titles, bodies, tags and file attachments are sealed with AES-GCM-256 in your browser. The API receives opaque blobs.',
-  },
-  {
-    icon: ServerOff,
-    title: 'Zero-knowledge backend',
-    body: 'The database stores ciphertext and wrapped keys. A full dump of the PostgreSQL database reveals no note or file content.',
-  },
-  {
-    icon: FolderLock,
-    title: 'End-to-end encrypted files',
-    body: 'Every attachment gets its own key, wrapped like note keys. Files live in private server storage with no public URLs.',
-  },
-  {
-    icon: KeyRound,
-    title: 'Keys wrapped per recipient',
-    body: 'Sharing wraps the note key with the recipient\u2019s RSA-OAEP public key, so only their private key can open it.',
-  },
-  {
-    icon: UserX,
-    title: 'Revocable access',
-    body: 'Owners can withdraw a share at any time. The API rejects revoked callers and writes the decision to the audit log.',
-  },
-  {
-    icon: Search,
-    title: 'Private local search',
-    body: 'Search runs on notes you have already decrypted in memory. There is no server-side search over note content.',
-  },
-  {
-    icon: Fingerprint,
-    title: 'Honest about the edges',
-    body: 'Revocation cannot un-download plaintext. Login events, key derivation and threat boundaries are documented in the README.',
-  },
-];
-
-const FLOW = [
-  { step: '01', label: 'Alice writes a note', detail: 'PBKDF2 unlocks her master key; a fresh AES-GCM note key seals the payload.' },
-  { step: '02', label: 'Database stores ciphertext', detail: 'Only the blob, a nonce and a wrapped key reach the server.' },
-  { step: '03', label: 'Alice shares with Bob', detail: 'The note key is wrapped with Bob\u2019s public key and stored per recipient.' },
-  { step: '04', label: 'Bob decrypts locally', detail: 'His private key unwraps the note key; plaintext never leaves his device.' },
-  { step: '05', label: 'Alice revokes Bob', detail: 'The share is marked revoked and every later request is refused.' },
-  { step: '06', label: 'Audit log captures it', detail: 'Share and revocation events are recorded with actor, note and timestamp.' },
-];
 
 export function LandingPage(): JSX.Element {
   const { status } = useAuth();
-  const { theme, toggleTheme } = useTheme();
-
-  const primaryHref = status === 'unlocked' ? '/dashboard' : status === 'locked' ? '/unlock' : '/register';
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-5">
-        <div className="flex items-center gap-2.5">
-          <span className="brand-tile" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.8">
-              <rect x="4" y="10.5" width="16" height="9.5" rx="2" />
-              <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
-              <path d="M12 14v3" strokeLinecap="round" />
-            </svg>
-          </span>
-          <span className="leading-tight">
-            <span className="block text-sm font-bold tracking-tight text-slate-900 dark:text-slate-50">
-              CipherNote
+    <div className="flex min-h-screen flex-col">
+      <header className="card-glass border-b border-white/10 px-4 py-4 sm:px-6">
+        <div className="flex items-center justify-between">
+          <Link to="/dashboard" className="flex items-center gap-3 group">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_8px_24px_-10px_rgba(122,88,247,0.9)]">
+              <Lock className="h-5 w-5" />
             </span>
-            <span className="block text-[11px] font-medium text-slate-500 dark:text-slate-400">
-              Private by design.
+            <span className="text-xl font-bold tracking-tight text-stone-900 dark:text-white">
+              <span className="brand-wordmark-cipher">Cipher</span>
+              <span className="brand-wordmark-note">Note</span>
             </span>
-          </span>
+          </Link>
+          <div className="flex items-center gap-2">
+            {status === 'unlocked' ? (
+              <Link to="/dashboard" className="btn btn-secondary btn-sm">
+                Go to app <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            ) : (
+              <Link to="/login" className="btn btn-primary btn-sm">
+                Sign in <ChevronDown className="h-3.5 w-3.5" />
+              </Link>
+            )}
+          </div>
         </div>
-
-        <nav className="flex items-center gap-2">
-          <a
-            href="https://github.com/Vignesh01-afk/Cipher"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-ghost p-2"
-            aria-label="CipherNote on GitHub"
-            title="View the source on GitHub"
-          >
-            <Github className="h-4 w-4" />
-          </a>
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="btn btn-ghost p-2"
-            aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-          >
-            <Moon className="h-4 w-4" />
-          </button>
-          <Link to="/login" className="btn btn-secondary btn-sm">
-            Sign in
-          </Link>
-          <Link to={primaryHref} className="btn btn-primary btn-sm">
-            {status === 'unlocked' ? 'Open vault' : 'Create account'}
-          </Link>
-        </nav>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-5 pb-16">
-        {/* Hero */}
-        <section className="pt-10 text-center sm:pt-16">
-          <span className="badge badge-cyan mx-auto">
-            <Lock className="h-3 w-3" />
-            End-to-end encrypted · notes & files · zero-knowledge server
-          </span>
-          <h1 className="mx-auto mt-5 max-w-3xl text-4xl font-bold leading-tight tracking-tight text-slate-900 dark:text-slate-50 sm:text-5xl">
-            Notes that are encrypted{' '}
-            <span className="bg-gradient-to-r from-cyan-500 to-emerald-400 bg-clip-text text-transparent">
-              before they reach the server
+      <main className="flex flex-1 flex-col items-center justify-center px-4 py-12 sm:py-20">
+        <div className="mx-auto max-w-4xl text-center">
+          <div className="mb-6 flex justify-center">
+            <span className="flex h-18 w-18 items-center justify-center rounded-3xl bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_20px_60px_-20px_rgba(122,88,247,0.9)]">
+              <Lock className="h-9 w-9" />
             </span>
+          </div>
+
+          <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white sm:text-5xl lg:text-6xl">
+            <span className="brand-gradient-text">CipherNote</span>
           </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-400">
-            CipherNote is a working, full-stack secure notes app. Your browser derives the keys, seals every note with
-            AES-GCM, and wraps the note key for each recipient with RSA-OAEP. The API stores ciphertext it cannot
-            read - and can prove it.
+
+          <p className="mt-5 max-w-lg text-lg leading-8 text-stone-500 dark:text-stone-400">
+            Your notes, your privacy. Encrypted end-to-end in your browser before anything is stored on the server.
+            Share, revoke and manage access with a premium security workflow.
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <Link to={primaryHref} className="btn btn-primary px-5 py-2.5">
-              {status === 'unlocked' ? 'Open your vault' : 'Create your encrypted vault'}
-              <ArrowRight className="h-4 w-4" />
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Link to="/login" className="btn btn-primary">
+              Start for free <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link to="/login" className="btn btn-secondary px-5 py-2.5">
-              I already have an account
+            <Link to="/login" className="btn btn-secondary">
+              <Lock className="h-4 w-4" />
+              See how it works
             </Link>
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-500 dark:text-slate-400">
-            <span className="inline-flex items-center gap-1.5">
-              <Lock className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" /> AES-GCM-256 note payloads
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <KeyRound className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" /> RSA-OAEP-2048 key wrapping
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Fingerprint className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" /> PBKDF2-SHA256 key derivation
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <EyeOff className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-400" /> No plaintext search on the server
-            </span>
-          </div>
-        </section>
-
-        {/* Features */}
-        <section className="mt-20">
-          <h2 className="text-center text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
-            What actually makes it secure
-          </h2>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {FEATURES.map((feature) => (
-              <div key={feature.title} className="card p-5">
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-600/10 text-cyan-600 dark:text-cyan-400">
-                  <feature.icon className="h-5 w-5" />
-                </span>
-                <h3 className="mt-4 text-sm font-semibold text-slate-900 dark:text-slate-50">{feature.title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{feature.body}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Demo flow */}
-        <section className="mt-20">
-          <div className="card overflow-hidden">
-            <div className="border-b border-slate-200 px-6 py-5 dark:border-slate-800">
-              <h2 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">
-                The demonstration flow: Alice, Bob and a revoked share
-              </h2>
-              <p className="mt-1.5 text-sm text-slate-600 dark:text-slate-400">
-                Register two accounts (for example in a normal and a private window) and walk the whole lifecycle.
+          <div className="mt-10 grid gap-6 sm:grid-cols-3">
+            <div className="card p-5">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+                <ShieldCheck className="h-5 w-5" />
+              </span>
+              <h3 className="mt-3 text-sm font-bold text-stone-900 dark:text-white">End-to-end encrypted</h3>
+              <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                Every note is sealed with AES-GCM before it leaves this browser.
               </p>
             </div>
-            <ol className="grid gap-px bg-slate-200 dark:bg-slate-800 sm:grid-cols-2 lg:grid-cols-3">
-              {FLOW.map((item) => (
-                <li key={item.step} className="bg-white p-5 dark:bg-slate-900">
-                  <span className="font-mono text-xs font-semibold text-cyan-600 dark:text-cyan-400">
-                    {item.step}
-                  </span>
-                  <h3 className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-50">{item.label}</h3>
-                  <p className="mt-1.5 text-sm leading-6 text-slate-600 dark:text-slate-400">{item.detail}</p>
-                </li>
-              ))}
-            </ol>
+            <div className="card p-5">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10 text-brand-600 dark:text-brand-300">
+                <Users className="h-5 w-5" />
+              </span>
+              <h3 className="mt-3 text-sm font-bold text-stone-900 dark:text-white">Share & revoke</h3>
+              <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                Share with anyone. Revoke access instantly, from anywhere.
+              </p>
+            </div>
+            <div className="card p-5">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400">
+                <Lock className="h-5 w-5" />
+              </span>
+              <h3 className="mt-3 text-sm font-bold text-stone-900 dark:text-white">Zero-knowledge</h3>
+              <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                The server stores ciphertext and wrapped keys only.
+              </p>
+            </div>
           </div>
-        </section>
-
-        {/* Honest limitations */}
-        <section className="mt-12 rounded-xl border border-amber-300 bg-amber-50/70 p-6 dark:border-amber-500/30 dark:bg-amber-500/5">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
-            What CipherNote does not claim
-          </h2>
-          <ul className="mt-3 space-y-2 text-sm leading-6 text-amber-900/90 dark:text-amber-100/80">
-            <li>
-              Revoking access is an access-control change. It cannot erase plaintext a recipient already decrypted,
-              copied or exported, and the note key they hold would still open the note until the owner rotates it.
-            </li>
-            <li>
-              The server sees metadata: user ids, note ids, timestamps, share relationships and the size of each
-              ciphertext.
-            </li>
-            <li>
-              A compromised browser, a malicious extension or a keylogger defeats end-to-end encryption in any web
-              application, this one included.
-            </li>
-          </ul>
-        </section>
+        </div>
       </main>
 
-      <footer className="border-t border-slate-200 py-8 dark:border-slate-800">
-        <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-2 px-5 text-center text-xs text-slate-500 dark:text-slate-400">
-          <p>
-            <a
-              href="https://github.com/Vignesh01-afk/Cipher"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-slate-700 underline-offset-2 hover:text-cyan-600 hover:underline dark:text-slate-300 dark:hover:text-cyan-400"
-            >
-              CipherNote
-            </a>{' '}
-            · SYNCSQUAD · Srikanth G · Vignesh S · Moushika G · Navasakthi A
-          </p>
-          <p>React + Vite + TypeScript · Express + TypeScript · Prisma + PostgreSQL · Web Crypto API</p>
+      <footer className="border-t border-white/10 px-4 py-6 text-center text-xs text-stone-500 dark:border-white/[0.08] dark:text-stone-400">
+        <div className="flex items-center justify-center gap-2">
+          <Lock className="h-3.5 w-3.5" />
+          <span>CipherNote · Encrypt. Share. Revoke.</span>
         </div>
+        <p className="mt-2">Your privacy is your power.</p>
       </footer>
     </div>
   );

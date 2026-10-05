@@ -57,7 +57,7 @@ export function TagInput({
             <button
               type="button"
               onClick={() => onChange(value.filter((candidate) => candidate !== tag))}
-              className="-mr-1 ml-0.5 rounded-full p-0.5 transition-colors hover:bg-cyan-500/20"
+              className="-mr-1 ml-0.5 rounded-full p-0.5 transition-colors hover:bg-orange-600/20"
               aria-label={`Remove tag ${tag}`}
               disabled={disabled}
             >
@@ -66,7 +66,7 @@ export function TagInput({
           </span>
         ))}
         {value.length === 0 ? (
-          <span className="text-xs text-slate-400 dark:text-slate-500">No tags yet</span>
+          <span className="text-xs text-stone-400 dark:text-stone-500">No tags yet</span>
         ) : null}
       </div>
 
@@ -80,7 +80,7 @@ export function TagInput({
         onKeyDown={onKeyDown}
         onBlur={() => commit(draft)}
       />
-      <p className="mt-1.5 text-xs text-slate-400 dark:text-slate-500">
+      <p className="mt-1.5 text-xs text-stone-400 dark:text-stone-500">
         {value.length}/{maxTags} tags · stored inside the encrypted payload, not on the server as plaintext
       </p>
     </div>

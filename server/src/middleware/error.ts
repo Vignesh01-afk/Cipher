@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { Prisma } from '@prisma/client';
+import { ZodError } from 'zod';
 import { ApiError } from '../lib/http';
 import { env } from '../env';
 
@@ -28,6 +29,45 @@ export function errorHandler(
       error: error.message,
       code: error.code,
       ...(error.details ? { details: error.details } : {}),
+    });
+    return;
+  }
+
+  // Body-parser failures (express.json) are client errors, not server faults:
+  // malformed JSON, an over-limit payload, or an unsupported charset. Without
+  // this branch they fall through to the generic 500 below, which both hides
+  // the real cause from the client and logs misleading "unhandled error" noise.
+  if (typeof error === 'object' && error !== null) {
+    const bodyError = error as { type?: unknown; status?: unknown; statusCode?: unknown };
+    const type = typeof bodyError.type === 'string' ? bodyError.type : '';
+    const status = typeof bodyError.status === 'number'
+      ? bodyError.status
+      : typeof bodyError.statusCode === 'number'
+        ? bodyError.statusCode
+        : 0;
+
+    if (type === 'entity.too.large' || status === 413) {
+      res.status(413).json({
+        error: 'That request body is too large.',
+        code: 'PAYLOAD_TOO_LARGE',
+      });
+      return;
+    }
+    if (type === 'entity.parse.failed' || (status === 400 && type.startsWith('entity.'))) {
+      res.status(400).json({
+        error: 'Request body is not valid JSON.',
+        code: 'INVALID_JSON',
+      });
+      return;
+    }
+  }
+
+  // Schema validation failures are client errors, not server faults.
+  if (error instanceof ZodError) {
+    res.status(400).json({
+      error: 'Request validation failed',
+      code: 'VALIDATION_ERROR',
+      details: error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message })),
     });
     return;
   }

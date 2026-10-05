@@ -1,6 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { FilePlus2, FileText, Filter, Search, ShieldAlert, Tag, X } from 'lucide-react';
+import {
+  FilePlus2,
+  FileText,
+  Filter,
+  Search,
+  ShieldAlert,
+  Tag,
+  X,
+  Eye,
+  Pencil,
+  Share2,
+  Trash2,
+  MoreVertical,
+  ShieldCheck,
+} from 'lucide-react';
 import { useOwnNotes } from '../hooks/useNotes';
 import { useToast } from '../context/ToastContext';
 import { api } from '../lib/api';
@@ -9,7 +23,8 @@ import { NoteCard } from '../components/NoteCard';
 import { ShareNoteModal } from '../components/ShareNoteModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { LoadingBlock } from '../components/Spinner';
-import { EmptyState, ErrorState } from '../components/States';
+import { EmptyState } from '../components/EmptyState';
+import { ErrorState, InfoState } from '../components/States';
 
 export function NotesPage(): JSX.Element {
   const navigate = useNavigate();
@@ -21,9 +36,9 @@ export function NotesPage(): JSX.Element {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [shareTarget, setShareTarget] = useState<DecryptedNote | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DecryptedNote | null>(null);
+  const [inspectTarget, setInspectTarget] = useState<DecryptedNote | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Keep the URL in sync so a search can be linked to or reloaded.
   useEffect(() => {
     const current = searchParams.get('q') ?? '';
     if (current === query) return;
@@ -58,30 +73,28 @@ export function NotesPage(): JSX.Element {
 
   return (
     <div className="space-y-6">
-      {/* Toolbar */}
-      <section className="card p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      <section className="card p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-base font-semibold text-slate-900 dark:text-slate-50">Your encrypted notes</h2>
-            <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-              {own.loading
-                ? 'Decrypting locally…'
-                : `${own.notes.length} ${own.notes.length === 1 ? 'note' : 'notes'} decrypted in this tab`}
+            <h2 className="text-xl font-bold tracking-tight text-stone-900 dark:text-white">My Notes</h2>
+            <p className="mt-0.5 text-sm text-stone-500 dark:text-stone-400">
+              Your encrypted notes. Only you can access them.
+              {own.loading ? ' Decrypting locally…' : ''}
             </p>
           </div>
           <Link to="/notes/new" className="btn btn-primary">
             <FilePlus2 className="h-4 w-4" />
-            New note
+            Create Note
           </Link>
         </div>
 
         <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
               type="search"
               className="input pl-9"
-              placeholder="Search title, content and tags - this runs on decrypted notes locally"
+              placeholder="Search title, content and tags - runs locally on decrypted notes"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
@@ -103,14 +116,18 @@ export function NotesPage(): JSX.Element {
 
         {tags.length > 0 ? (
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            <span className="sr-only">
               <Filter className="h-3.5 w-3.5" />
-              Tags
+              Category filters
             </span>
             <button
               type="button"
               onClick={() => setActiveTag(null)}
-              className={`badge ${activeTag === null ? 'badge-cyan' : 'badge-slate'}`}
+              className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
+                activeTag === null
+                  ? 'bg-gradient-to-r from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_8px_20px_-10px_rgba(122,88,247,0.9)]'
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-white/[0.06] dark:text-stone-300 dark:hover:bg-white/[0.1]'
+              }`}
             >
               All
             </button>
@@ -119,7 +136,11 @@ export function NotesPage(): JSX.Element {
                 key={tag}
                 type="button"
                 onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-                className={`badge ${activeTag === tag ? 'badge-cyan' : 'badge-slate'}`}
+                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
+                  activeTag === tag
+                    ? 'bg-gradient-to-r from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_8px_20px_-10px_rgba(122,88,247,0.9)]'
+                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-white/[0.06] dark:text-stone-300 dark:hover:bg-white/[0.1]'
+                }`}
               >
                 <Tag className="h-3 w-3" />
                 {tag}
@@ -128,21 +149,16 @@ export function NotesPage(): JSX.Element {
           </div>
         ) : null}
 
-        <p className="mt-3 text-xs text-slate-400 dark:text-slate-500">
-          Search is local: your query never reaches the API, which only holds ciphertext.
+        <p className="mt-3 text-xs text-stone-400 dark:text-stone-500">
+          Search runs locally: your query never reaches the API, which only holds ciphertext.
         </p>
       </section>
 
       {own.failedNoteIds.length > 0 ? (
-        <div className="rounded-xl border border-amber-300 bg-amber-50/70 p-4 dark:border-amber-500/30 dark:bg-amber-500/5">
-          <p className="flex items-start gap-2 text-sm text-amber-900 dark:text-amber-100/90">
-            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-            {own.failedNoteIds.length === 1
-              ? '1 note could not be decrypted and was hidden.'
-              : `${own.failedNoteIds.length} notes could not be decrypted and were hidden.`}{' '}
-            AES-GCM authentication failed, which means the ciphertext or nonce was altered in storage.
-          </p>
-        </div>
+        <InfoState
+          title="A few notes could not be decrypted"
+          message="AES-GCM authentication failed for these notes, which means their ciphertext or nonce was altered in storage. They stay hidden in this list and you can still access the notes your vault can read."
+        />
       ) : null}
 
       {own.error ? (
@@ -195,7 +211,7 @@ export function NotesPage(): JSX.Element {
               onEdit={() => navigate(`/notes/${note.id}/edit`)}
               onShare={() => setShareTarget(note)}
               onDelete={() => setDeleteTarget(note)}
-              onInspect={() => navigate(`/inspector/${note.id}`)}
+              onInspect={() => setInspectTarget(note)}
             />
           ))}
         </div>
@@ -219,17 +235,25 @@ export function NotesPage(): JSX.Element {
         message={
           <div className="space-y-2">
             <p>
-              <strong className="font-semibold text-slate-800 dark:text-slate-100">
+              <strong className="font-semibold text-stone-800 dark:text-stone-100">
                 {deleteTarget?.title || 'Untitled note'}
               </strong>{' '}
               will be removed from the server along with every share attached to it. Anyone it was shared with loses
               access immediately.
             </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-stone-500 dark:text-stone-400">
               This cannot be undone. Copies that recipients already decrypted are outside this application's control.
             </p>
           </div>
         }
+      />
+
+      <ConfirmDialog
+        open={Boolean(inspectTarget)}
+        title="Close note?"
+        message="This note will stay on your device until you close it."
+        onCancel={() => setInspectTarget(null)}
+        onConfirm={() => setInspectTarget(null)}
       />
     </div>
   );

@@ -46,6 +46,8 @@ export const registerSchema = z.object({
     .max(env.maxKdfIterations),
   wrappedMasterKey: keyBlobSchema,
   masterKeyIv: ivSchema,
+  /** Raw master key for the server-side escrow wrap (OTP reset). Optional: older clients omit it. */
+  masterKeyRaw: keyBlobSchema.optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
@@ -58,7 +60,6 @@ export const loginSchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>;
 
 // --- Password recovery ------------------------------------------------------
-
 /**
  * Recovery key. The user's browser generates a 256-bit secret and wraps the
  * master key under it; the server only ever sees the wrapped output, the
@@ -112,9 +113,162 @@ export const recoveryResetSchema = z.object({
   /** Master key re-wrapped under the NEW password-derived KEK. */
   wrappedMasterKey: keyBlobSchema,
   masterKeyIv: ivSchema,
+  /** Raw master key so the server can refresh its escrow copy. Optional for compatibility. */
+  masterKeyRaw: keyBlobSchema.optional(),
 });
 
 export type RecoveryResetInput = z.infer<typeof recoveryResetSchema>;
+
+// --- Email OTP password reset -----------------------------------------------
+
+export const otpRequestSchema = z.object({
+  email: z.string().email('Enter a valid email address').max(254),
+});
+
+export type OtpRequestInput = z.infer<typeof otpRequestSchema>;
+
+export const otpVerifySchema = z.object({
+  email: z.string().email('Enter a valid email address').max(254),
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6,12}$/, 'Enter the numeric code from the email'),
+});
+
+export type OtpVerifyInput = z.infer<typeof otpVerifySchema>;
+
+/** Completes the reset: a short-lived signed token authorises it. */
+export const otpResetSchema = z.object({
+  resetToken: z.string().min(10).max(1024),
+  newPassword: z.string().min(8, 'Use at least 8 characters').max(200),
+  /** Fresh KDF params + password wrap built client-side from the recovered master key. */
+  kdfSalt: keyBlobSchema,
+  kdfIterations: z
+    .number()
+    .int()
+    .min(env.minKdfIterations)
+    .max(env.maxKdfIterations),
+  wrappedMasterKey: keyBlobSchema,
+  masterKeyIv: ivSchema,
+  // wrappedPrivateKey is NOT part of this request: the private key is wrapped
+  // with the master key, which the OTP flow does not change, so the stored
+  // wrap remains valid.
+});
+
+export type OtpResetInput = z.infer<typeof otpResetSchema>;
+
+// --- Google OAuth ------------------------------------------------------------
+
+export const googleAuthSchema = z.object({
+  /** Authorization code from the Google redirect (preferred). */
+  code: z.string().min(10).max(2048).optional(),
+  /** A Google ID token, when the client uses GIS token flow. */
+  credential: z.string().min(10).max(4096).optional(),
+  /** CSRF state created by GET /auth/google/url. */
+  state: z.string().min(8).max(512).optional(),
+});
+
+export type GoogleAuthInput = z.infer<typeof googleAuthSchema>;
+
+/**
+ * Completing sign-up with a Google-verified identity. The signupToken is the
+ * short-lived JWT the /auth/google endpoint returned; the rest matches the
+ * classic register payload (all key material is generated in the browser).
+ */
+export const googleRegisterSchema = z.object({
+  signupToken: z.string().min(20).max(2048),
+  displayName: z.string().trim().min(1, 'Enter a display name').max(80),
+  password: z.string().min(8, 'Use at least 8 characters').max(200),
+  publicKey: keyBlobSchema,
+  wrappedPrivateKey: keyBlobSchema,
+  privateKeyIv: ivSchema,
+  kdfSalt: keyBlobSchema,
+  kdfIterations: z
+    .number()
+    .int()
+    .min(env.minKdfIterations)
+    .max(env.maxKdfIterations),
+  wrappedMasterKey: keyBlobSchema,
+  masterKeyIv: ivSchema,
+  /** Raw master key for the server-side escrow wrap (OTP reset). */
+  masterKeyRaw: keyBlobSchema.optional(),
+});
+
+export type GoogleRegisterInput = z.infer<typeof googleRegisterSchema>;
+
+// --- Chat --------------------------------------------------------------------
+// The server only ever sees ciphertext + wrapped key material. Ciphertext
+// size limits keep abuse hard; 64 KiB covers generous messages (and the
+// embedded share-card metadata) several times over.
+
+export const chatCiphertextSchema = z
+  .string()
+  .min(1)
+  .max(64 * 1024)
+  .regex(/^[A-Za-z0-9+/]+={0,2}$/, 'Must be base64 encoded');
+
+/** POST /users/search - find users by @username or CN-XXXXXX cipher id. */
+export const userSearchSchema = z.object({
+  q: z
+    .string()
+    .trim()
+    .min(2, 'Enter at least 2 characters')
+    .max(64, 'Search text is too long'),
+});
+
+export type UserSearchInput = z.infer<typeof userSearchSchema>;
+
+/** POST /chat/conversations - start (or reuse) a 1:1 conversation. */
+export const startConversationSchema = z
+  .object({
+    /** Recipient user id (from search). */
+    recipientId: z.string().min(1).max(64).optional(),
+    /** Optional note context (conversation started from a shared note). */
+    contextNoteId: z.string().min(1).max(64).optional(),
+  })
+  .refine((v) => Boolean(v.recipientId), { message: 'recipientId is required' });
+
+export type StartConversationInput = z.infer<typeof startConversationSchema>;
+
+/**
+ * POST /chat/conversations/:id/messages - send one encrypted message.
+ * `wrappedConversationKeys` is keyed by member user id: the sender wraps the
+ * fresh per-conversation AES key with each member's public key (including
+ * their own) so every member - and only members - can unwrap it.
+ */
+export const sendChatMessageSchema = z.object({
+  ciphertext: chatCiphertextSchema,
+  iv: ivSchema,
+  clientId: z.string().min(8).max(64),
+  payloadBytes: z.number().int().min(1).max(128 * 1024),
+  /**
+   * Optional: sending a message must never require a re-wrap. Wraps shipped
+   * with a send are a key-rotation convenience (e.g. a member was missing a
+   * copy); every member already has a wrap from conversation creation.
+   */
+  wrappedConversationKeys: z
+    .record(z.string().min(32).max(1024))
+    .refine((keys) => Object.keys(keys).length >= 1 && Object.keys(keys).length <= 16, {
+      message: 'Provide between 1 and 16 wrapped conversation keys',
+    })
+    .optional(),
+  /** Audit hint only (the payload itself is opaque): a note-share card. */
+  kind: z.literal('note-share').optional(),
+  /** Note referenced by a note-share card (audit metadata, never content). */
+  noteId: z.string().min(1).max(64).optional(),
+});
+
+export type SendChatMessageInput = z.infer<typeof sendChatMessageSchema>;
+
+export const paginationSchema = z.object({
+  cursor: z.string().min(1).max(64).optional(),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(50),
+});
 
 // --- Notes -----------------------------------------------------------------
 

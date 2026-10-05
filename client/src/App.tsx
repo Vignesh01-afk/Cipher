@@ -1,9 +1,12 @@
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from './components/AppLayout';
 import { RedirectIfAuthenticated, RequireLockedSession, RequireUnlocked } from './components/RouteGuards';
 import { ActivityLogPage } from './pages/ActivityLogPage';
+import { ChatPage } from './pages/ChatPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { GoogleCallbackPage } from './pages/GoogleCallbackPage';
+import { GoogleSignupPage } from './pages/GoogleSignupPage';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -32,6 +35,12 @@ export default function App(): JSX.Element {
         }
       />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      {/* Google OAuth redirect target. Outside the auth guards: the session
+          is adopted inside the page itself, then routed to /unlock. */}
+      <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
+      {/* Sign-up completion: receives the verified identity stashed in
+          sessionStorage by the callback page, outside the auth guards. */}
+      <Route path="/auth/google/signup" element={<GoogleSignupPage />} />
       {/* Sits OUTSIDE RedirectIfAuthenticated: the session is already unlocked
           when the user lands here, and the guard would bounce them away. */}
       <Route path="/recovery-key" element={<RecoveryKeyHandoffPage />} />
@@ -66,8 +75,12 @@ export default function App(): JSX.Element {
         <Route path="/notes/:noteId" element={<NoteViewPage />} />
         <Route path="/notes/:noteId/edit" element={<NoteEditorPage mode="edit" />} />
         <Route path="/shared" element={<SharedWithMePage />} />
+        <Route path="/chat" element={<ChatPage />} />
+        <Route path="/chat/:conversationId" element={<ChatPage />} />
         <Route path="/files" element={<SecureFilesPage />} />
         <Route path="/privacy" element={<PrivacySettingsPage />} />
+        {/* Legacy/alias path: Settings has no page of its own. */}
+        <Route path="/settings" element={<Navigate to="/privacy" replace />} />
         <Route path="/activity" element={<ActivityLogPage />} />
         <Route path="/inspector" element={<SecurityInspectorPage />} />
         <Route path="/inspector/:noteId" element={<SecurityInspectorPage />} />

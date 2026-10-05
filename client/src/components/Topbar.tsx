@@ -1,61 +1,91 @@
-import type { ReactNode } from 'react';
-import { Menu, Moon, ShieldCheck, Sun } from 'lucide-react';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Search, Bell, Moon, Sun, ChevronDown, LogOut, User, Settings, Shield, Lock, Mail, Compass, ArrowLeft } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { SecurityBadge } from './SecurityBadge';
+import { Avatar } from './Avatar';
+import { Dropdown, DropdownMenu, type DropdownItem } from './Dropdown';
 
 interface TopbarProps {
-  title: string;
-  subtitle?: string;
-  onOpenSidebar: () => void;
-  actions?: ReactNode;
+  onOpenSidebar?: () => void;
+  actions?: React.ReactNode;
 }
 
-export function Topbar({ title, subtitle, onOpenSidebar, actions }: TopbarProps): JSX.Element {
-  const { theme, toggleTheme } = useTheme();
-  const { status } = useAuth();
+export function Topbar({ onOpenSidebar, actions }: TopbarProps): JSX.Element {
+  const { theme, toggleTheme, setTheme } = useTheme();
+  const { status, user, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+
+  const handleThemeChange = (next: 'light' | 'dark') => {
+    setTheme(next);
+    toggleTheme();
+  };
+
+  const onSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) navigate(`/notes?q=${encodeURIComponent(searchQuery.trim())}`);
+    setSearchOpen(false);
+  };
+
+  const profileItems: DropdownItem[] = [
+    { label: 'Profile', icon: <User className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/privacy'); } },
+    { label: 'Settings', icon: <Settings className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/settings'); } },
+    { label: 'Security', icon: <Shield className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/inspector'); } },
+    { label: 'Log out', icon: <LogOut className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); void logout(); } },
+  ];
+
+  const onChatThread = location.pathname.startsWith('/chat') && location.pathname !== '/chat';
 
   return (
-    <header className="sticky top-0 z-20 border-b border-slate-200 bg-slate-100/85 backdrop-blur dark:border-slate-800 dark:bg-slate-950/85">
-      <div className="flex items-center gap-3 px-4 py-3.5 sm:px-6">
-        <button
-          type="button"
-          className="btn btn-ghost p-2 lg:hidden"
-          onClick={onOpenSidebar}
-          aria-label="Open navigation"
-        >
-          <Menu className="h-5 w-5" />
-        </button>
+    <header className="topbar">
+      <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
+        {onChatThread ? (
+          <button
+            type="button"
+            className="btn btn-ghost p-2"
+            onClick={() => navigate('/chat')}
+            aria-label="Back to conversations"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+        ) : onOpenSidebar ? (
+          <button type="button" className="btn btn-ghost p-2" onClick={onOpenSidebar} aria-label="Open navigation">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        ) : null}
 
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-50">
-            {title}
-          </h1>
-          {subtitle ? (
-            <p className="truncate text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>
-          ) : null}
-        </div>
+        <form className="topbar-search" onSubmit={onSearch}>
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            type="search"
+            className="input pl-11"
+            placeholder="Search notes, chats, or users..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => setSearchOpen(true)}
+            aria-label="Search notes, chats, or users"
+          />
+        </form>
 
-        <div className="flex shrink-0 items-center gap-2">
-          {actions}
-
-          {/* App-wide encryption indicator; click for the claims modal. */}
-          <span className="hidden sm:inline-flex">
-            <SecurityBadge />
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className="relative flex h-2 w-2">
+            <Bell className="h-2.5 w-2.5" />
+            <span className="notification-ring" />
+            <span className="notification-dot" />
           </span>
 
-          <span
-            className={`badge hidden sm:inline-flex ${
-              status === 'unlocked' ? 'badge-emerald' : 'badge-amber'
-            }`}
-            title={
-              status === 'unlocked'
-                ? 'Your encryption keys are unlocked in this tab'
-                : 'Your keys are not in memory; decrypting requires unlocking'
-            }
-          >
-            <ShieldCheck className="h-3 w-3" />
-            {status === 'unlocked' ? 'Vault unlocked' : 'Vault locked'}
+          {actions}
+
+          <span className={`hidden h-9 w-9 items-center justify-center rounded-full sm:inline-flex ${status === 'unlocked' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
+            <Lock className="h-4 w-4" />
           </span>
 
           <button
@@ -63,10 +93,13 @@ export function Topbar({ title, subtitle, onOpenSidebar, actions }: TopbarProps)
             className="btn btn-ghost p-2"
             onClick={toggleTheme}
             aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-            title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
           >
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
+
+          <Dropdown align="right" trigger={<Avatar name={user?.displayName ?? 'User'} />}>
+            <DropdownMenu items={profileItems} />
+          </Dropdown>
         </div>
       </div>
     </header>

@@ -32,22 +32,22 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 const VARIANT_STYLES: Record<ToastVariant, { container: string; icon: ReactNode }> = {
   success: {
     container:
-      'border-emerald-200 bg-white text-slate-800 dark:border-emerald-500/30 dark:bg-slate-900 dark:text-slate-100',
+      'border-emerald-200 bg-white text-stone-800 dark:border-emerald-500/30 dark:bg-stone-900 dark:text-stone-100',
     icon: <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />,
   },
   error: {
     container:
-      'border-rose-200 bg-white text-slate-800 dark:border-rose-500/30 dark:bg-slate-900 dark:text-slate-100',
+      'border-rose-200 bg-white text-stone-800 dark:border-rose-500/30 dark:bg-stone-900 dark:text-stone-100',
     icon: <XCircle className="h-5 w-5 shrink-0 text-rose-500" />,
   },
   warning: {
     container:
-      'border-amber-200 bg-white text-slate-800 dark:border-amber-500/30 dark:bg-slate-900 dark:text-slate-100',
+      'border-amber-200 bg-white text-stone-800 dark:border-amber-500/30 dark:bg-stone-900 dark:text-stone-100',
     icon: <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />,
   },
   info: {
     container:
-      'border-cyan-200 bg-white text-slate-800 dark:border-cyan-500/30 dark:bg-slate-900 dark:text-slate-100',
+      'border-cyan-200 bg-white text-stone-800 dark:border-cyan-500/30 dark:bg-stone-900 dark:text-stone-100',
     icon: <Info className="h-5 w-5 shrink-0 text-cyan-500" />,
   },
 };
@@ -96,13 +96,13 @@ export function ToastProvider({ children }: { children: ReactNode }): JSX.Elemen
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border px-4 py-3 shadow-lg shadow-slate-900/5 animate-fade-in-up ${VARIANT_STYLES[toast.variant].container}`}
+            className={`pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border px-4 py-3 shadow-lg shadow-stone-900/5 animate-fade-in-up ${VARIANT_STYLES[toast.variant].container}`}
           >
             {VARIANT_STYLES[toast.variant].icon}
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold leading-5">{toast.title}</p>
               {toast.description ? (
-                <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                <p className="mt-0.5 text-xs leading-5 text-stone-500 dark:text-stone-400">
                   {toast.description}
                 </p>
               ) : null}
@@ -110,7 +110,7 @@ export function ToastProvider({ children }: { children: ReactNode }): JSX.Elemen
             <button
               type="button"
               onClick={() => dismiss(toast.id)}
-              className="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+              className="rounded-md p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-200"
               aria-label="Dismiss notification"
             >
               <X className="h-4 w-4" />

@@ -2,38 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
-/*
- * CipherNote design system - "premium encrypted communication".
- *
- * Visual identity:
- *  - Deep charcoal/graphite surfaces (dark is the primary theme).
- *  - Electric cyan as the single accent, used sparingly.
- *  - Glassmorphism only where it improves hierarchy (topbar, overlays).
- *  - Soft shadows, thin borders, restrained motion.
- */
+/* ==========================================================================
+   CipherNote design system — premium "cyber-security" identity
+   Midnight navy / glassmorphism base with a blue -> violet -> pink accent
+   gradient. Light mode re-uses the same tokens below (light theme is the
+   fallback layer, dark is applied through the `dark:` variants).
+   ========================================================================== */
 
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-slate-100 text-slate-800 antialiased dark:bg-[#05070d] dark:text-slate-200;
+    @apply bg-stone-50 text-stone-800 antialiased dark:bg-[#0B0F19] dark:text-stone-200;
     min-height: 100vh;
   }
 
   :focus-visible {
-    @apply outline-none ring-2 ring-cyan-500/60 ring-offset-1 ring-offset-white dark:ring-offset-[#05070d];
+    @apply outline-none ring-2 ring-brand/50 ring-offset-1 ring-offset-white dark:ring-[#A85F7] dark:ring-offset-[#0B0F19];
   }
 
   ::selection {
-    @apply bg-cyan-500/25;
-  }
-
-  /* Scrollbars tuned for the dark cybersecurity theme. */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: rgb(100 116 139 / 0.4) transparent;
+    @apply bg-brand/30 text-stone-900 dark:text-white;
   }
 
   /* Respect the OS reduced-motion preference. */
@@ -49,94 +41,169 @@
 }
 
 @layer components {
+  /* --- Brand -------------------------------------------------------------- */
+
+  .brand-gradient-text {
+    @apply bg-gradient-to-r from-brand-600 via-violet-500 to-pink-500 bg-clip-text text-transparent;
+  }
+
+  .brand-wordmark {
+    @apply font-bold tracking-tight text-stone-900 dark:text-white;
+  }
+
+  .brand-wordmark-cipher {
+    @apply text-[#3D55E0] dark:text-[#8FA6FF];
+  }
+
+  .brand-wordmark-note {
+    @apply brand-gradient-text;
+  }
+
+  .brand-logo-img {
+    @apply relative flex items-center justify-center overflow-hidden rounded-2xl shadow-[0_10px_30px_-10px_rgba(122,88,247,0.75)];
+  }
+
+  .brand-logo-img > svg {
+    @apply h-full w-full;
+  }
+
   /* --- Surfaces ---------------------------------------------------------- */
+
   .card {
-    @apply rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/[0.06] dark:bg-white/[0.03] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset,0_8px_24px_-12px_rgba(0,0,0,0.6)];
+    @apply rounded-2xl border border-white/70 bg-white/85 shadow-[0_1px_2px_rgba(23,28,56,0.04),0_12px_32px_-18px_rgba(23,28,56,0.28)];
+    @apply dark:border-white/[0.08] dark:bg-[#12173A] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.03)_inset,0_18px_44px_-24px_rgba(0,0,0,0.9)];
+  }
+
+  .card-glass {
+    @apply rounded-3xl border border-white/70 bg-white/[0.88] shadow-[0_24px_60px_-24px_rgba(43,58,140,0.32)] backdrop-blur-xl;
+    @apply dark:border-white/[0.09] dark:bg-[#12173A]/[0.92] dark:shadow-[0_28px_70px_-28px_rgba(0,0,0,0.95)];
+  }
+
+  .bubble {
+    @apply rounded-3xl rounded-br-md border border-transparent bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_10px_24px_-12px_rgba(74,108,247,0.75)];
+  }
+
+  .bubble-alt {
+    @apply rounded-3xl rounded-bl-md border border-white/10 bg-white/[0.04] dark:border-white/[0.07] dark:bg-white/[0.05];
   }
 
   .card-interactive {
-    @apply card transition-all hover:border-cyan-400/60 hover:shadow-md dark:hover:border-cyan-400/30;
+    @apply card cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-400/40 hover:shadow-[0_10px_30px_-12px_rgba(122,88,247,0.35)];
   }
 
-  .panel {
-    @apply rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-white/[0.06] dark:bg-white/[0.02];
+  .glass-panel {
+    @apply rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl shadow-[0_10px_30px_-18px_rgba(0,0,0,0.45)];
+    @apply dark:border-white/[0.08] dark:bg-[#12173A]/80;
   }
 
   .divider {
-    @apply my-4 h-px w-full bg-slate-200 dark:bg-white/[0.06];
+    @apply my-4 h-px w-full border-0 bg-white/[0.2] dark:bg-white/[0.08];
+  }
+
+  .aurora-panel {
+    @apply relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-white;
+  }
+
+  .glass-mobile-bar {
+    @apply flex shrink-0 flex-wrap items-center justify-center gap-x-3 gap-y-2 border-t border-white/10 bg-[#0B0F19]/95 px-2 py-2 backdrop-blur-xl md:hidden dark:border-white/[0.08];
   }
 
   /* --- Buttons ----------------------------------------------------------- */
+
   .btn {
-    @apply inline-flex select-none items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors;
-    @apply disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex cursor-pointer select-none items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 active:scale-[0.97];
+    @apply disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand/50;
   }
 
   .btn-primary {
-    @apply bg-cyan-600 text-white shadow-[0_0_0_1px_rgba(8,145,178,0.4),0_4px_16px_-6px_rgba(6,182,212,0.5)] hover:bg-cyan-500 active:bg-cyan-700;
+    @apply bg-gradient-to-r from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_10px_26px_-10px_rgba(122,88,247,0.8)];
+    @apply hover:brightness-[1.07] hover:shadow-[0_14px_32px_-10px_rgba(122,88,247,0.9)];
+    @apply active:brightness-[0.97];
   }
 
   .btn-secondary {
-    @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 active:bg-slate-100;
-    @apply dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200 dark:hover:bg-white/[0.08];
+    @apply border border-white/60 bg-white/70 text-stone-700 hover:bg-white/90 active:bg-white;
+    @apply dark:border-white/[0.10] dark:bg-white/[0.06] dark:text-stone-200 dark:hover:bg-white/[0.12];
   }
 
   .btn-ghost {
-    @apply text-slate-600 hover:bg-slate-200/70 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-slate-100;
+    @apply text-stone-600 hover:bg-white/50 hover:text-stone-900;
+    @apply dark:text-stone-400 dark:hover:bg-white/[0.08] dark:hover:text-stone-100;
   }
 
   .btn-danger {
-    @apply bg-rose-600 text-white hover:bg-rose-500 active:bg-rose-700;
+    @apply bg-rose-600 text-white shadow-[0_10px_26px_-10px_rgba(225,29,72,0.7)] hover:bg-rose-500 active:bg-rose-700;
+  }
+
+  .btn-glass {
+    @apply border border-white/60 bg-white/70 text-stone-700 hover:bg-white/90 active:bg-white;
+    @apply dark:border-white/[0.10] dark:bg-white/[0.06] dark:text-stone-200 dark:hover:bg-white/[0.12];
   }
 
   .btn-sm {
     @apply px-3 py-1.5 text-xs;
   }
 
+  .btn-lg {
+    @apply px-6 py-3.5 text-base;
+  }
+
   /* --- Forms ------------------------------------------------------------- */
+
   .label {
-    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400;
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400;
   }
 
   .input {
-    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-colors;
-    @apply placeholder:text-slate-400;
-    @apply focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30;
-    @apply dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-100 dark:placeholder:text-slate-600;
+    @apply w-full rounded-xl border border-white/70 bg-white/80 px-3.5 py-2.5 text-sm text-stone-900 transition-all;
+    @apply placeholder:text-stone-400;
+    @apply focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-400/15;
+    @apply dark:border-white/[0.10] dark:bg-white/[0.05] dark:text-stone-100 dark:placeholder:text-stone-500;
     @apply disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .textarea {
-    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm leading-6 text-slate-900 transition-colors;
-    @apply placeholder:text-slate-400;
-    @apply focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30;
-    @apply dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-100 dark:placeholder:text-slate-600;
+    @apply w-full rounded-xl border border-white/70 bg-white/80 px-3.5 py-2.5 text-sm leading-6 text-stone-900 transition-all;
+    @apply placeholder:text-stone-400;
+    @apply focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-400/15;
+    @apply dark:border-white/[0.10] dark:bg-white/[0.05] dark:text-stone-100 dark:placeholder:text-stone-500;
     @apply disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .select {
-    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition-colors;
-    @apply focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/30;
-    @apply dark:border-white/10 dark:bg-[#0b0f1a] dark:text-slate-100;
+    @apply w-full rounded-xl border border-white/70 bg-white/80 px-3.5 py-2.5 text-sm text-stone-900 transition-all;
+    @apply focus:border-violet-400 focus:outline-none focus:ring-4 focus:ring-violet-400/15;
+    @apply dark:border-white/[0.10] dark:bg-white/[0.05] dark:text-stone-100;
   }
 
-  /* --- Misc -------------------------------------------------------------- */
+  .input-auth {
+    @apply input rounded-xl py-3 pl-11;
+  }
+
+  .field-error {
+    @apply mt-1.5 flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400;
+  }
+
+  .form-error {
+    @apply mt-3 rounded-xl border border-rose-200/80 bg-rose-50/60 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/25 dark:bg-rose-500/5 dark:text-rose-300;
+  }
+
+  /* --- Badges ------------------------------------------------------------ */
+
   .badge {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset;
   }
 
-  /* Clickable badges (rendered as <button>) must stay tappable on touch
-     screens; purely decorative badge spans are unaffected. */
   button.badge {
     @apply min-h-[24px] cursor-pointer;
   }
 
   .badge-slate {
-    @apply bg-slate-100 text-slate-700 ring-slate-200 dark:bg-white/[0.06] dark:text-slate-300 dark:ring-white/10;
+    @apply bg-white/70 text-stone-600 ring-white/40 dark:bg-white/[0.06] dark:text-stone-300 dark:ring-white/10;
   }
 
-  .badge-cyan {
-    @apply bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/30;
+  .badge-brand {
+    @apply bg-brand/15 text-brand-700 ring-brand/30 dark:bg-brand/15 dark:text-brand-300 dark:ring-brand/40;
   }
 
   .badge-emerald {
@@ -155,34 +222,343 @@
     @apply bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/30;
   }
 
-  .link {
-    @apply font-medium text-cyan-700 underline-offset-2 hover:underline dark:text-cyan-400;
+  .badge-cyan {
+    @apply bg-cyan-50 text-cyan-700 ring-cyan-200 dark:bg-cyan-500/10 dark:text-cyan-300 dark:ring-cyan-500/30;
   }
 
+  .badge-success {
+    @apply bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30;
+  }
+
+  /* Category chips from the reference mockups. */
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-all duration-200;
+  }
+
+  .chip-all {
+    @apply bg-brand/15 text-brand-700 ring-brand/30 font-semibold;
+  }
+
+  .chip-personal {
+    @apply bg-brand/15 text-brand-700 ring-brand/30;
+  }
+
+  .chip-work {
+    @apply bg-amber-50/70 text-amber-700 ring-amber-200/60;
+  }
+
+  .chip-study {
+    @apply bg-emerald-50/70 text-emerald-700 ring-emerald-200/60;
+  }
+
+  .chip-others {
+    @apply bg-violet-50/70 text-violet-700 ring-violet-200/60;
+  }
+
+  .chip-active {
+    @apply ring-2 ring-brand/40;
+  }
+
+  .link {
+    @apply font-medium text-brand underline-offset-2 hover:underline dark:text-brand-300;
+  }
+
+  /* --- Navigation --------------------------------------------------------- */
+
   .nav-link {
-    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors;
-    @apply hover:bg-slate-200/70 hover:text-slate-900;
-    @apply dark:text-slate-400 dark:hover:bg-white/[0.05] dark:hover:text-slate-100;
+    @apply relative flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-stone-600 transition-all duration-200;
+    @apply hover:bg-white/60 hover:text-stone-900;
+    @apply dark:text-stone-400 dark:hover:bg-white/[0.08] dark:hover:text-stone-100;
   }
 
   .nav-link-active {
-    @apply bg-cyan-600/10 text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300;
+    @apply bg-gradient-to-r from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_10px_24px_-12px_rgba(122,88,247,0.9)];
+    @apply hover:from-brand-500 hover:to-violet-500 hover:text-white;
   }
 
-  .mono-value {
-    @apply break-all rounded-md bg-slate-100 px-2 py-1 font-mono text-xs text-slate-700 dark:bg-white/[0.04] dark:text-slate-300;
+  .nav-icon {
+    @apply h-4 w-4 shrink-0;
   }
 
-  .table-head {
-    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400;
+  .nav-label {
+    @apply text-xs font-semibold uppercase tracking-[0.12em] text-stone-400 dark:text-stone-500;
   }
 
-  .table-cell {
-    @apply px-4 py-3 text-sm text-slate-700 dark:text-slate-300;
+  /* --- Sidebar ----------------------------------------------------------- */
+  .sidebar {
+    @apply flex h-full flex-col border-r border-white/10 bg-white/60 backdrop-blur-xl dark:bg-[#0B0F19]/80;
   }
 
-  /* Brand mark: cipher-inspired logo tile. */
-  .brand-tile {
-    @apply relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-cyan-500 to-blue-700 text-white shadow-[0_4px_14px_-4px_rgba(6,182,212,0.6)];
+  .sidebar-brand {
+    @apply flex items-center justify-between px-5 py-6;
   }
+
+  .sidebar-nav {
+    @apply flex-1 space-y-1 overflow-y-auto px-3 py-2;
+  }
+
+  .sidebar-section-label {
+    @apply px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400 dark:text-stone-500;
+  }
+
+  .sidebar-footer {
+    @apply flex items-center justify-between border-t border-white/10 px-4 py-4 space-y-3 dark:border-white/[0.06];
+  }
+
+  .security-badge {
+    @apply flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 backdrop-blur-xl;
+    @apply dark:border-white/[0.08] dark:bg-[#12173A]/80;
+  }
+
+  /* --- Top bar ----------------------------------------------------------- */
+  .topbar {
+    @apply sticky top-0 z-30 border-b border-white/10 bg-white/80 backdrop-blur-xl dark:bg-[#0B0F19]/85;
+  }
+
+  .topbar-search {
+    @apply flex w-full max-w-2xl items-center gap-3;
+  }
+
+  .avatar {
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-xs font-bold text-white;
+  }
+
+  .avatar-sm {
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-xs font-bold text-white;
+  }
+
+  .avatar-lg {
+    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-base font-bold text-white;
+  }
+
+  /* --- Notifications ---------------------------------------------------- */
+  .notification-dot {
+    @apply relative flex h-2 w-2 shrink-0 rounded-full bg-rose-500;
+  }
+
+  .notification-ring {
+    @apply absolute inset-0 h-full w-full rounded-full bg-rose-500 opacity-75 animate-ping;
+  }
+
+  .unread-badge {
+    @apply inline-flex items-center justify-center rounded-full bg-gradient-to-r from-brand-500 via-violet-500 to-pink-500 px-2 py-0.5 text-xs font-bold text-white;
+  }
+
+  .mentions-tooltip {
+    @apply absolute bottom-full left-0 mb-2 w-64 rounded-2xl border border-white/10 bg-white/95 px-4 py-3 shadow-2xl backdrop-blur-xl dark:bg-[#12173A];
+    @apply hidden animate-scale-in;
+  }
+
+  /* --- Modal / dialog ---------------------------------------------------- */
+  .modal-overlay {
+    @apply fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-stone-950/50 p-4 backdrop-blur-sm animate-fade-in sm:items-center;
+  }
+
+  .modal {
+    @apply w-full max-h-[92vh] overflow-y-auto rounded-2xl border border-white/10 bg-white/90 shadow-2xl shadow-brand/5 backdrop-blur-xl animate-scale-in dark:bg-[#12173A];
+  }
+
+  .modal-header {
+    @apply flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4 dark:border-white/[0.08];
+  }
+
+  /* --- Toast ------------------------------------------------------------- */
+  .toast-container {
+    @apply pointer-events-none fixed inset-x-0 bottom-0 z-[70] flex flex-col items-center justify-center gap-2 p-4;
+  }
+
+  .toast {
+    @apply pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-2xl border border-white/10 bg-white/95 px-4 py-3.5 shadow-2xl shadow-brand/5 backdrop-blur-xl animate-slide-up;
+    @apply dark:bg-[#12173A]/95;
+  }
+
+  /* --- Stat card --------------------------------------------------------- */
+  .stat-card {
+    @apply card overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_-12px_rgba(122,88,247,0.3)];
+  }
+
+  .stat-card-icon {
+    @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand-600 dark:text-brand-300;
+  }
+
+  .stat-card-value {
+    @apply mt-3 text-2xl font-bold tracking-tight text-stone-900 dark:text-white;
+  }
+
+  .stat-card-label {
+    @apply text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500;
+  }
+
+  .stat-card-url {
+    @apply text-xs text-stone-400 underline-offset-2 hover:underline dark:text-stone-500;
+  }
+
+  /* --- Typography -------------------------------------------------------- */
+  .flow-text {
+    @apply text-sm leading-7 text-stone-600 dark:text-stone-300;
+  }
+
+  .flow-title {
+    @apply text-sm font-semibold text-stone-800 dark:text-stone-100;
+  }
+
+  .flow-tag {
+    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400 dark:text-stone-500;
+  }
+
+  .flow-item {
+    @apply flex gap-3 rounded-xl border border-white/80 bg-white/60 p-3 transition hover:bg-white/80 dark:border-white/[0.07] dark:bg-white/[0.03];
+  }
+
+  .number-count {
+    @apply text-4xl font-bold tracking-tight text-stone-900 dark:text-white;
+  }
+
+  /* --- Empty state ------------------------------------------------------- */
+  .empty-state {
+    @apply flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/20 px-6 py-16 text-center;
+    @apply dark:border-white/10;
+  }
+
+  .empty-state-icon {
+    @apply mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/70 text-stone-400 dark:bg-white/[0.06] dark:text-stone-500;
+  }
+
+  /* --- Loading skeleton -------------------------------------------------- */
+  .skeleton {
+    @apply animate-pulse rounded-lg bg-white/60 dark:bg-white/[0.06];
+  }
+
+  /* --- Reduced motion ---------------------------------------------------- */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-in,
+    .animate-scale-in,
+    .animate-slide-up,
+    .animate-fade-in-up,
+    .animate-pulse-slow {
+      animation-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* --- Animation keyframes ----------------------------------------------- */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 12px -6px rgba(74, 108, 247, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 22px -6px rgba(139, 92, 246, 0.6);
+  }
+}
+
+/* --- Utility classes --------------------------------------------------- */
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out both;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.22s ease-out both;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out both;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.25s ease-out both;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+.glow-pulse {
+  animation: glow-pulse 4s ease-in-out infinite;
+}
+
+/* Chat message logic */
+.chat-message {
+  @apply flex gap-2.5;
+}
+
+/* --- Mobile bottom nav ------------------------------------------------- */
+.bottom-nav {
+  @apply fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0B0F19]/95 backdrop-blur-xl md:hidden;
+}
+
+.bottom-nav-link {
+  @apply flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-semibold text-stone-400 transition-all hover:text-brand dark:text-stone-500;
+}
+
+.bottom-nav-link-active {
+  @apply text-brand;
+}
+
+/* Theme transition on the whole page: a subtle fade so mode switches feel
+ * crisp but never startling. */
+html.dark,
+html.light {
+  transition: background-color 0.35s ease, color 0.35s ease;
 }

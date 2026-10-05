@@ -40,14 +40,14 @@ export function PrivacyShield({ children }: { children: ReactNode }): JSX.Elemen
 
       {/* Screenshot-attempt flash: covers the screen for ~1s. */}
       {privacy.screenshotAttempt ? (
-        <div className="fixed inset-0 z-[75] flex flex-col items-center justify-center gap-4 bg-slate-950 text-center">
+        <div className="fixed inset-0 z-[75] flex flex-col items-center justify-center gap-4 bg-stone-950 text-center">
           <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400">
             <Camera className="h-7 w-7" />
           </span>
-          <p className="max-w-md px-6 text-base font-semibold text-slate-100">
+          <p className="max-w-md px-6 text-base font-semibold text-stone-100">
             Screenshot blocked
           </p>
-          <p className="max-w-md px-6 text-xs leading-5 text-slate-400">
+          <p className="max-w-md px-6 text-xs leading-5 text-stone-400">
             Screen capture of CipherNote content is not permitted. The clipboard was overwritten.
           </p>
         </div>
@@ -55,16 +55,16 @@ export function PrivacyShield({ children }: { children: ReactNode }): JSX.Elemen
 
       {/* Opaque cover for hidden-tab / capture cases. */}
       {privacy.protected && privacy.reason !== 'blur' ? (
-        <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center gap-4 bg-slate-950 text-center">
+        <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center gap-4 bg-stone-950 text-center">
           <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400">
             {capture ? <MonitorX className="h-7 w-7" /> : <ShieldAlert className="h-7 w-7" />}
           </span>
-          <p className="max-w-md px-6 text-base font-semibold text-slate-100">
+          <p className="max-w-md px-6 text-base font-semibold text-stone-100">
             {capture
               ? 'Screen sharing detected. Sensitive content has been hidden for your protection.'
               : 'Content hidden while this tab is in the background.'}
           </p>
-          <p className="max-w-md px-6 text-xs leading-5 text-slate-400">
+          <p className="max-w-md px-6 text-xs leading-5 text-stone-400">
             Content will reappear automatically when it is safe again.
           </p>
         </div>
@@ -74,7 +74,7 @@ export function PrivacyShield({ children }: { children: ReactNode }): JSX.Elemen
       {privacy.settings.privacyMode && privacy.settings.watermark ? (
         <div
           aria-hidden="true"
-          className="pointer-events-none fixed bottom-3 right-4 z-[65] select-none font-mono text-[10px] tracking-wide text-slate-500/50 dark:text-slate-400/40"
+          className="pointer-events-none fixed bottom-3 right-4 z-[65] select-none font-mono text-[10px] tracking-wide text-stone-500/50 dark:text-stone-400/40"
         >
           {watermarkText(user?.email)}
         </div>
