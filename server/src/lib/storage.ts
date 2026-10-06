@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { env } from '../env';
@@ -289,7 +289,3 @@ export function defaultStorage(): StorageAdapter {
   return storageFor(defaultStorageKind());
 }
 
-/** SHA-256 of a stored blob, used for integrity notices in the audit log. */
-export function blobChecksum(base64Body: string): string {
-  return createHash('sha256').update(Buffer.from(base64Body, 'base64')).digest('hex');
-}

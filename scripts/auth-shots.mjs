@@ -9,21 +9,15 @@
  *
  * Usage: node scripts/auth-shots.mjs   (needs `npm --prefix client run dev`)
  */
-import { existsSync, mkdirSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer-core';
+import { resolveChromePath } from './chrome-path.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const shotDir = resolve(root, 'client', 'ui-shots');
 const base = process.env.CIPHER_WEB ?? 'http://localhost:5173';
-
-const CHROME_PATHS = [
-  'C:/Program Files/Google/Chrome/Application/chrome.exe',
-  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
-  '/usr/bin/google-chrome',
-  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-];
 
 /** Route -> screenshot name. */
 const ROUTES = [
@@ -37,7 +31,7 @@ const ROUTES = [
 mkdirSync(shotDir, { recursive: true });
 
 const browser = await puppeteer.launch({
-  executablePath: CHROME_PATHS.find((p) => existsSync(p)),
+  executablePath: resolveChromePath(),
   headless: 'new',
   args: ['--no-sandbox'],
 });

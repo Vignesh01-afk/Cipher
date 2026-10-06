@@ -13,12 +13,13 @@
  * Run: node scripts/browser-checks.mjs
  */
 import { chromium } from 'playwright';
+import { SCRIPT_PASSWORD, resolveChromePath } from './chrome-path.mjs';
 
 const BASE = 'http://localhost:5173';
 const results = [];
 const stamp = Date.now();
 const EMAIL = `pw${stamp}@test.dev`;
-const PASSWORD = 'password123';
+const PASSWORD = SCRIPT_PASSWORD;
 
 function report(name, ok, detail = '') {
   results.push({ name, ok, detail });
@@ -59,7 +60,7 @@ async function gotoAndUnlock(page, path) {
 
 async function main() {
   const browser = await chromium.launch({
-    executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    executablePath: resolveChromePath(),
     headless: true,
   });
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });

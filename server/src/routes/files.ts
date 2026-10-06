@@ -486,6 +486,3 @@ filesRouter.delete(
     res.status(204).send();
   }),
 );
-
-// Re-exported so app.ts can raise the JSON body ceiling for uploads only.
-export const maxFileUploadBodyBytes = env.maxFileUploadBodyBytes;

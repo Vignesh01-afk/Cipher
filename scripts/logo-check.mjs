@@ -3,16 +3,11 @@
  * Verifies <img src="/cipher-logo.png"> is present, loaded (naturalWidth > 0),
  * visible, and takes a screenshot for eyeballing.
  */
-import { existsSync } from 'node:fs';
 import puppeteer from 'puppeteer-core';
-
-const CHROME_PATHS = [
-  'C:/Program Files/Google/Chrome/Application/chrome.exe',
-  'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
-];
+import { resolveChromePath } from './chrome-path.mjs';
 
 const browser = await puppeteer.launch({
-  executablePath: CHROME_PATHS.find((p) => existsSync(p)),
+  executablePath: resolveChromePath(),
   headless: 'new',
   args: ['--no-sandbox'],
 });

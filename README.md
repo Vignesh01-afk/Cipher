@@ -8,7 +8,7 @@ CipherNote is a full-stack secure notes application where note content is encryp
 
 🔗 **Live app:** <https://ciphernote-orcin.vercel.app/> · **Source:** <https://github.com/Vignesh01-afk/Cipher>
 
-All commands below are run from the repository root unless stated otherwise.
+This project lives at the repository root - the directory that holds the top-level `package.json`, with `server/` and `client/` beside it. All commands below are run from there unless stated otherwise.
 
 ---
 
@@ -322,7 +322,16 @@ The session token is **revocable**. Each user row carries a `tokenVersion` that 
 
 ## Data model
 
-Four models in `server/prisma/schema.prisma`.
+Ten models in `server/prisma/schema.prisma`. The four central ones are
+documented in full below; the rest are summarised first.
+
+| Model | Purpose |
+| --- | --- |
+| `OtpToken` | SHA-256 hashed one-time email codes, scoped per user and purpose. |
+| `SecureFile` | One encrypted attachment: storage key + driver, metadata, wrapped file keys. |
+| `Conversation` / `ConversationMember` | Encrypted chat threads and each member's wrapped conversation key. |
+| `EncryptedMessage` | One AES-GCM chat message (opaque to the server). |
+| `ChatBlock` | User-blocks-user records, enforced on send. |
 
 ### `User`
 
@@ -693,7 +702,7 @@ Use two browser profiles (for example a normal window and a private/incognito wi
 Can read the whole database: bcrypt hashes, wrapped keys, ciphertext, nonces and the full sharing graph. Cannot recover note plaintext, the master key, note keys or the private key, because unwrapping requires the password-derived KEK, which is never transmitted - and on `authVersion 2` accounts the password itself never reaches the server either (only the second half of a 512-bit PBKDF2 derivation, which is bcrypt-stored and cannot be inverted into the KEK). The KDF salt and iteration count it does store are public by design. Cannot search note content or learn titles. Legacy `authVersion 1` accounts still send the password once per login until the client migrates them via `POST /auth/upgrade-auth`.
 
 **2. A database thief.**
-Gains everything in (1) plus write access. Can delete or corrupt data and can mount offline brute-force against bcrypt hashes. Cannot decrypt notes. The strongest available attack is a **credential-guessing** attack against a stolen bcrypt hash: on `authVersion 2` a guess yields only the authKey (offline-checked by bcrypt) - an attacker who guesses right still needs to run the client-side PBKDF2 against a *guessed password* to obtain the KEK, which is why the 210,000-iteration PBKDF2 step and the registration strength meter both push for strong, unique passwords. This is also why the recovery verifier is an HKDF value with a dedicated info string: it verifies a recovery key without ever storing or transmitting one.
+Gains everything in (1) plus write access. Can delete or corrupt data and can mount offline brute-force against bcrypt hashes. Cannot decrypt notes. The strongest available attack is a **credential-guessing** attack against a stolen bcrypt hash: on `authVersion 2` a guess yields only the authKey (offline-checked by bcrypt) - an attacker who guesses right still needs to run the client-side PBKDF2 against a *guessed password* to obtain the KEK, which is why the 210,000-iteration PBKDF2 step, the NFKC normalisation and the client's 10-character minimum plus breach-list policy all push for strong, unique passwords. This is also why the recovery verifier is an HKDF value with a dedicated info string: it verifies a recovery key without ever storing or transmitting one.
 
 **3. A malicious recipient.**
 Can read exactly the notes shared with them, and can keep anything they have read. Revocation does not claw that back.
@@ -733,6 +742,36 @@ Stated honestly, because an encrypted-notes app is only trustworthy if it is pre
 
 ---
 
+## Deployment (Vercel)
+
+`vercel.json` builds `client/` and serves the API through the serverless
+function at `api/index.ts` (which re-exports `server/dist`). The client and API
+are the same origin, so no CORS or `VITE_API_BASE_URL` configuration is needed.
+
+1. **Database.** Point `DATABASE_URL` at a Postgres instance and run
+   `npm --prefix server run prisma:deploy` once to apply the baseline
+   migration. `npm --prefix server run prisma:push` also works if you prefer no
+   migration history, but then `migrate deploy` will not know what is applied.
+2. **Storage.** Vercel has no durable local disk, so file uploads need a
+   private Supabase bucket: create one, then set `SUPABASE_URL`,
+   `SUPABASE_SERVICE_ROLE_KEY` and `SUPABASE_STORAGE_BUCKET`, or set
+   `STORAGE_DRIVER=supabase`. Without these, `STORAGE_DRIVER=auto` falls back to
+   local disk and uploads will not survive a redeploy.
+3. **Secrets.** Set `JWT_SECRET` and `ESCROW_MASTER_KEY` (the server refuses to
+   boot in production without them), plus SMTP and Google OAuth credentials if
+   you use those flows.
+4. **Shared rate limiting (recommended).** Serverless runs many isolated
+   instances, so set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` to
+   keep the limiters effective across them. Without them counters are
+   per-instance.
+5. **Redeploy.** The `headers` block in `vercel.json` ships the CSP and the
+   other security headers; `client/public/theme-init.js` exists so the CSP can
+   forbid inline scripts.
+
+See `server/.env.example` for the complete variable list with defaults.
+
+---
+
 ## Troubleshooting
 
 **`window.crypto.subtle` is undefined.**
@@ -763,7 +802,9 @@ Expected. Keys are never persisted; `/unlock` re-derives them. This is the core 
 AES-GCM authentication failed: the ciphertext, nonce or key no longer match. Usually the row was edited directly in the database. The app hides such notes rather than displaying garbage.
 
 **The root scripts cannot find `server` or `client`.**
-Run them from the repository root, not from the repository root. `npm --prefix server ...` resolves relative to the current directory.
+Run them from the repository root (the directory containing the top-level
+`package.json`, with `server/` and `client/` beside it). The root scripts use
+`npm --prefix server ...`, which resolves relative to the current directory.
 
 ---
 

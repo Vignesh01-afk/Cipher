@@ -34,7 +34,9 @@ function isRetryableConnectionError(error: unknown): boolean {
 const base =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: process.env.NODE_ENV === 'production' ? ['warn', 'error'] : ['warn', 'error'],
+    // Prisma's own log only ever receives warnings and errors anyway; the app
+    // logs its own request/audit lines, so both modes use the same setting.
+    log: ['warn', 'error'],
   });
 
 /**

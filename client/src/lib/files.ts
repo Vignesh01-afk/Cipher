@@ -3,7 +3,6 @@ import {
   decryptBytes,
   decryptRawBytes,
   encryptBytes,
-  exportAesKey,
   fromBase64,
   generateAesKey,
   importAesKey,
@@ -411,11 +410,6 @@ export async function wrapFileKeyForRecipient(
   return { wrappedFileKey: wrapped.ciphertext, fileKeyIv: wrapped.iv };
 }
 
-/** Exports a CryptoKey file key to raw bytes (for re-wrapping on share). */
-export async function exportFileKey(fileKey: CryptoKey): Promise<Uint8Array> {
-  return exportAesKey(fileKey);
-}
-
 /**
  * Downloads the ciphertext through the authorised endpoint and decrypts it
  * in memory. Returns a fresh Blob; the caller creates object URLs from it and
@@ -455,9 +449,4 @@ export async function downloadAndDecryptFile(
   return new Blob([plaintext as unknown as BlobPart], {
     type: safePreviewBlobType(file.mimeType),
   });
-}
-
-/** Human-readable one-line summary used in lists. */
-export function fileMetaSummary(file: SecureFileDto): string {
-  return `${file.mimeType}`;
 }

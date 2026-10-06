@@ -11,11 +11,12 @@
  * Run: node scripts/puppeteer-checks.mjs
  */
 import puppeteer from 'puppeteer-core';
+import { SCRIPT_PASSWORD, resolveChromePath } from './chrome-path.mjs';
 
 const BASE = 'http://localhost:5173';
 const stamp = Date.now();
 const EMAIL = `pptr${stamp}@test.dev`;
-const PASSWORD = 'password123';
+const PASSWORD = SCRIPT_PASSWORD;
 const results = [];
 
 function report(name, ok, detail = '') {
@@ -56,7 +57,7 @@ async function gotoAndUnlock(page, path) {
 
 async function main() {
   const browser = await puppeteer.launch({
-    executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    executablePath: resolveChromePath(),
     headless: 'new',
     args: ['--no-sandbox', '--disable-dev-shm-usage'],
   });
