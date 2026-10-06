@@ -3,17 +3,25 @@ import rateLimit from 'express-rate-limit';
 import { prisma } from '../db';
 import { env } from '../env';
 import { AuditAction, recordAudit, requestIp } from '../lib/audit';
-import { requireNoteAccess } from '../lib/access';
+import { requireNoteAccess, requireNoteOwnership } from '../lib/access';
 import { ApiError, asyncHandler, parseBody } from '../lib/http';
 import {
+  completeFileSchema,
   createFileSchema,
   extractExtension,
   idParamSchema,
+  initFileSchema,
   sanitiseFilename,
 } from '../lib/schemas';
 import { toSecureFileDto } from '../lib/serialize';
 import { currentUserId, requireAuth } from '../middleware/auth';
-import { deleteBlob, generateStorageKey, readBlob, writeBlob } from '../lib/storage';
+import { createRateLimitStore } from '../lib/rateLimitStore';
+import {
+  defaultStorage,
+  generateStorageKey,
+  storageFor,
+  type StorageDriverKind,
+} from '../lib/storage';
 
 export const filesRouter = Router();
 
@@ -23,6 +31,7 @@ const fileUploadLimiter = rateLimit({
   limit: 60,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  store: createRateLimitStore(),
   message: { error: 'Too many file uploads. Please wait before trying again.', code: 'RATE_LIMITED' },
 });
 
@@ -31,8 +40,35 @@ const fileDownloadLimiter = rateLimit({
   limit: 120,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  store: createRateLimitStore(),
   message: { error: 'Too many file requests. Please wait before trying again.', code: 'RATE_LIMITED' },
 });
+
+/** Narrows the stored driver name (a plain string column) to a known backend. */
+function driverOf(file: { storageDriver: string }): StorageDriverKind {
+  return file.storageDriver === 'supabase' ? 'supabase' : 'local';
+}
+
+/**
+ * Per-account storage ceiling.
+ *
+ * Checked before every write against the sum of the account's live encrypted
+ * blobs, so a user cannot fill the bucket with repeated uploads. Runs before
+ * any bytes are stored or any pending row is created.
+ */
+async function assertStorageQuota(userId: string, additionalBytes: number): Promise<void> {
+  const aggregate = await prisma.secureFile.aggregate({
+    where: { ownerId: userId, deletedAt: null, status: 'READY' },
+    _sum: { encryptedBytes: true },
+  });
+  const used = aggregate._sum.encryptedBytes ?? 0;
+  if (used + additionalBytes > env.maxUserStorageBytes) {
+    throw ApiError.badRequest(
+      'This account has reached its encrypted storage limit. Delete a file to free space.',
+      'STORAGE_QUOTA_EXCEEDED',
+    );
+  }
+}
 
 /**
  * Resolves the caller's access to the note a file is attached to.
@@ -74,12 +110,16 @@ async function loadFileAccess(req: Request, fileId: string) {
 /**
  * POST /api/files
  *
- * Stores an encrypted file blob. The browser has already:
+ * Stores an encrypted file blob in one request. The browser has already:
  *   1. generated a fresh per-file AES-GCM-256 key,
  *   2. encrypted the file bytes with it,
  *   3. wrapped the file key with the uploader's master key.
- * The server receives only opaque blobs and metadata, and validates that the
- * uploader can access the target note.
+ * The server receives only opaque blobs and metadata.
+ *
+ * Only the OWNER of the note may attach files (a share is read access, not a
+ * write grant); `requireNoteOwnership` enforces that before any bytes are
+ * written. Very large blobs use the two-step /files/init flow instead, so the
+ * payload never has to pass through a serverless request body cap.
  */
 filesRouter.post(
   '/',
@@ -89,17 +129,18 @@ filesRouter.post(
     const userId = currentUserId(req);
     const input = parseBody(createFileSchema, req.body);
 
-    // Authorization BEFORE any bytes are written: the uploader must be able to
-    // read the note they are attaching to.
-    await requireNoteAccess(input.noteId, userId);
+    // Authorization BEFORE any bytes are written.
+    await requireNoteOwnership(input.noteId, userId);
+    await assertStorageQuota(userId, Math.ceil((input.ciphertext.length * 3) / 4));
 
     const filename = sanitiseFilename(input.filename);
     const extension = extractExtension(filename);
     const storageKey = generateStorageKey();
+    const adapter = defaultStorage();
 
-    const writtenBytes = await writeBlob(storageKey, input.ciphertext);
+    const writtenBytes = await adapter.put(storageKey, Buffer.from(input.ciphertext, 'base64'));
     if (writtenBytes === 0) {
-      await deleteBlob(storageKey);
+      await adapter.delete(storageKey);
       throw ApiError.badRequest('The uploaded file is empty', 'EMPTY_FILE');
     }
 
@@ -109,6 +150,8 @@ filesRouter.post(
           ownerId: userId,
           noteId: input.noteId,
           storageKey,
+          storageDriver: adapter.kind,
+          status: 'READY',
           filename,
           mimeType: input.mimeType,
           encryptedBytes: writtenBytes,
@@ -143,9 +186,140 @@ filesRouter.post(
       });
     } catch (error) {
       // Do not leave an orphaned blob behind if the record could not be created.
-      await deleteBlob(storageKey);
+      await adapter.delete(storageKey);
       throw error;
     }
+  }),
+);
+
+/**
+ * POST /api/files/init
+ *
+ * Step 1 of the direct upload used for large files: validate + authorise +
+ * reserve quota, create a PENDING row, and hand the browser a short-lived
+ * presigned PUT. The blob then goes straight to storage, never through the
+ * API, which keeps it under serverless request-size limits. Only backends
+ * that support direct uploads can serve this route; clients fall back to the
+ * single-shot POST /files when it answers DIRECT_UPLOAD_UNAVAILABLE.
+ */
+filesRouter.post(
+  '/init',
+  requireAuth,
+  fileUploadLimiter,
+  asyncHandler(async (req, res) => {
+    const userId = currentUserId(req);
+    const input = parseBody(initFileSchema, req.body);
+
+    await requireNoteOwnership(input.noteId, userId);
+    await assertStorageQuota(userId, input.encryptedBytes);
+
+    const adapter = defaultStorage();
+    if (!adapter.supportsDirectUpload) {
+      throw ApiError.badRequest(
+        'Direct uploads are not available on this deployment. Use the single-request upload.',
+        'DIRECT_UPLOAD_UNAVAILABLE',
+      );
+    }
+
+    const filename = sanitiseFilename(input.filename);
+    const extension = extractExtension(filename);
+    const storageKey = generateStorageKey();
+
+    const target = await adapter.createUploadTarget(storageKey);
+    if (!target) {
+      throw ApiError.internal('Could not create an upload target', 'UPLOAD_TARGET_FAILED');
+    }
+
+    const file = await prisma.secureFile.create({
+      data: {
+        ownerId: userId,
+        noteId: input.noteId,
+        storageKey,
+        storageDriver: adapter.kind,
+        status: 'PENDING',
+        filename,
+        mimeType: input.mimeType,
+        // Declared size; /complete verifies it against the stored object.
+        encryptedBytes: input.encryptedBytes,
+        plaintextBytes: input.plaintextBytes,
+        extension,
+        wrappedFileKey: input.wrappedFileKey,
+        fileKeyIv: input.fileKeyIv,
+        wrappedForNoteKey: input.wrappedForNoteKey,
+        noteKeyWrapIv: input.noteKeyWrapIv,
+        fileIv: input.fileIv,
+        encryptionVersion: input.encryptionVersion,
+        algorithm: input.algorithm,
+      },
+    });
+
+    res.status(201).json({
+      file: toSecureFileDto(file, { includeWrappedKey: true, includeNoteKeyWrap: true }),
+      upload: { mode: 'direct', url: target.url, headers: target.headers },
+    });
+  }),
+);
+
+/**
+ * POST /api/files/complete
+ *
+ * Step 2: confirm the object landed in storage, check its size against the
+ * declared metadata, and flip the row to READY. A missing or truncated object
+ * is rejected (and removed) so a half-finished upload can never be downloaded.
+ */
+filesRouter.post(
+  '/complete',
+  requireAuth,
+  fileUploadLimiter,
+  asyncHandler(async (req, res) => {
+    const userId = currentUserId(req);
+    const input = parseBody(completeFileSchema, req.body);
+
+    const file = await prisma.secureFile.findUnique({ where: { id: input.fileId } });
+    if (!file || file.deletedAt) {
+      throw ApiError.notFound('That file does not exist', 'FILE_NOT_FOUND');
+    }
+    if (file.ownerId !== userId) {
+      throw ApiError.forbidden('Only the uploader can complete this upload', 'NOT_FILE_OWNER');
+    }
+    await requireNoteOwnership(file.noteId, userId);
+
+    const adapter = storageFor(driverOf(file));
+    const object = await adapter.head(file.storageKey);
+    if (!object) {
+      throw ApiError.badRequest('The upload was not received. Try again.', 'UPLOAD_INCOMPLETE');
+    }
+    if (object.bytes !== file.encryptedBytes) {
+      await adapter.delete(file.storageKey);
+      throw ApiError.badRequest(
+        'The upload was truncated. Try again.',
+        'UPLOAD_SIZE_MISMATCH',
+      );
+    }
+
+    const updated = await prisma.secureFile.update({
+      where: { id: file.id },
+      data: { status: 'READY' },
+    });
+
+    await recordAudit({
+      userId,
+      action: AuditAction.FILE_CREATE,
+      targetType: 'FILE',
+      targetId: updated.id,
+      noteId: updated.noteId,
+      metadata: {
+        filename: updated.filename,
+        mimeType: updated.mimeType,
+        encryptedBytes: updated.encryptedBytes,
+        direct: true,
+      },
+      ipAddress: requestIp(req),
+    });
+
+    res.json({
+      file: toSecureFileDto(updated, { includeWrappedKey: true, includeNoteKeyWrap: true }),
+    });
   }),
 );
 
@@ -169,7 +343,7 @@ filesRouter.get(
     await requireNoteAccess(noteId, userId);
 
     const files = await prisma.secureFile.findMany({
-      where: { noteId, deletedAt: null },
+      where: { noteId, deletedAt: null, status: 'READY' },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -190,9 +364,13 @@ filesRouter.get(
 /**
  * GET /api/files/:id/content
  *
- * Streams the encrypted blob back to an authorised caller. The client decrypts
- * with the per-file key it unwraps locally. Responses are marked no-store so
- * no browser or intermediary cache keeps a copy.
+ * Returns the encrypted blob to an authorised caller. The client decrypts with
+ * the per-file key it unwraps locally.
+ *
+ * A backend that supports signed URLs answers with a 302 to one valid for
+ * `SIGNED_URL_TTL_SECONDS` (60s) instead of proxying the bytes, so a large
+ * download never has to pass through the API function. The redirect target is
+ * still ciphertext, and the authorisation + audit happen here first.
  */
 filesRouter.get(
   '/:id/content',
@@ -204,12 +382,7 @@ filesRouter.get(
       throw ApiError.badRequest('Invalid file id', 'VALIDATION_ERROR');
     }
 
-    const blob = await readBlob(file.storageKey);
-    if (blob.byteLength !== file.encryptedBytes) {
-      // Storage drifted from the database - fail closed rather than serving
-      // something the client cannot authenticate.
-      throw ApiError.internal('Stored file is incomplete', 'FILE_STORAGE_MISMATCH');
-    }
+    const adapter = storageFor(driverOf(file));
 
     await recordAudit({
       userId: currentUserId(req),
@@ -217,9 +390,23 @@ filesRouter.get(
       targetType: 'FILE',
       targetId: file.id,
       noteId: file.noteId,
-      metadata: { filename: file.filename, bytes: blob.byteLength },
+      metadata: { filename: file.filename, bytes: file.encryptedBytes, signed: adapter.supportsDirectUpload },
       ipAddress: requestIp(req),
     });
+
+    const signedUrl = await adapter.createDownloadUrl(file.storageKey, env.signedUrlTtlSeconds);
+    if (signedUrl) {
+      res.setHeader('Cache-Control', 'no-store');
+      res.redirect(302, signedUrl);
+      return;
+    }
+
+    const blob = await adapter.get(file.storageKey);
+    if (blob.byteLength !== file.encryptedBytes) {
+      // Storage drifted from the database - fail closed rather than serving
+      // something the client cannot authenticate.
+      throw ApiError.internal('Stored file is incomplete', 'FILE_STORAGE_MISMATCH');
+    }
 
     res.setHeader('Content-Type', 'application/octet-stream');
     res.setHeader('Content-Length', String(blob.byteLength));
@@ -247,8 +434,10 @@ filesRouter.get(
 /**
  * DELETE /api/files/:id - soft delete.
  *
- * Only the uploader (owner) may delete a file. The blob is removed from
- * storage immediately; the row is kept for the audit trail.
+ * The uploader can always remove their own upload; the note OWNER can also
+ * remove any file attached to their note (they control the note's contents).
+ * A share recipient has neither right. The blob is removed from storage
+ * immediately; the row is kept for the audit trail.
  */
 filesRouter.delete(
   '/:id',
@@ -256,10 +445,10 @@ filesRouter.delete(
   asyncHandler(async (req, res) => {
     const { file, userId } = await loadFileAccess(req, req.params.id);
     if (file.ownerId !== userId) {
-      throw ApiError.forbidden('Only the user who uploaded this file can delete it', 'NOT_FILE_OWNER');
+      await requireNoteOwnership(file.noteId, userId);
     }
 
-    await deleteBlob(file.storageKey);
+    await storageFor(driverOf(file)).delete(file.storageKey);
     await prisma.secureFile.update({
       where: { id: file.id },
       data: { deletedAt: new Date() },

@@ -2,6 +2,9 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   authKeySchema,
+  completeFileSchema,
+  createFileSchema,
+  initFileSchema,
   loginSchema,
   preloginSchema,
   recoveryChallengeSchema,
@@ -103,12 +106,31 @@ describe('recovery schemas never carry the raw recovery key', () => {
       wrappedMasterKeyRecovery: 'x'.repeat(64),
       masterKeyRecoveryIv: 'x'.repeat(16),
       recoveryVerifier: VERIFIER,
+      // Re-authentication is mandatory for recovery setup.
+      authKey: VALID_AUTH_KEY,
       // A legacy client that still sends the raw key: it must not survive
       // validation (zod strips unknown keys rather than persisting them).
       recoveryKey: 'RCVR-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     });
     assert.equal(parsed.success, true);
     assert.equal(parsed.success && 'recoveryKey' in parsed.data, false);
+  });
+
+  test('setup requires re-authentication (exactly one credential)', () => {
+    const base = {
+      kdfSalt: 'x'.repeat(64),
+      kdfIterations: 210_000,
+      wrappedMasterKeyRecovery: 'x'.repeat(64),
+      masterKeyRecoveryIv: 'x'.repeat(16),
+      recoveryVerifier: VERIFIER,
+    };
+    assert.equal(recoverySetupSchema.safeParse(base).success, false);
+    assert.equal(recoverySetupSchema.safeParse({ ...base, authKey: VALID_AUTH_KEY }).success, true);
+    assert.equal(recoverySetupSchema.safeParse({ ...base, password: 'current-password' }).success, true);
+    assert.equal(
+      recoverySetupSchema.safeParse({ ...base, authKey: VALID_AUTH_KEY, password: 'current-password' }).success,
+      false,
+    );
   });
 
   test('setup rejects a payload with only a raw recovery key', () => {
@@ -118,6 +140,19 @@ describe('recovery schemas never carry the raw recovery key', () => {
       wrappedMasterKeyRecovery: 'x'.repeat(64),
       masterKeyRecoveryIv: 'x'.repeat(16),
       recoveryKey: 'RCVR-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    });
+    assert.equal(parsed.success, false);
+  });
+
+  test('setup rejects a payload with two credentials', () => {
+    const parsed = recoverySetupSchema.safeParse({
+      kdfSalt: 'x'.repeat(64),
+      kdfIterations: 210_000,
+      wrappedMasterKeyRecovery: 'x'.repeat(64),
+      masterKeyRecoveryIv: 'x'.repeat(16),
+      recoveryVerifier: VERIFIER,
+      authKey: VALID_AUTH_KEY,
+      password: 'current-password',
     });
     assert.equal(parsed.success, false);
   });
@@ -156,6 +191,46 @@ describe('recovery schemas never carry the raw recovery key', () => {
     };
     assert.equal(recoveryResetSchema.safeParse({ ...base, recoveryVerifier: 'not-hex' }).success, false);
     assert.equal(recoveryResetSchema.safeParse({ ...base, recoveryVerifier: 'AB'.repeat(32) }).success, false);
+  });
+});
+
+describe('file upload schemas (single-shot vs two-step)', () => {
+  const fileBase = {
+    noteId: 'note1',
+    filename: 'report.pdf',
+    mimeType: 'application/pdf',
+    plaintextBytes: 1024,
+    fileIv: Buffer.alloc(12, 1).toString('base64'),
+    wrappedFileKey: 'x'.repeat(64),
+    fileKeyIv: Buffer.alloc(12, 2).toString('base64'),
+    wrappedForNoteKey: 'x'.repeat(64),
+    noteKeyWrapIv: Buffer.alloc(12, 3).toString('base64'),
+  };
+
+  test('createFileSchema needs the ciphertext', () => {
+    assert.equal(createFileSchema.safeParse(fileBase).success, false);
+    assert.equal(
+      createFileSchema.safeParse({ ...fileBase, ciphertext: Buffer.alloc(64, 9).toString('base64') }).success,
+      true,
+    );
+  });
+
+  test('initFileSchema needs the declared encrypted size instead', () => {
+    assert.equal(initFileSchema.safeParse(fileBase).success, false);
+    assert.equal(initFileSchema.safeParse({ ...fileBase, encryptedBytes: 4096 }).success, true);
+  });
+
+  test('initFileSchema rejects zero and out-of-range sizes', () => {
+    assert.equal(initFileSchema.safeParse({ ...fileBase, encryptedBytes: 0 }).success, false);
+    assert.equal(
+      initFileSchema.safeParse({ ...fileBase, encryptedBytes: 26 * 1024 * 1024 }).success,
+      false,
+    );
+  });
+
+  test('completeFileSchema requires a file id', () => {
+    assert.equal(completeFileSchema.safeParse({ fileId: 'file1' }).success, true);
+    assert.equal(completeFileSchema.safeParse({}).success, false);
   });
 });
 

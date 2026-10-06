@@ -57,6 +57,10 @@ model User {
   /// Clients on v1 are migrated transparently on their next login via
   /// POST /auth/upgrade-auth.
   authVersion       Int    @default(1)
+  /// Session generation counter. Embedded in every session JWT as `tv` and
+  /// re-checked on each authenticated request; incrementing it (logout,
+  /// password reset, recovery reset) invalidates every token issued before.
+  tokenVersion      Int    @default(0)
   /// The user's master key, wrapped with the password-derived KEK (AES-GCM).
   wrappedMasterKey  String
   /// IV used when wrapping `wrappedMasterKey`.
@@ -166,11 +170,12 @@ model Note {
 /// key, wraps that key with the owner's master key, and uploads only the
 /// ciphertext. `wrappedFileKey` is opaque to the server.
 ///
-/// Storage: the encrypted blob lives in private server-side storage
-/// (`server/storage/files/`, configurable) - never in a public bucket and
-/// never with a publicly guessable URL. Downloads go through
-/// `GET /api/files/:id/content`, which re-validates authentication and note
-/// access on every request.
+/// Storage: the encrypted blob lives in private storage selected by
+/// STORAGE_DRIVER - a private server directory (`server/storage/files/`) or a
+/// private Supabase Storage bucket. Never a public bucket, never a publicly
+/// guessable URL. Downloads go through `GET /api/files/:id/content`, which
+/// re-validates authentication and note access on every request (the Supabase
+/// driver answers with a short-lived signed URL instead of proxying bytes).
 model SecureFile {
   id      String @id @default(cuid())
   ownerId String
@@ -184,6 +189,12 @@ model SecureFile {
   /// Random name generated server-side for the stored blob. Contains no
   /// user input, so it cannot be used for path traversal.
   storageKey   String @unique
+  /// Which backend holds `storageKey` (`local` or `supabase`). Recorded per
+  /// file so a deployment can switch drivers without orphaning old blobs.
+  storageDriver String @default("local")
+  /// READY once the blob is confirmed present; PENDING between the two-step
+  /// upload's /init and /complete calls.
+  status        String @default("READY")
   /// Sanitised original filename, shown in the UI.
   filename     String
   /// MIME type reported by the browser at upload time.

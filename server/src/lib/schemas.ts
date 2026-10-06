@@ -129,19 +129,31 @@ export const recoveryVerifierSchema = z
   .string()
   .regex(/^[a-f0-9]{64}$/, 'Must be the hex recovery verifier');
 
-/** POST /auth/recovery/setup - store the recovery-wrapped master key. */
-export const recoverySetupSchema = z.object({
-  kdfSalt: keyBlobSchema,
-  kdfIterations: z
-    .number()
-    .int()
-    .min(env.minKdfIterations)
-    .max(env.maxKdfIterations),
-  wrappedMasterKeyRecovery: keyBlobSchema,
-  masterKeyRecoveryIv: ivSchema,
-  /** HKDF verifier of the raw recovery key, hex - never the key itself. */
-  recoveryVerifier: recoveryVerifierSchema,
-});
+/**
+ * POST /auth/recovery/setup - store the recovery-wrapped master key.
+ *
+ * Re-authentication is required: generating (or rotating) a recovery key is a
+ * persistent account-takeover primitive, so a stolen session token alone must
+ * not be enough. The client sends the account's current credential alongside
+ * the new key material and it is verified exactly as on login.
+ */
+export const recoverySetupSchema = credentialFields(
+  z.object({
+    kdfSalt: keyBlobSchema,
+    kdfIterations: z
+      .number()
+      .int()
+      .min(env.minKdfIterations)
+      .max(env.maxKdfIterations),
+    wrappedMasterKeyRecovery: keyBlobSchema,
+    masterKeyRecoveryIv: ivSchema,
+    /** HKDF verifier of the raw recovery key, hex - never the key itself. */
+    recoveryVerifier: recoveryVerifierSchema,
+    /** Current credential, re-verified before the new recovery key is stored. */
+    authKey: authKeySchema.optional(),
+    password: z.string().min(1, 'Enter your password').max(200).optional(),
+  }),
+);
 
 export type RecoverySetupInput = z.infer<typeof recoverySetupSchema>;
 
@@ -410,24 +422,33 @@ export function extractExtension(raw: string): string | null {
 }
 
 /**
- * Upload payload. The ciphertext cap mirrors the storage limit; the body
- * parser ceiling is configured separately in env.ts.
+ * Fields common to both upload paths (single-shot and two-step). Everything
+ * here is either metadata or opaque key material; the server can decrypt none
+ * of it.
+ */
+const fileFields = {
+  noteId: z.string().min(1).max(64),
+  filename: z.string().min(1).max(255),
+  mimeType: z.string().max(255).regex(/^[\w.+-]+\/[\w.+-]+$/, 'Must look like a MIME type'),
+  plaintextBytes: z.number().int().min(0).max(2_000_000_000),
+  /** IV of the file ciphertext itself; the key-wrap IVs are separate fields. */
+  fileIv: ivSchema,
+  encryptionVersion: z.number().int().min(1).max(100).default(1),
+  algorithm: z.string().max(64).default('AES-GCM-256'),
+  wrappedFileKey: keyBlobSchema,
+  fileKeyIv: ivSchema,
+  wrappedForNoteKey: keyBlobSchema,
+  noteKeyWrapIv: ivSchema,
+};
+
+/**
+ * Single-shot upload payload. The ciphertext cap mirrors the storage limit;
+ * the body parser ceiling is configured separately in env.ts.
  */
 export const createFileSchema = z
   .object({
-    noteId: z.string().min(1).max(64),
-    filename: z.string().min(1).max(255),
-    mimeType: z.string().max(255).regex(/^[\w.+-]+\/[\w.+-]+$/, 'Must look like a MIME type'),
-    plaintextBytes: z.number().int().min(0).max(2_000_000_000),
+    ...fileFields,
     ciphertext: ciphertextSchema.max(48_000_000),
-    /** IV of the file ciphertext itself; the key-wrap IVs are separate fields. */
-    fileIv: ivSchema,
-    encryptionVersion: z.number().int().min(1).max(100).default(1),
-    algorithm: z.string().max(64).default('AES-GCM-256'),
-    wrappedFileKey: keyBlobSchema,
-    fileKeyIv: ivSchema,
-    wrappedForNoteKey: keyBlobSchema,
-    noteKeyWrapIv: ivSchema,
   })
   .refine(
     (value) => Math.ceil((value.ciphertext.length * 3) / 4) <= env.maxFileBytes,
@@ -435,3 +456,22 @@ export const createFileSchema = z
   );
 
 export type CreateFileInput = z.infer<typeof createFileSchema>;
+
+/**
+ * POST /files/init - begins a direct (browser -> storage) upload. The size is
+ * declared up front so the quota can be enforced before any bytes move; the
+ * object is only registered by POST /files/complete once it actually exists.
+ */
+export const initFileSchema = z.object({
+  ...fileFields,
+  encryptedBytes: z.number().int().min(1).max(env.maxFileBytes),
+});
+
+export type InitFileInput = z.infer<typeof initFileSchema>;
+
+/** POST /files/complete - finalises a pending direct upload. */
+export const completeFileSchema = z.object({
+  fileId: z.string().min(1).max(64),
+});
+
+export type CompleteFileInput = z.infer<typeof completeFileSchema>;

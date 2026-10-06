@@ -1,9 +1,10 @@
-import { API_BASE_URL, ApiError, getAuthToken } from './api';
+import { API_BASE_URL, ApiError, api, getAuthToken } from './api';
 import {
   decryptBytes,
   decryptRawBytes,
   encryptBytes,
   exportAesKey,
+  fromBase64,
   generateAesKey,
   importAesKey,
   wrapNoteKeyForStorage,
@@ -31,6 +32,13 @@ import type { SecureFileDto } from './types';
 
 /** Cap mirrors the server's MAX_FILE_BYTES default (25 MiB ciphertext). */
 export const MAX_FILE_BYTES = 25 * 1024 * 1024;
+
+/**
+ * Above this ciphertext size the upload uses the two-step direct flow
+ * (/files/init -> PUT to storage -> /files/complete) so the blob never has to
+ * pass through the API function's request-body cap (4.5 MB on Vercel).
+ */
+export const DIRECT_UPLOAD_THRESHOLD_BYTES = 4 * 1024 * 1024;
 
 export const FILE_ENCRYPTION_VERSION = 1;
 export const FILE_ALGORITHM = 'AES-GCM-256';
@@ -263,6 +271,105 @@ export function uploadFileWithProgress(
 
     xhr.send(JSON.stringify(payload));
   });
+}
+
+/** Byte length of a base64 string without decoding it. */
+function base64ByteLength(base64: string): number {
+  if (base64.length === 0) return 0;
+  const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
+  return Math.floor((base64.length * 3) / 4) - padding;
+}
+
+/** PUTs the encrypted bytes straight to a presigned storage URL, with progress. */
+function putToSignedUrl(
+  url: string,
+  headers: Record<string, string>,
+  bytes: Uint8Array,
+  onProgress: (fraction: number) => void,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', url);
+    for (const [name, value] of Object.entries(headers)) xhr.setRequestHeader(name, value);
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress(Math.min(1, event.loaded / event.total));
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress(1);
+        resolve();
+        return;
+      }
+      reject(new ApiError(xhr.status, 'UPLOAD_FAILED', `Upload failed with status ${xhr.status}`));
+    };
+    xhr.onerror = () => reject(new ApiError(0, 'NETWORK_ERROR', 'Could not reach the storage backend.'));
+    // Wrap in a Blob so the body is a plain byte stream; the Content-Type we
+    // set above is what the storage backend sees.
+    xhr.send(new Blob([new Uint8Array(bytes)]));
+  });
+}
+
+export interface FileUploadContext {
+  noteId: string;
+  /** The file key wrapped with the note key, for share recipients. */
+  wrappedForNoteKey: string;
+  noteKeyWrapIv: string;
+}
+
+/**
+ * Uploads an already-encrypted file, choosing the transport by size.
+ *
+ * Small blobs go up in one authenticated request. Large ones use the direct
+ * two-step flow; if the deployment has no direct-upload backend (local disk),
+ * the server answers DIRECT_UPLOAD_UNAVAILABLE and we transparently fall back
+ * to the single request - so the same client works everywhere.
+ */
+export async function uploadEncryptedFile(
+  prepared: PreparedUpload,
+  context: FileUploadContext,
+  onProgress: (fraction: number) => void,
+): Promise<SecureFileDto> {
+  const singleShotPayload = (): FileUploadPayload => ({
+    ...buildFileUploadPayload(prepared, context.noteId),
+    wrappedForNoteKey: context.wrappedForNoteKey,
+    noteKeyWrapIv: context.noteKeyWrapIv,
+  });
+
+  const encryptedBytes = base64ByteLength(prepared.encrypted.ciphertext);
+  if (encryptedBytes <= DIRECT_UPLOAD_THRESHOLD_BYTES) {
+    return uploadFileWithProgress(singleShotPayload(), onProgress);
+  }
+
+  try {
+    const init = await api.initFileUpload({
+      noteId: context.noteId,
+      filename: prepared.file.name,
+      mimeType: normalizeFileMimeType(prepared.file.type),
+      plaintextBytes: prepared.plaintextBytes,
+      encryptedBytes,
+      fileIv: prepared.encrypted.iv,
+      encryptionVersion: FILE_ENCRYPTION_VERSION,
+      algorithm: FILE_ALGORITHM,
+      wrappedFileKey: prepared.wrappedFileKey,
+      fileKeyIv: prepared.fileKeyIv,
+      wrappedForNoteKey: context.wrappedForNoteKey,
+      noteKeyWrapIv: context.noteKeyWrapIv,
+    });
+
+    await putToSignedUrl(
+      init.upload.url,
+      init.upload.headers,
+      fromBase64(prepared.encrypted.ciphertext),
+      onProgress,
+    );
+    return await api.completeFileUpload(init.file.id);
+  } catch (error) {
+    if (error instanceof ApiError && error.code === 'DIRECT_UPLOAD_UNAVAILABLE') {
+      return uploadFileWithProgress(singleShotPayload(), onProgress);
+    }
+    throw error;
+  }
 }
 
 /**

@@ -9,11 +9,18 @@ import { ApiError } from './http';
 export interface SessionTokenPayload {
   sub: string;
   email: string;
+  /** Session generation (User.tokenVersion). Mismatch => token revoked. */
+  tv: number;
   iat?: number;
   exp?: number;
 }
 
-export function signSessionToken(user: { id: string; email: string }): string {
+/**
+ * Signs a session token. `tokenVersion` is embedded so that bumping it on the
+ * user row (logout, password reset) invalidates every previously issued token
+ * the next time it is presented - see `requireAuth`.
+ */
+export function signSessionToken(user: { id: string; email: string; tokenVersion: number }): string {
   // `expiresIn` is typed as a template-literal duration, so the plain string
   // from the environment is narrowed here rather than at every call site.
   const options: jwt.SignOptions = {
@@ -22,7 +29,7 @@ export function signSessionToken(user: { id: string; email: string }): string {
     algorithm: 'HS256',
   };
 
-  return jwt.sign({ email: user.email }, env.jwtSecret, options);
+  return jwt.sign({ email: user.email, tv: user.tokenVersion }, env.jwtSecret, options);
 }
 
 /**
@@ -136,6 +143,9 @@ export function verifySessionToken(token: string): SessionTokenPayload {
     return {
       sub: decoded.sub,
       email: typeof decoded.email === 'string' ? decoded.email : '',
+      // Tokens minted before the tokenVersion rollout carry no `tv`; treat
+      // them as generation 0, which matches the column default.
+      tv: typeof (decoded as { tv?: unknown }).tv === 'number' ? (decoded as { tv: number }).tv : 0,
       iat: decoded.iat,
       exp: decoded.exp,
     };

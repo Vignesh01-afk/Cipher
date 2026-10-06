@@ -6,6 +6,7 @@ import { env } from './env';
 import { prisma } from './db';
 import { apiRouter } from './routes';
 import { errorHandler, notFoundHandler } from './middleware/error';
+import { createRateLimitStore } from './lib/rateLimitStore';
 
 /**
  * The Express app, factored out of `index.ts` so that both the local
@@ -17,7 +18,8 @@ export function createApp(): express.Express {
 
   // Behind a reverse proxy in production this makes req.ip reflect the client.
   // Vercel routes requests through its own edge proxies, so this is required
-  // for rate limiting to key on the real client IP.
+  // for rate limiting to key on the real client IP. `req.ip` (not the raw
+  // X-Forwarded-For header) is the only client address the app trusts.
   app.set('trust proxy', 1);
   app.disable('x-powered-by');
 
@@ -41,14 +43,12 @@ export function createApp(): express.Express {
       maxAge: 600,
     }),
   );
-  // One parser only: stacking a second json parser for /api/files consumed
-  // the stream twice and corrupted large upload bodies.
-  app.use(express.json({ limit: env.maxFileUploadBodyBytes }));
 
   // `ok` only proves the process is up. `dbOk` probes the database so callers
   // (deploy checks, the E2E pre-flight) can tell "API up" from "API can serve".
   // The response stays 200 either way so the process is never marked unhealthy
-  // just because a managed Postgres scaled to zero.
+  // just because a managed Postgres scaled to zero. Registered before the
+  // limiter so health checks never consume a client's quota.
   app.get('/api/health', async (_req, res) => {
     let dbOk = true;
     try {
@@ -72,7 +72,12 @@ export function createApp(): express.Express {
   });
 
   // A coarse ceiling for the whole API; the credential endpoints add their own
-  // much tighter limiter on top of this.
+  // much tighter limiters on top of this. The limiter runs BEFORE any body
+  // parser so an oversized or slow request is rejected without being buffered.
+  // Counters live in Upstash when configured, so the limit holds across
+  // serverless instances; otherwise express-rate-limit's in-memory store is
+  // used (single instance / local dev).
+  const sharedStore = createRateLimitStore();
   app.use(
     '/api',
     rateLimit({
@@ -80,9 +85,17 @@ export function createApp(): express.Express {
       limit: 300,
       standardHeaders: 'draft-7',
       legacyHeaders: false,
+      store: sharedStore,
       message: { error: 'Too many requests, slow down.', code: 'RATE_LIMITED' },
     }),
   );
+
+  // Per-path body ceilings, mounted from largest to smallest. A parser that
+  // sees an already-parsed body (`req._body`) is a no-op, so the wider parsers
+  // must be registered first for their paths to win over the 100 kb default.
+  app.use('/api/files', express.json({ limit: env.maxFileUploadBodyBytes }));
+  app.use('/api/notes', express.json({ limit: env.notesBodyLimit }));
+  app.use('/api', express.json({ limit: env.jsonBodyLimit }));
 
   app.use('/api', apiRouter);
 

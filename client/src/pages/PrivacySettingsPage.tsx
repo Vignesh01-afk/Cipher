@@ -24,6 +24,8 @@ export function PrivacySettingsPage(): JSX.Element {
   const [newKey, setNewKey] = useState<string | null>(null);
   const [confirmRegen, setConfirmRegen] = useState(false);
   const [regenBusy, setRegenBusy] = useState(false);
+  // Rotating the recovery key re-authenticates, so the password is required.
+  const [regenPassword, setRegenPassword] = useState('');
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -182,13 +184,21 @@ export function PrivacySettingsPage(): JSX.Element {
         destructive={false}
         busy={regenBusy}
         confirmLabel="Generate"
-        onCancel={() => setConfirmRegen(false)}
+        onCancel={() => {
+          setRegenPassword('');
+          setConfirmRegen(false);
+        }}
         onConfirm={() => {
+          if (!regenPassword) {
+            toast.error('Password required', 'Enter your account password to continue.');
+            return;
+          }
           void (async () => {
             setRegenBusy(true);
             try {
-              const key = await setupRecoveryKey();
+              const key = await setupRecoveryKey(regenPassword);
               setNewKey(key);
+              setRegenPassword('');
               setConfirmRegen(false);
               toast.success('Recovery key regenerated', 'The previous key no longer works.');
             } catch (error) {
@@ -198,7 +208,26 @@ export function PrivacySettingsPage(): JSX.Element {
             }
           })();
         }}
-        message="A new single-use recovery key will replace the current one. Your notes, files and shares are unaffected."
+        message={
+          <span className="block space-y-3">
+            <span className="block">
+              A new single-use recovery key will replace the current one. Your notes, files and shares are
+              unaffected.
+            </span>
+            <label className="block text-left">
+              <span className="mb-1 block text-xs font-medium text-stone-600 dark:text-stone-300">
+                Confirm your account password
+              </span>
+              <input
+                type="password"
+                className="input"
+                value={regenPassword}
+                autoComplete="current-password"
+                onChange={(event) => setRegenPassword(event.target.value)}
+              />
+            </label>
+          </span>
+        }
       />
 
       <section className="rounded-2xl border border-amber-300 bg-amber-50/70 p-5 dark:border-amber-500/30 dark:bg-amber-500/5">

@@ -227,7 +227,7 @@ export function NoteViewPage(): JSX.Element {
       </article>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)]">
-        <NoteFilesPanel noteId={note.id} noteKey={note.noteKey} />
+        <NoteFilesPanel noteId={note.id} noteKey={note.noteKey} isNoteOwner={isOwner} />
 
         <aside className="space-y-5">
           <section className="card p-5">

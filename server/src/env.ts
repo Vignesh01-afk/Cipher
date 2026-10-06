@@ -20,6 +20,19 @@ function readNumber(name: string, fallback: number): number {
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+/**
+ * Storage backend selection.
+ *
+ * `auto` (the default) uses Supabase when credentials are present and private
+ * local disk otherwise, so local development works with no configuration and
+ * a production deployment only has to add the Supabase env vars.
+ */
+const rawStorageDriver = (process.env.STORAGE_DRIVER ?? 'auto').toLowerCase();
+if (!['auto', 'local', 'supabase'].includes(rawStorageDriver)) {
+  throw new Error(`STORAGE_DRIVER must be one of auto|local|supabase, received "${rawStorageDriver}"`);
+}
+export type StorageDriverSetting = 'auto' | 'local' | 'supabase';
+
 // A placeholder secret is fine for local development but must never ship.
 const jwtSecret = process.env.JWT_SECRET ?? 'ciphernote-development-only-secret-change-me';
 if (isProduction && jwtSecret === 'ciphernote-development-only-secret-change-me') {
@@ -39,17 +52,47 @@ export const env = {
   port: readNumber('PORT', 4000),
   clientOrigin: readString('CLIENT_ORIGIN', 'http://localhost:5173'),
   jwtSecret,
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '12h',
+  // Short-lived sessions by default; clients re-authenticate silently via
+  // /auth/me on reload. Revocation is enforced server-side (User.tokenVersion).
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '2h',
   bcryptRounds: readNumber('BCRYPT_ROUNDS', 12),
   authRateLimitWindowMs: readNumber('AUTH_RATE_LIMIT_WINDOW_MS', 15 * 60 * 1000),
   authRateLimitMax: readNumber('AUTH_RATE_LIMIT_MAX', 30),
   maxKdfIterations: 2_000_000,
   minKdfIterations: 100_000,
 
+  // --- Request body limits --------------------------------------------------
+  // The global ceiling is deliberately small. Notes and file uploads mount a
+  // larger parser on their own path (see app.ts), because a body parser that
+  // runs before the rate limiter is a cheap memory-exhaustion vector.
+  jsonBodyLimit: process.env.JSON_BODY_LIMIT ?? '100kb',
+  notesBodyLimit: process.env.NOTES_BODY_LIMIT ?? '3mb',
+
+  // --- Shared rate-limit store (optional) ------------------------------------
+  // Upstash Redis REST credentials. When set, every API instance shares the
+  // counters so limits hold across serverless invocations; otherwise the
+  // in-memory store is used (correct for a single instance / local dev).
+  upstashRedisRestUrl: process.env.UPSTASH_REDIS_REST_URL ?? '',
+  upstashRedisRestToken: process.env.UPSTASH_REDIS_REST_TOKEN ?? '',
+
   // --- Secure file storage -------------------------------------------------
+  storageDriver: rawStorageDriver as StorageDriverSetting,
   // Private server-side directory for encrypted file blobs. Never exposed
   // directly: every read goes through an authenticated API route.
   fileStorageDir: process.env.FILE_STORAGE_DIR ?? 'storage/files',
+  // Supabase Storage (used when STORAGE_DRIVER=supabase, or =auto with creds).
+  // The service-role key must NEVER reach the browser.
+  supabaseUrl: process.env.SUPABASE_URL ?? '',
+  supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
+  supabaseStorageBucket: process.env.SUPABASE_STORAGE_BUCKET ?? 'ciphernote-files',
+  // How long a signed (presigned) download URL stays valid. Short by design:
+  // the browser fetches it immediately and the blob is ciphertext anyway.
+  signedUrlTtlSeconds: readNumber('SIGNED_URL_TTL_SECONDS', 60),
+  // Uploads above this size use the two-step direct-upload flow so the body
+  // never has to pass through the API function (Vercel caps request bodies).
+  directUploadThresholdBytes: readNumber('DIRECT_UPLOAD_THRESHOLD_BYTES', 4 * 1024 * 1024),
+  // Per-account storage ceiling for encrypted blobs.
+  maxUserStorageBytes: readNumber('MAX_USER_STORAGE_BYTES', 500 * 1024 * 1024),
   // Maximum size of the *encrypted* blob accepted per upload.
   maxFileBytes: readNumber('MAX_FILE_BYTES', 25 * 1024 * 1024),
   // Base64 inflates ciphertext by ~4/3; this is the request ceiling for uploads.

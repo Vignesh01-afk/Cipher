@@ -177,6 +177,8 @@ passwordOtpRouter.post(
         // wrappedPrivateKey stays valid: it is wrapped with the master key,
         // which the OTP flow recovers unchanged. The escrow copy likewise
         // remains valid for the same reason.
+        // A password change must end every existing session.
+        tokenVersion: { increment: 1 },
       },
     });
 

@@ -65,7 +65,11 @@ interface AuthContextValue {
   lock: () => void;
   logout: () => Promise<void>;
   /** Generates a recovery key, wraps the master key under it and stores it. */
-  setupRecoveryKey: () => Promise<string>;
+  /**
+   * Generates + stores a new recovery key. Requires the account password
+   * because the server re-authenticates before accepting a new recovery key.
+   */
+  setupRecoveryKey: (password: string) => Promise<string>;
   /**
    * Adopts a session created without a local password (Google sign-in):
    * stores the token + user and puts the app in the `locked` state so the
@@ -144,18 +148,23 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
    * failed (a key can be generated later from Settings).
    */
   const adoptNewAccount = useCallback(
-    async (result: { token: string; user: KeyMaterial }, session: CryptoSession): Promise<string | null> => {
+    async (
+      result: { token: string; user: KeyMaterial },
+      session: CryptoSession,
+      authKey: string,
+    ): Promise<string | null> => {
       setAuthToken(result.token);
       setUser(result.user);
       setKeys(session);
       setStatus('unlocked');
 
       // Recovery setup uses the in-hand `session` (NOT React state, which
-      // would still be stale within this closure).
+      // would still be stale within this closure). The just-derived authKey
+      // doubles as the re-authentication credential the server now requires.
       try {
         const recoveryKey = generateRecoveryKey();
         const setup = await buildRecoverySetup(recoveryKey, session.masterKey);
-        await api.setupRecovery(setup);
+        await api.setupRecovery({ ...setup, authKey });
         return recoveryKey;
       } catch {
         return null;
@@ -191,7 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
           masterKeyRaw: toBase64(masterKeyRaw),
         });
         wipe(masterKeyRaw);
-        return await adoptNewAccount(result, session);
+        return await adoptNewAccount(result, session, authKey);
       } catch (error) {
         // Do not leave a half-authenticated state behind.
         setAuthToken(null);
@@ -224,7 +233,7 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
           masterKeyRaw: toBase64(masterKeyRaw),
         });
         wipe(masterKeyRaw);
-        return await adoptNewAccount(result, session);
+        return await adoptNewAccount(result, session, authKey);
       } catch (error) {
         setAuthToken(null);
         setKeys(null);
@@ -327,15 +336,26 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
    * master key under it and stores the wrap server-side. The key is returned
    * exactly once - the server only holds a hash, so it cannot be re-shown.
    */
-  const setupRecoveryKey = useCallback(async (): Promise<string> => {
-    if (!keys || !user) {
-      throw new Error('Unlock your vault before generating a recovery key.');
-    }
-    const recoveryKey = generateRecoveryKey();
-    const setup = await buildRecoverySetup(recoveryKey, keys.masterKey);
-    await api.setupRecovery(setup);
-    return recoveryKey;
-  }, [keys, user]);
+  const setupRecoveryKey = useCallback(
+    async (password: string): Promise<string> => {
+      if (!keys || !user) {
+        throw new Error('Unlock your vault before generating a recovery key.');
+      }
+      // Re-authenticate with the current password: the server verifies the
+      // derived authKey before accepting a new recovery key. (Accounts are
+      // migrated to the split scheme on login, so authKey is the credential.)
+      const { authKey } = await deriveKekAndAuthKey(
+        password,
+        fromBase64(user.kdfSalt),
+        user.kdfIterations,
+      );
+      const recoveryKey = generateRecoveryKey();
+      const setup = await buildRecoverySetup(recoveryKey, keys.masterKey);
+      await api.setupRecovery({ ...setup, authKey });
+      return recoveryKey;
+    },
+    [keys, user],
+  );
 
   const logout = useCallback(async () => {
     try {

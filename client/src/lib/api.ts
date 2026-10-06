@@ -342,6 +342,12 @@ export const api = {
     masterKeyRecoveryIv: string;
     /** HKDF verifier computed in the browser; the raw key never leaves it. */
     recoveryVerifier: string;
+    /**
+     * Re-authentication: the account's current credential. The server
+     * re-verifies it before storing a new recovery key, so a stolen session
+     * alone cannot mint one.
+     */
+    authKey: string;
   }): Promise<void> {
     await request<{ ok: boolean }>('/auth/recovery/setup', { method: 'POST', body: payload });
   },
@@ -495,6 +501,36 @@ export const api = {
       `/files?noteId=${encodeURIComponent(noteId)}`,
     );
     return result.files;
+  },
+
+  /**
+   * Step 1 of a large upload: reserve quota and get a presigned PUT. The blob
+   * then goes straight to storage, never through this API.
+   */
+  async initFileUpload(payload: {
+    noteId: string;
+    filename: string;
+    mimeType: string;
+    plaintextBytes: number;
+    encryptedBytes: number;
+    fileIv: string;
+    encryptionVersion: number;
+    algorithm: string;
+    wrappedFileKey: string;
+    fileKeyIv: string;
+    wrappedForNoteKey: string;
+    noteKeyWrapIv: string;
+  }): Promise<{ file: SecureFileDto; upload: { mode: 'direct'; url: string; headers: Record<string, string> } }> {
+    return request('/files/init', { method: 'POST', body: payload });
+  },
+
+  /** Step 2: confirm the direct upload landed and make the file downloadable. */
+  async completeFileUpload(fileId: string): Promise<SecureFileDto> {
+    const result = await request<{ file: SecureFileDto }>('/files/complete', {
+      method: 'POST',
+      body: { fileId },
+    });
+    return result.file;
   },
 
   async getFileMeta(fileId: string): Promise<SecureFileDto> {

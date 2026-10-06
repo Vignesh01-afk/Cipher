@@ -86,11 +86,14 @@ export async function recordAudit(entry: AuditEntry): Promise<void> {
   }
 }
 
-/** Normalises the IP address of a request for storage in the audit log. */
-export function requestIp(req: { ip?: string; headers: Record<string, unknown> }): string | null {
-  const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string' && forwarded.length > 0) {
-    return forwarded.split(',')[0]!.trim().slice(0, 100);
-  }
-  return req.ip ? req.ip.slice(0, 100) : null;
+/**
+ * Normalises the IP address of a request for storage in the audit log.
+ *
+ * Only `req.ip` is used. Reading `X-Forwarded-For` directly would let any
+ * client forge the address recorded against their own audit entries; Express
+ * already resolves the header into `req.ip` when `trust proxy` is set (which
+ * app.ts does), so the trusted value is the only one worth storing.
+ */
+export function requestIp(req: { ip?: string }): string | null {
+  return req.ip ? String(req.ip).slice(0, 100) : null;
 }

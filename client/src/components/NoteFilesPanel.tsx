@@ -4,13 +4,10 @@ import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import {
-  buildFileUploadPayload,
   encryptFileForUpload,
-  uploadFileWithProgress,
+  uploadEncryptedFile,
   wrapFileKeyForRecipient,
-  exportFileKey,
   FileTooLargeError,
-  type SecureFileWithNoteKey,
 } from '../lib/files';
 import type { SecureFileDto } from '../lib/types';
 import { formatBytes, formatRelativeTime } from '../lib/format';
@@ -27,7 +24,16 @@ type UploadPhase = 'idle' | 'preparing' | 'encrypting' | 'uploading' | 'done';
  * with real progress, then a "Sent" confirmation. Recipients see the same list
  * and decrypt with the note key from their share - no extra sharing flow.
  */
-export function NoteFilesPanel({ noteId, noteKey }: { noteId: string; noteKey?: CryptoKey }): JSX.Element {
+export function NoteFilesPanel({
+  noteId,
+  noteKey,
+  isNoteOwner = false,
+}: {
+  noteId: string;
+  noteKey?: CryptoKey;
+  /** The note owner may delete any file on their note, not just their own uploads. */
+  isNoteOwner?: boolean;
+}): JSX.Element {
   const { keys, user } = useAuth();
   const toast = useToast();
 
@@ -43,7 +49,8 @@ export function NoteFilesPanel({ noteId, noteKey }: { noteId: string; noteKey?: 
   const [previewFile, setPreviewFile] = useState<SecureFileDto | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isOwner = Boolean(user && files.some((f) => f.ownerId === user.id) === true);
+  const canDeleteFile = (file: SecureFileDto): boolean =>
+    file.ownerId === user?.id || isNoteOwner;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -80,10 +87,10 @@ export function NoteFilesPanel({ noteId, noteKey }: { noteId: string; noteKey?: 
         : await wrapFileKeyForRecipient(keys.masterKey, prepared.fileKeyRaw);
 
       setPhase('uploading');
-      const payload = buildFileUploadPayload(prepared, noteId);
-      await uploadFileWithProgress(
+      await uploadEncryptedFile(
+        prepared,
         {
-          ...payload,
+          noteId,
           wrappedForNoteKey: noteWrap.wrappedFileKey,
           noteKeyWrapIv: noteWrap.fileKeyIv,
         },
@@ -221,7 +228,7 @@ export function NoteFilesPanel({ noteId, noteKey }: { noteId: string; noteKey?: 
               >
                 Open
               </button>
-              {file.ownerId === user?.id ? (
+              {canDeleteFile(file) ? (
                 <button
                   type="button"
                   className="btn btn-ghost btn-sm text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-500/10"
@@ -239,7 +246,7 @@ export function NoteFilesPanel({ noteId, noteKey }: { noteId: string; noteKey?: 
       <FilePreviewModal
         file={previewFile}
         noteKey={noteKey}
-        canDelete={Boolean(previewFile && previewFile.ownerId === user?.id)}
+        canDelete={Boolean(previewFile && canDeleteFile(previewFile))}
         onClose={() => setPreviewFile(null)}
         onDeleted={() => void load()}
       />

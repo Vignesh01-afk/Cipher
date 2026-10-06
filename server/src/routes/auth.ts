@@ -21,6 +21,7 @@ import { signSessionToken } from '../lib/jwt';
 import { currentUserId, requireAuth } from '../middleware/auth';
 import { escrowWrap, isEscrowConfigured } from '../lib/otp';
 import { generateCipherId } from '../lib/cipherId';
+import { createRateLimitStore, hashKeyPart } from '../lib/rateLimitStore';
 
 function fromBase64(value: string): Buffer {
   return Buffer.from(value, 'base64');
@@ -34,7 +35,32 @@ const credentialsLimiter = rateLimit({
   limit: env.authRateLimitMax,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
+  store: createRateLimitStore(),
   message: { error: 'Too many authentication attempts. Please wait and try again.', code: 'RATE_LIMITED' },
+});
+
+/**
+ * Second, stricter budget on /login keyed on the ACCOUNT rather than the IP.
+ *
+ * The IP limiter above stops one host from hammering the API; this one stops
+ * a distributed botnet from spraying guesses for a single account from many
+ * addresses (which the per-IP counter cannot see). The key is a hash of the
+ * normalised email so no raw address lands in the rate-limit store, and it
+ * falls back to the trusted `req.ip` when the body carries no email.
+ */
+const loginAccountLimiter = rateLimit({
+  windowMs: env.authRateLimitWindowMs,
+  limit: env.authRateLimitMax,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  store: createRateLimitStore(),
+  keyGenerator: (req) => {
+    const raw = (req.body as { email?: unknown } | undefined)?.email;
+    return typeof raw === 'string' && raw.trim()
+      ? `acct:${hashKeyPart(raw)}`
+      : `ip:${req.ip ?? 'unknown'}`;
+  },
+  message: { error: 'Too many sign-in attempts for this account. Please wait and try again.', code: 'RATE_LIMITED' },
 });
 
 /**
@@ -165,6 +191,7 @@ authRouter.post(
 authRouter.post(
   '/login',
   credentialsLimiter,
+  loginAccountLimiter,
   asyncHandler(async (req, res) => {
     const input = parseBody(loginSchema, req.body);
     const email = normaliseEmail(input.email);
@@ -274,18 +301,25 @@ authRouter.post(
 /**
  * POST /api/auth/logout
  *
- * Sessions are stateless JWTs, so logout is a client-side token discard plus an
- * audit record. A production deployment would keep a token denylist here.
+ * Sessions are revocable JWTs: bumping `tokenVersion` invalidates every token
+ * issued for this account before now (including any copy an attacker holds),
+ * because requireAuth compares the claim against the current row on every
+ * request. The client also discards its copy of the token.
  */
 authRouter.post(
   '/logout',
   requireAuth,
   asyncHandler(async (req, res) => {
+    const userId = currentUserId(req);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { tokenVersion: { increment: 1 } },
+    });
     await recordAudit({
-      userId: currentUserId(req),
+      userId,
       action: AuditAction.LOGOUT,
       targetType: 'USER',
-      targetId: currentUserId(req),
+      targetId: userId,
       ipAddress: requestIp(req),
     });
     res.status(204).send();
@@ -326,9 +360,39 @@ function verifyRecoveryVerifier(recoveryVerifier: string, storedSalt: string, st
 authRouter.post(
   '/recovery/setup',
   requireAuth,
+  credentialsLimiter,
   asyncHandler(async (req, res) => {
     const userId = currentUserId(req);
     const input = parseBody(recoverySetupSchema, req.body);
+
+    // Re-authenticate: a valid session alone must not be able to mint a new
+    // recovery key (a durable account-takeover primitive). The same
+    // scheme-aware check as /login applies, with a dummy comparison on
+    // mismatch so timing does not disclose the account's authVersion.
+    const account = await prisma.user.findUnique({ where: { id: userId } });
+    if (!account) {
+      throw ApiError.unauthorized('This account no longer exists', 'ACCOUNT_MISSING');
+    }
+    const usingAuthKey = typeof input.authKey === 'string';
+    const credential = input.authKey ?? input.password ?? '';
+    const schemeMatches = usingAuthKey ? account.authVersion >= 2 : account.authVersion === 1;
+    let reauthenticated = false;
+    if (schemeMatches) {
+      reauthenticated = await verifyPassword(credential, account.passwordHash);
+    } else {
+      await burnPasswordComparison(credential);
+    }
+    if (!reauthenticated) {
+      await recordAudit({
+        userId,
+        action: AuditAction.RECOVERY_CHALLENGE_FAILED,
+        targetType: 'USER',
+        targetId: userId,
+        metadata: { stage: 'recovery-setup-reauth' },
+        ipAddress: requestIp(req),
+      });
+      throw ApiError.unauthorized('Re-enter your account password to continue', 'REAUTH_REQUIRED');
+    }
 
     const serverSalt = randomBytes(16).toString('hex');
     const pepperedHash = createHash('sha256').update(`${serverSalt}:${input.recoveryVerifier}`).digest('hex');
@@ -482,6 +546,8 @@ authRouter.post(
         // The private key is wrapped with the master key, which is unchanged,
         // so wrappedPrivateKey stays valid and is NOT touched here.
         recoveryKeyUsedAt: new Date(),
+        // A password change must end every existing session.
+        tokenVersion: { increment: 1 },
         // Refresh the escrow copy too so the OTP path keeps working after a
         // recovery-key reset (the master key itself is unchanged; re-wrapping
         // simply re-encrypts it under the current escrow secret).

@@ -65,7 +65,8 @@ No custom cryptography is used anywhere. Every primitive comes from the platform
 | --- | --- |
 | Frontend | React 18, Vite 5, TypeScript, Tailwind CSS 3, React Router 6, Lucide React icons |
 | Backend | Node.js, Express 4, TypeScript, Zod validation, Helmet, express-rate-limit |
-| Database | SQLite via Prisma ORM |
+| Database | PostgreSQL via Prisma ORM |
+| File storage | Private local disk or a private Supabase Storage bucket, selected by `STORAGE_DRIVER` |
 | Password hashing | bcrypt (`bcryptjs`) |
 | Note encryption | AES-GCM-256 (Web Crypto `crypto.subtle`) |
 | Key derivation | PBKDF2-SHA256, 210,000 iterations (Web Crypto) |
@@ -177,16 +178,19 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 
 ### 3. Create the database
 
-SQLite needs no server — Prisma creates a single file at `server/prisma/dev.db`.
+CipherNote requires PostgreSQL. Set `DATABASE_URL` in `server/.env` to any
+reachable instance (local Postgres, Neon, Supabase, RDS, ...). The schema and
+the checked-in baseline migration are Postgres-only.
 
 ```bash
 # from the repository root
 npm run db:setup
 ```
 
-That runs `prisma generate` followed by `prisma migrate dev --name init`, which creates the migration and applies it.
+That runs `prisma generate` followed by `prisma migrate deploy`, applying the
+baseline in `server/prisma/migrations`.
 
-**Alternative (no migration files, fastest for a demo):**
+**Alternative (no migration history, fastest for a demo):**
 
 ```bash
 npm run db:push
@@ -223,14 +227,26 @@ The Vite dev server proxies `/api` to the API, so the browser only ever talks to
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | `file:./dev.db` | SQLite file location, relative to `server/prisma/`. |
+| `DATABASE_URL` | *(required)* | PostgreSQL connection string. |
 | `PORT` | `4000` | Express listen port. |
 | `CLIENT_ORIGIN` | `http://localhost:5173` | Allowed CORS origin(s), comma-separated. |
 | `JWT_SECRET` | *(dev placeholder)* | Signs session tokens. **Must** be set in production — the server refuses to boot with the placeholder when `NODE_ENV=production`. |
-| `JWT_EXPIRES_IN` | `12h` | Session lifetime. |
+| `JWT_EXPIRES_IN` | `2h` | Session lifetime. Revocation is enforced server-side via `User.tokenVersion`, so a short lifetime is safe. |
 | `BCRYPT_ROUNDS` | `12` | bcrypt cost factor. |
-| `AUTH_RATE_LIMIT_WINDOW_MS` | `900000` | Window for the credential rate limiter (15 min). |
-| `AUTH_RATE_LIMIT_MAX` | `30` | Max credential attempts per window. |
+| `AUTH_RATE_LIMIT_WINDOW_MS` | `900000` | Window for the credential rate limiters (15 min). |
+| `AUTH_RATE_LIMIT_MAX` | `30` | Max credential attempts per window, per IP **and** per account. |
+| `JSON_BODY_LIMIT` | `100kb` | Body ceiling for ordinary API routes. |
+| `NOTES_BODY_LIMIT` | `3mb` | Body ceiling for `/api/notes` (large encrypted payloads). |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | *(empty)* | Optional shared rate-limit store. Without them counters are in-process, which is correct for a single instance. |
+| `STORAGE_DRIVER` | `auto` | `auto` uses Supabase when its credentials are set and local disk otherwise; also accepts `local` or `supabase`. |
+| `FILE_STORAGE_DIR` | `storage/files` | Private directory for encrypted blobs when the local driver is used. |
+| `MAX_FILE_BYTES` | `26214400` | Maximum size of one encrypted blob (25 MiB). |
+| `MAX_FILE_UPLOAD_BODY_BYTES` | `37748736` | Request ceiling for the single-request upload path (base64 inflates ~4/3). |
+| `MAX_USER_STORAGE_BYTES` | `524288000` | Per-account encrypted storage ceiling (500 MiB). |
+| `DIRECT_UPLOAD_THRESHOLD_BYTES` | `4194304` | Blobs above this size use the two-step direct-upload flow. |
+| `SIGNED_URL_TTL_SECONDS` | `60` | Lifetime of a signed download URL. |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | *(empty)* | Supabase project URL and **server-only** service-role key (private bucket). |
+| `SUPABASE_STORAGE_BUCKET` | `ciphernote-files` | Private bucket that holds the encrypted blobs. |
 | `NODE_ENV` | `development` | Production mode hides internal error details. |
 
 ### `client/.env` (optional)
@@ -276,7 +292,7 @@ No secret is required by the client. It is architecturally incapable of holding 
                                         ▼
 ┌──────────────────────────── Server (zero-knowledge) ─────────────────────────────────┐
 │  Express + Zod validation + JWT auth + per-route authorization                        │
-│  Prisma ──► SQLite: users, notes, note_shares, audit_logs                             │
+│  Prisma ──► Postgres: users, notes, shares, files, chat, audit_logs                   │
 └──────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -286,7 +302,8 @@ No secret is required by the client. It is architecturally incapable of holding 
 | --- | --- | --- |
 | Browser (client) | Password, all keys, all plaintext | — |
 | API server | Metadata, ciphertext, wrapped keys, bcrypt hashes | Note plaintext, passwords, unwrapped keys |
-| SQLite database | Same as the API (it is the API's storage) | Note plaintext, unwrapped keys |
+| PostgreSQL database | Same as the API (it is the API's storage) | Note plaintext, unwrapped keys |
+| Blob storage (disk or private bucket) | AES-GCM ciphertext written by the browser | Anything decryptable |
 
 ### Session model
 
@@ -298,6 +315,8 @@ Two independent states are tracked after sign-in:
 A reload therefore restores the session but not the keys, and the app routes to `/unlock`. Re-entering the password re-derives the KEK with PBKDF2 and unwraps the master key and private key again. This is the intended behaviour of a zero-knowledge app: there is nothing on disk to steal that would let an attacker read notes. The **Lock** button in the sidebar drops the keys while keeping the session.
 
 Authorization is enforced server-side on every protected route by `server/src/middleware/auth.ts` and `server/src/lib/access.ts`. Client-side route guards are a UX affordance only.
+
+The session token is **revocable**. Each user row carries a `tokenVersion` that is embedded in the JWT as `tv`; `requireAuth` re-reads it on every authenticated request and rejects a token whose generation is stale. Logging out, or completing a password / recovery reset, bumps it, which instantly invalidates every token issued earlier — including a copy an attacker already holds. On top of that, `POST /auth/recovery/setup` re-verifies the account credential before it will store a new recovery key, so a stolen session alone cannot mint a persistent takeover primitive.
 
 ---
 
@@ -392,6 +411,22 @@ All routes are prefixed with `/api`. Every route except `POST /auth/register`, `
 | --- | --- | --- |
 | `GET` | `/shared` | Notes shared with the caller that are still active, each with its `wrappedKey`. |
 | `GET` | `/audit?action=&limit=` | The caller's own audit trail, newest first. |
+
+### Secure files
+
+Only the owner of a note may attach a file to it. The stored object is always
+AES-GCM ciphertext produced in the browser; the server sees metadata and wrapped
+keys only.
+
+| Method | Path | Notes |
+| --- | --- | --- |
+| `POST` | `/files` | Single-request upload for small blobs. Owner of the target note only. |
+| `POST` | `/files/init` | Starts a large upload: checks the storage quota and returns a short-lived presigned PUT. |
+| `POST` | `/files/complete` | Confirms the presigned upload landed and makes the file downloadable. |
+| `GET` | `/files?noteId=` | Files on one note (owner or an active share holder). |
+| `GET` | `/files/:id` | File metadata. |
+| `GET` | `/files/:id/content` | Streams the encrypted blob, or redirects to a signed URL valid for `SIGNED_URL_TTL_SECONDS` on the Supabase driver. |
+| `DELETE` | `/files/:id` | The uploader or the note owner. Removes the blob and soft-deletes the row. |
 
 ### Error format
 
