@@ -324,17 +324,36 @@ filesRouter.post(
 );
 
 /**
- * GET /api/files?noteId=...
+ * GET /api/files?noteId=... | ?scope=all
  *
- * Lists files attached to one note. The caller must be able to read the note;
- * the wrapped key is only included for the owner (recipients receive their
- * copy via their own share flow - see the client file module).
+ * With `noteId`: files attached to one note. The caller must be able to read
+ * the note; the wrapped key is only included for the owner (recipients receive
+ * their copy via their own share flow - see the client file module).
+ *
+ * With `scope=all`: every file the caller uploaded, across all their notes -
+ * what the "Secure files" page lists. Only the uploader's own master-key wrap
+ * is returned, which is exactly what that page needs.
  */
 filesRouter.get(
   '/',
   requireAuth,
   asyncHandler(async (req, res) => {
     const userId = currentUserId(req);
+    const scope = typeof req.query.scope === 'string' ? req.query.scope.trim() : '';
+
+    if (scope === 'all') {
+      const owned = await prisma.secureFile.findMany({
+        where: { ownerId: userId, deletedAt: null, status: 'READY' },
+        orderBy: { createdAt: 'desc' },
+      });
+      res.json({
+        files: owned.map((file) =>
+          toSecureFileDto(file, { includeWrappedKey: true, includeNoteKeyWrap: true }),
+        ),
+      });
+      return;
+    }
+
     const noteId = typeof req.query.noteId === 'string' ? req.query.noteId.trim() : '';
     if (!noteId || noteId.length > 64) {
       throw ApiError.badRequest('A noteId query parameter is required', 'VALIDATION_ERROR');

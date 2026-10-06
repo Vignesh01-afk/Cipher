@@ -16,6 +16,7 @@ import {
   recoveryVerifier,
   unwrapMasterKeyWithRecoveryKey,
 } from '../lib/crypto';
+import { MIN_PASSWORD_LENGTH, passwordPolicyError } from '../lib/passwordStrength';
 
 /**
  * Forgot password.
@@ -51,8 +52,9 @@ export function ForgotPasswordPage(): JSX.Element {
   async function onSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
     if (busy) return;
-    if (newPassword.length < 8) {
-      setError('Use at least 8 characters for the new password.');
+    const policyError = passwordPolicyError(newPassword);
+    if (policyError) {
+      setError(policyError);
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -212,8 +214,8 @@ export function ForgotPasswordPage(): JSX.Element {
               type="password"
               autoComplete="new-password"
               required
-              minLength={8}
-              placeholder="At least 8 characters"
+              minLength={MIN_PASSWORD_LENGTH}
+              placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
               value={newPassword}
               onChange={(event) => setNewPassword(event.target.value)}
               disabled={busy}

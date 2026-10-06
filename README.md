@@ -396,7 +396,7 @@ All routes are prefixed with `/api`. Every route except `POST /auth/register`, `
 
 | Method | Path | Authorization | Notes |
 | --- | --- | --- | --- |
-| `GET` | `/notes` | Owner | The caller's own notes, with active shares. |
+| `GET` | `/notes?cursor=&limit=` | Owner | The caller's own notes, with active shares. Cursor-paginated (default 50, max 100) and returns `nextCursor`. |
 | `POST` | `/notes` | Owner | Stores `ciphertext`, `iv`, `wrappedNoteKey`, `noteKeyIv`, `encryptionVersion`, `algorithm`, `payloadBytes`. |
 | `GET` | `/notes/:id` | Owner **or** unrevoked share holder | Recipients receive their own `wrappedKey`; owners receive `wrappedNoteKey` and the share list. |
 | `PATCH` | `/notes/:id` | Owner only | Replaces ciphertext fields. |
@@ -409,7 +409,7 @@ All routes are prefixed with `/api`. Every route except `POST /auth/register`, `
 
 | Method | Path | Notes |
 | --- | --- | --- |
-| `GET` | `/shared` | Notes shared with the caller that are still active, each with its `wrappedKey`. |
+| `GET` | `/shared?cursor=&limit=` | Notes shared with the caller that are still active, each with its `wrappedKey`. Cursor-paginated like `/notes`; `nextCursor` is the last share id. |
 | `GET` | `/audit?action=&limit=` | The caller's own audit trail, newest first. |
 
 ### Secure files
@@ -424,6 +424,7 @@ keys only.
 | `POST` | `/files/init` | Starts a large upload: checks the storage quota and returns a short-lived presigned PUT. |
 | `POST` | `/files/complete` | Confirms the presigned upload landed and makes the file downloadable. |
 | `GET` | `/files?noteId=` | Files on one note (owner or an active share holder). |
+| `GET` | `/files?scope=all` | Every file the caller uploaded, across all their notes - what the Secure files page lists. Only the caller's own files are ever returned. |
 | `GET` | `/files/:id` | File metadata. |
 | `GET` | `/files/:id/content` | Streams the encrypted blob, or redirects to a signed URL valid for `SIGNED_URL_TTL_SECONDS` on the Supabase driver. |
 | `DELETE` | `/files/:id` | The uploader or the note owner. Removes the blob and soft-deletes the row. |
@@ -480,6 +481,15 @@ The split matters: PBKDF2 output is block-structured, so the first 256 bits
 are identical to the pre-split 256-bit derivation (existing wrapped keys keep
 unlocking), while the second 256 bits - a value that cannot be inverted into
 the KEK - are all the server ever receives.
+
+The password is **normalised with NFKC** before it is encoded for PBKDF2, so
+visually identical inputs (composed vs decomposed accents, ligatures, full-width
+characters) always derive the same keys. Because the password is the only input
+to the KEK, its length is the strongest defence against offline guessing: the
+client enforces a **10-character minimum**, rejects passwords that appear in
+common breach lists, and blocks anything scoring "Weak" on the strength meter.
+Registration, Google sign-up and the recovery reset all apply the same policy
+(`client/src/lib/passwordStrength.tsx`).
 
 ### Registration
 

@@ -88,12 +88,42 @@ const STORAGE_KEY = 'ciphernote.privacy';
 
 const PrivacyContext = createContext<PrivacyContextValue | null>(null);
 
+const AUTO_LOCK_VALUES: number[] = AUTO_LOCK_OPTIONS.map((option) => option.value);
+
+/**
+ * Persisted settings come from localStorage, which anyone with access to the
+ * browser profile (or a script running on the origin) can write. Treat them as
+ * untrusted input: coerce every field to its expected type and clamp the
+ * auto-lock timeout to a known option, so a crafted value can neither disable
+ * protection by making the timer NaN nor install an unexpected timeout.
+ */
+function coerceSettings(value: unknown): PrivacySettings {
+  const parsed = (value && typeof value === 'object' ? value : {}) as Partial<PrivacySettings>;
+  const bool = (candidate: unknown, fallback: boolean): boolean =>
+    typeof candidate === 'boolean' ? candidate : fallback;
+
+  return {
+    privacyMode: bool(parsed.privacyMode, DEFAULT_PRIVACY_SETTINGS.privacyMode),
+    blurOnBlur: bool(parsed.blurOnBlur, DEFAULT_PRIVACY_SETTINGS.blurOnBlur),
+    hideOnHidden: bool(parsed.hideOnHidden, DEFAULT_PRIVACY_SETTINGS.hideOnHidden),
+    captureProtection: bool(parsed.captureProtection, DEFAULT_PRIVACY_SETTINGS.captureProtection),
+    screenshotProtection: bool(
+      parsed.screenshotProtection,
+      DEFAULT_PRIVACY_SETTINGS.screenshotProtection,
+    ),
+    watermark: bool(parsed.watermark, DEFAULT_PRIVACY_SETTINGS.watermark),
+    autoLockSeconds:
+      typeof parsed.autoLockSeconds === 'number' && AUTO_LOCK_VALUES.includes(parsed.autoLockSeconds)
+        ? parsed.autoLockSeconds
+        : DEFAULT_PRIVACY_SETTINGS.autoLockSeconds,
+  };
+}
+
 function loadSettings(): PrivacySettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_PRIVACY_SETTINGS;
-    const parsed = JSON.parse(raw) as Partial<PrivacySettings>;
-    return { ...DEFAULT_PRIVACY_SETTINGS, ...parsed };
+    return coerceSettings(JSON.parse(raw));
   } catch {
     return DEFAULT_PRIVACY_SETTINGS;
   }
@@ -224,7 +254,9 @@ export function PrivacyProvider({ children }: { children: ReactNode }): JSX.Elem
   }, [settings]);
 
   const updateSettings = useCallback((patch: Partial<PrivacySettings>) => {
-    setSettings((current) => ({ ...current, ...patch }));
+    // Run every patch through the same coercion as a persisted value, so the
+    // in-memory state can never hold something loadSettings would reject.
+    setSettings((current) => coerceSettings({ ...current, ...patch }));
   }, []);
 
   // --- Window focus / blur ---------------------------------------------------
@@ -262,8 +294,17 @@ export function PrivacyProvider({ children }: { children: ReactNode }): JSX.Elem
 
   // --- Screenshot deterrence --------------------------------------------------
   useEffect(() => {
-    if (!settings.privacyMode || !settings.screenshotProtection) return undefined;
-    return installScreenshotWatch(setScreenshotAttempt);
+    if (!settings.privacyMode || !settings.screenshotProtection) {
+      setScreenshotAttempt(false);
+      return undefined;
+    }
+    const cleanup = installScreenshotWatch(setScreenshotAttempt);
+    return () => {
+      cleanup();
+      // Clear any in-flight flash: otherwise turning the setting off (or
+      // unmounting) during the 1.2s window would leave the overlay stuck on.
+      setScreenshotAttempt(false);
+    };
   }, [settings.privacyMode, settings.screenshotProtection]);
 
   // --- Auto-lock timer ---------------------------------------------------------

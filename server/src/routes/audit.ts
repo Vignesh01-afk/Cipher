@@ -1,7 +1,9 @@
 import { Router } from 'express';
+import rateLimit from 'express-rate-limit';
 import { prisma } from '../db';
 import { AUDIT_ACTION_VALUES } from '../lib/audit';
 import { ApiError, asyncHandler } from '../lib/http';
+import { createRateLimitStore } from '../lib/rateLimitStore';
 import { toAuditLogDto } from '../lib/serialize';
 import { currentUserId, requireAuth } from '../middleware/auth';
 
@@ -9,6 +11,17 @@ export const auditRouter = Router();
 
 const MAX_LIMIT = 200;
 const DEFAULT_LIMIT = 100;
+
+// The audit trail is the most expensive read in the app (a filtered scan of
+// one user's log), so it gets its own budget on top of the global limiter.
+const auditReadLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 60,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  store: createRateLimitStore(),
+  message: { error: 'Too many audit requests. Please wait a moment.', code: 'RATE_LIMITED' },
+});
 
 /**
  * GET /api/audit?action=NOTE_SHARE&limit=100
@@ -20,6 +33,7 @@ const DEFAULT_LIMIT = 100;
 auditRouter.get(
   '/',
   requireAuth,
+  auditReadLimiter,
   asyncHandler(async (req, res) => {
     const userId = currentUserId(req);
 

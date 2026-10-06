@@ -82,9 +82,10 @@ export function LandingPage(): JSX.Element {
               <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400">
                 <Lock className="h-5 w-5" />
               </span>
-              <h3 className="mt-3 text-sm font-bold text-stone-900 dark:text-white">Zero-knowledge</h3>
+              <h3 className="mt-3 text-sm font-bold text-stone-900 dark:text-white">Zero-knowledge core</h3>
               <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-                The server stores ciphertext and wrapped keys only.
+                The server stores ciphertext and wrapped keys it cannot decrypt. An optional escrow copy makes
+                email-code recovery possible; the threat model spells out the trade-off.
               </p>
             </div>
           </div>

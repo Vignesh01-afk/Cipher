@@ -269,9 +269,20 @@ export const api = {
     return result.user;
   },
 
-  async listNotes(): Promise<NoteDto[]> {
-    const result = await request<{ notes: NoteDto[] }>('/notes');
-    return result.notes;
+  /**
+   * One page of the caller's own notes. Pass the previous page's `nextCursor`
+   * to continue; `nextCursor === null` means the last page.
+   */
+  async listNotes(
+    options: { cursor?: string; limit?: number } = {},
+  ): Promise<{ notes: NoteDto[]; nextCursor: string | null }> {
+    const params = new URLSearchParams();
+    if (options.cursor) params.set('cursor', options.cursor);
+    if (options.limit) params.set('limit', String(options.limit));
+    const query = params.toString();
+    return request<{ notes: NoteDto[]; nextCursor: string | null }>(
+      `/notes${query ? `?${query}` : ''}`,
+    );
   },
 
   async getNote(noteId: string): Promise<NoteDto> {
@@ -319,9 +330,17 @@ export const api = {
     return result.share;
   },
 
-  async listSharedWithMe(): Promise<SharedNoteDto[]> {
-    const result = await request<{ shares: SharedNoteDto[] }>('/shared');
-    return result.shares;
+  /** One page of notes shared with the caller (see `listNotes`). */
+  async listSharedWithMe(
+    options: { cursor?: string; limit?: number } = {},
+  ): Promise<{ shares: SharedNoteDto[]; nextCursor: string | null }> {
+    const params = new URLSearchParams();
+    if (options.cursor) params.set('cursor', options.cursor);
+    if (options.limit) params.set('limit', String(options.limit));
+    const query = params.toString();
+    return request<{ shares: SharedNoteDto[]; nextCursor: string | null }>(
+      `/shared${query ? `?${query}` : ''}`,
+    );
   },
 
   async listAuditLogs(options: { action?: string; limit?: number } = {}): Promise<AuditLogDto[]> {
@@ -500,6 +519,12 @@ export const api = {
     const result = await request<{ files: SecureFileDto[] }>(
       `/files?noteId=${encodeURIComponent(noteId)}`,
     );
+    return result.files;
+  },
+
+  /** Every file the caller has uploaded, across all of their notes. */
+  async listAllFiles(): Promise<SecureFileDto[]> {
+    const result = await request<{ files: SecureFileDto[] }>('/files?scope=all');
     return result.files;
   },
 

@@ -3,7 +3,7 @@ import { prisma } from '../db';
 import { AuditAction, recordAudit, requestIp } from '../lib/audit';
 import { hasRevokedShare, requireNoteAccess, requireNoteOwnership, type NoteAccess } from '../lib/access';
 import { ApiError, asyncHandler, parseBody } from '../lib/http';
-import { createNoteSchema, createShareSchema, updateNoteSchema } from '../lib/schemas';
+import { createNoteSchema, createShareSchema, parsePagination, updateNoteSchema } from '../lib/schemas';
 import { noteInclude, toNoteDto, toShareDto } from '../lib/serialize';
 import { currentUserId, requireAuth } from '../middleware/auth';
 
@@ -40,26 +40,38 @@ async function loadAccess(req: Request): Promise<NoteAccess> {
 }
 
 /**
- * GET /api/notes
+ * GET /api/notes?cursor=&limit=
  *
- * The owner's own notes. Ciphertext only - the browser decrypts and then
- * performs search locally.
+ * The owner's own notes, newest first. Ciphertext only - the browser decrypts
+ * and then performs search locally.
+ *
+ * Keyset pagination: the client passes the `nextCursor` from the previous page
+ * and gets the following one. `id` is a tiebreaker on `updatedAt`, so the
+ * ordering is total and a note cannot be skipped or duplicated when two notes
+ * share a timestamp. One extra row is fetched to decide whether a next page
+ * exists, without a second COUNT query.
  */
 notesRouter.get(
   '/',
   requireAuth,
   asyncHandler(async (req, res) => {
     const userId = currentUserId(req);
-    const notes = await prisma.note.findMany({
+    const { cursor, limit } = parsePagination(req.query as Record<string, unknown>);
+
+    const rows = await prisma.note.findMany({
       where: { ownerId: userId },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
       include: noteInclude,
+      take: limit + 1,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
 
+    const hasMore = rows.length > limit;
+    const notes = hasMore ? rows.slice(0, limit) : rows;
+
     res.json({
-      notes: notes.map((note) =>
-        toNoteDto(note, { role: 'owner', includeShares: true }),
-      ),
+      notes: notes.map((note) => toNoteDto(note, { role: 'owner', includeShares: true })),
+      nextCursor: hasMore ? notes[notes.length - 1]!.id : null,
     });
   }),
 );

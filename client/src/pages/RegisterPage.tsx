@@ -6,7 +6,13 @@ import { useToast } from '../context/ToastContext';
 import { AuthShell } from './AuthShell';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { GoogleIcon, assessPassword, TONE_BAR } from '../lib/passwordStrength';
+import {
+  GoogleIcon,
+  MIN_PASSWORD_LENGTH,
+  TONE_BAR,
+  assessPassword,
+  passwordPolicyError,
+} from '../lib/passwordStrength';
 
 export function RegisterPage(): JSX.Element {
   const { register, isWebCryptoSupported } = useAuth();
@@ -24,11 +30,12 @@ export function RegisterPage(): JSX.Element {
 
   const strength = useMemo(() => assessPassword(password), [password]);
   const passwordsMatch = password.length > 0 && password === confirmPassword;
+  const passwordError = password ? passwordPolicyError(password) : null;
   const canSubmit =
     !busy &&
     displayName.trim().length > 0 &&
     email.trim().length > 0 &&
-    password.length >= 8 &&
+    passwordPolicyError(password) === null &&
     passwordsMatch &&
     agreed;
 
@@ -136,9 +143,9 @@ export function RegisterPage(): JSX.Element {
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="new-password"
                 required
-                minLength={8}
+                minLength={MIN_PASSWORD_LENGTH}
                 className="input-auth pr-11"
-                placeholder="Create a strong password"
+                placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={busy}
@@ -178,6 +185,7 @@ export function RegisterPage(): JSX.Element {
                     Good — this password derives your key-encryption-key with PBKDF2.
                   </p>
                 )}
+                {passwordError ? <p className="field-error">{passwordError}</p> : null}
               </div>
             ) : null}
           </div>

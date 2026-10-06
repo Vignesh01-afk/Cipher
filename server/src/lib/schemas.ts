@@ -353,6 +353,33 @@ export const paginationSchema = z.object({
     .default(50),
 });
 
+/** Hard ceiling on page size for every list endpoint. */
+export const MAX_PAGE_SIZE = 100;
+export const DEFAULT_PAGE_SIZE = 50;
+
+/**
+ * Parses `?cursor=&limit=` off a raw Express query object.
+ *
+ * Query strings are always strings, so this is where they become numbers.
+ * Out-of-range or malformed values are clamped rather than rejected - a bad
+ * `limit` should not fail a list request - and an oversized cursor is dropped
+ * (it cannot be a real id, and passing it to Prisma would just return empty).
+ */
+export function parsePagination(query: Record<string, unknown>): { cursor: string | null; limit: number } {
+  const cursorRaw = typeof query.cursor === 'string' ? query.cursor.trim() : '';
+  // An empty `?limit=` means "not provided", not zero.
+  const limitRaw =
+    typeof query.limit === 'string' && query.limit.trim() !== '' ? Number(query.limit) : NaN;
+  const limit = Number.isFinite(limitRaw)
+    ? Math.min(Math.max(Math.trunc(limitRaw), 1), MAX_PAGE_SIZE)
+    : DEFAULT_PAGE_SIZE;
+
+  return {
+    cursor: cursorRaw.length > 0 && cursorRaw.length <= 64 ? cursorRaw : null,
+    limit,
+  };
+}
+
 // --- Notes -----------------------------------------------------------------
 
 export const createNoteSchema = z.object({

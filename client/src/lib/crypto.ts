@@ -94,6 +94,19 @@ export function fromBase64(value: string): Uint8Array {
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
+/**
+ * Unicode-normalises a password before it is encoded for PBKDF2.
+ *
+ * Two visually identical passwords can be different byte sequences (composed
+ * vs decomposed accents, ligatures, full-width characters), and which one a
+ * user produces depends on their OS and keyboard. NFKC maps them all to one
+ * canonical form, so the same typed password always derives the same key.
+ * ASCII passwords - the overwhelming majority - are unchanged by this.
+ */
+export function normalizePassword(password: string): string {
+  return password.normalize('NFKC');
+}
+
 /** Best-effort scrubbing of sensitive byte arrays. JS cannot guarantee this. */
 export function wipe(bytes: Uint8Array | null | undefined): void {
   if (bytes) bytes.fill(0);
@@ -113,9 +126,13 @@ export async function deriveKeyEncryptionKey(
   salt: Uint8Array,
   iterations: number,
 ): Promise<CryptoKey> {
-  const baseKey = await crypto.subtle.importKey('raw', ab(textEncoder.encode(password)), 'PBKDF2', false, [
-    'deriveKey',
-  ]);
+  const baseKey = await crypto.subtle.importKey(
+    'raw',
+    ab(textEncoder.encode(normalizePassword(password))),
+    'PBKDF2',
+    false,
+    ['deriveKey'],
+  );
 
   return crypto.subtle.deriveKey(
     { name: 'PBKDF2', salt: ab(salt), iterations, hash: PBKDF2_HASH },
@@ -146,9 +163,13 @@ export async function deriveKekAndAuthKey(
   salt: Uint8Array,
   iterations: number,
 ): Promise<SplitKeyDerivation> {
-  const baseKey = await crypto.subtle.importKey('raw', ab(textEncoder.encode(password)), 'PBKDF2', false, [
-    'deriveBits',
-  ]);
+  const baseKey = await crypto.subtle.importKey(
+    'raw',
+    ab(textEncoder.encode(normalizePassword(password))),
+    'PBKDF2',
+    false,
+    ['deriveBits'],
+  );
 
   const bits = new Uint8Array(
     await crypto.subtle.deriveBits(

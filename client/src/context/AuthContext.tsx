@@ -16,6 +16,7 @@ import {
   fromBase64,
   generateRecoveryKey,
   isWebCryptoAvailable,
+  normalizePassword,
   toBase64,
   unlockUserKeyMaterial,
   wipe,
@@ -252,10 +253,15 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
   }, []);
 
   const login = useCallback(
-    async (email: string, password: string, options: { remember?: boolean } = {}) => {
+    async (email: string, rawPassword: string, options: { remember?: boolean } = {}) => {
       if (!isWebCryptoSupported) {
         throw new Error('This browser cannot provide Web Crypto, so CipherNote cannot decrypt notes here.');
       }
+
+      // Normalise once, before either path uses it: the derived keys are built
+      // from the normalised form, and the legacy v1 path must send exactly the
+      // value the keys were derived from.
+      const password = normalizePassword(rawPassword);
 
       // Step 1: public KDF parameters. v2 accounts derive an authKey from
       // them and never send the password; v1 (legacy) accounts fall back to

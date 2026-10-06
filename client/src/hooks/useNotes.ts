@@ -65,11 +65,39 @@ function useDecryptedNotes(
   return { loading, error, notes, failedNoteIds, reload: run };
 }
 
+/**
+ * Walks every page of a cursor-paginated endpoint.
+ *
+ * The pages are small (50 by default), so the whole list is fetched up front -
+ * the brief note list is decrypted and searched locally anyway, and partial
+ * pagination would silently hide notes from local search. The page cap keeps a
+ * misbehaving cursor from looping forever.
+ */
+async function fetchAllPages<TItem>(
+  fetchPage: (cursor: string | undefined) => Promise<{ items: TItem[]; nextCursor: string | null }>,
+): Promise<TItem[]> {
+  const MAX_PAGES = 100;
+  const items: TItem[] = [];
+  let cursor: string | undefined;
+
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const result = await fetchPage(cursor);
+    items.push(...result.items);
+    if (!result.nextCursor) return items;
+    cursor = result.nextCursor;
+  }
+
+  return items;
+}
+
 /** The current user's own notes, decrypted locally with the master key. */
 export function useOwnNotes(): DecryptedNotesState {
   const loader = useCallback(
     async (session: NonNullable<ReturnType<typeof useAuth>['keys']>) => {
-      const remote = await api.listNotes();
+      const remote = await fetchAllPages(async (cursor) => {
+        const page = await api.listNotes({ cursor });
+        return { items: page.notes, nextCursor: page.nextCursor };
+      });
       return decryptOwnNotes(remote, session);
     },
     [],
@@ -82,7 +110,10 @@ export function useOwnNotes(): DecryptedNotesState {
 export function useSharedNotes(): DecryptedNotesState {
   const loader = useCallback(
     async (session: NonNullable<ReturnType<typeof useAuth>['keys']>) => {
-      const remote = await api.listSharedWithMe();
+      const remote = await fetchAllPages(async (cursor) => {
+        const page = await api.listSharedWithMe({ cursor });
+        return { items: page.shares, nextCursor: page.nextCursor };
+      });
       return decryptSharedNotes(remote, session);
     },
     [],

@@ -44,12 +44,18 @@ export function SecurityBadge({ compact = false }: { compact?: boolean }): JSX.E
           <p className="flex items-start gap-2">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
             Files are encrypted in your browser before upload and decrypted in the recipient's browser after an
-            authorised download.
+            authorised download. Only the owner of a note can attach files to it, an account-level quota caps
+            storage, and every download is authorised and logged on the server before any bytes are served.
           </p>
           <p className="flex items-start gap-2">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
             Only authorized participants can decrypt: owners via their master key, recipients via the note key
             wrapped with their RSA-OAEP public key.
+          </p>
+          <p className="flex items-start gap-2">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+            Sessions are revocable: signing out (or resetting your password) invalidates every previously issued
+            session token server-side, and copying a recovery key requires re-entering your password.
           </p>
           <p className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-xs leading-5 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/5 dark:text-amber-200/90">
             Honest limitation: no web application can prevent OS-level screenshots, photos of the screen or hardware

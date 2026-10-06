@@ -6,6 +6,7 @@ import {
   createFileSchema,
   initFileSchema,
   loginSchema,
+  parsePagination,
   preloginSchema,
   recoveryChallengeSchema,
   recoveryResetSchema,
@@ -191,6 +192,30 @@ describe('recovery schemas never carry the raw recovery key', () => {
     };
     assert.equal(recoveryResetSchema.safeParse({ ...base, recoveryVerifier: 'not-hex' }).success, false);
     assert.equal(recoveryResetSchema.safeParse({ ...base, recoveryVerifier: 'AB'.repeat(32) }).success, false);
+  });
+});
+
+describe('parsePagination', () => {
+  test('defaults to 50 rows with no cursor', () => {
+    assert.deepEqual(parsePagination({}), { cursor: null, limit: 50 });
+  });
+
+  test('reads a numeric limit and clamps it to 1..100', () => {
+    assert.equal(parsePagination({ limit: '10' }).limit, 10);
+    assert.equal(parsePagination({ limit: '0' }).limit, 1);
+    assert.equal(parsePagination({ limit: '-5' }).limit, 1);
+    assert.equal(parsePagination({ limit: '5000' }).limit, 100);
+  });
+
+  test('falls back to the default for a non-numeric limit', () => {
+    assert.equal(parsePagination({ limit: 'abc' }).limit, 50);
+    assert.equal(parsePagination({ limit: '' }).limit, 50);
+  });
+
+  test('trims a cursor and drops empty or oversized values', () => {
+    assert.equal(parsePagination({ cursor: ' clx123 ' }).cursor, 'clx123');
+    assert.equal(parsePagination({ cursor: '' }).cursor, null);
+    assert.equal(parsePagination({ cursor: 'x'.repeat(65) }).cursor, null);
   });
 });
 

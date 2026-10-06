@@ -6,7 +6,12 @@ import { useToast } from '../context/ToastContext';
 import { Spinner } from '../components/Spinner';
 import { ErrorState } from '../components/States';
 import { AuthShell } from './AuthShell';
-import { assessPassword, TONE_BAR } from '../lib/passwordStrength';
+import {
+  MIN_PASSWORD_LENGTH,
+  TONE_BAR,
+  assessPassword,
+  passwordPolicyError,
+} from '../lib/passwordStrength';
 
 /** Completes sign-up after Google verified the identity. The signup token and
  * verified email are stashed in sessionStorage by the callback page; keys are
@@ -30,7 +35,9 @@ export function GoogleSignupPage(): JSX.Element {
 
   const strength = useMemo(() => assessPassword(password), [password]);
   const passwordsMatch = password.length > 0 && password === confirmPassword;
-  const canSubmit = !busy && displayName.trim().length > 0 && password.length >= 8 && passwordsMatch;
+  const passwordError = password ? passwordPolicyError(password) : null;
+  const canSubmit =
+    !busy && displayName.trim().length > 0 && passwordPolicyError(password) === null && passwordsMatch;
 
   // Landed here directly (reload, stale link, back button): send the user
   // back through the flow instead of showing a broken form.
@@ -161,11 +168,11 @@ export function GoogleSignupPage(): JSX.Element {
               <input
                 id="password"
                 type="password"
+                minLength={MIN_PASSWORD_LENGTH}
                 autoComplete="new-password"
                 required
-                minLength={8}
                 className="input-auth"
-                placeholder="At least 8 characters"
+                placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 disabled={busy}
@@ -203,6 +210,7 @@ export function GoogleSignupPage(): JSX.Element {
                     Good - this password will derive your key-encryption-key with PBKDF2.
                   </p>
                 )}
+                {passwordError ? <p className="field-error">{passwordError}</p> : null}
               </div>
             ) : null}
           </div>
