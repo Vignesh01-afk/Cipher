@@ -12,6 +12,8 @@ import { ApiError, api, getAuthToken, setAuthToken, setRememberPreference } from
 import {
   buildRecoverySetup,
   createUserKeyMaterial,
+  deriveKekAndAuthKey,
+  fromBase64,
   generateRecoveryKey,
   isWebCryptoAvailable,
   toBase64,
@@ -20,7 +22,7 @@ import {
   type CryptoSession,
   type UserKeyMaterial,
 } from '../lib/crypto';
-import type { KeyMaterial } from '../lib/types';
+import type { AuthResponse, KeyMaterial } from '../lib/types';
 
 /**
  * `loading`   - restoring a stored session on first paint
@@ -174,16 +176,17 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
 
       // Everything below happens locally: the key hierarchy is generated on
       // this device before any network call is made.
-      const { material, session, masterKeyRaw } = await createUserKeyMaterial(password);
+      const { material, session, masterKeyRaw, authKey } = await createUserKeyMaterial(password);
 
       try {
         // masterKeyRaw enables the server-side escrow wrap used by the
         // email-OTP password reset. Sent once over TLS; the server stores
-        // only its own encrypted wrap of it.
+        // only its own encrypted wrap of it. `authKey` replaces the password:
+        // the server bcrypt-hashes it, so it can never recompute the KEK.
         const result = await api.register({
           email,
           displayName,
-          password,
+          authKey,
           ...material,
           masterKeyRaw: toBase64(masterKeyRaw),
         });
@@ -210,13 +213,13 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
         throw new Error('This browser cannot provide Web Crypto, so CipherNote cannot encrypt notes here.');
       }
 
-      const { material, session, masterKeyRaw } = await createUserKeyMaterial(password);
+      const { material, session, masterKeyRaw, authKey } = await createUserKeyMaterial(password);
 
       try {
         const result = await api.googleRegister({
           signupToken,
           displayName,
-          password,
+          authKey,
           ...material,
           masterKeyRaw: toBase64(masterKeyRaw),
         });
@@ -245,17 +248,58 @@ export function AuthProvider({ children }: { children: ReactNode }): JSX.Element
         throw new Error('This browser cannot provide Web Crypto, so CipherNote cannot decrypt notes here.');
       }
 
-      const result = await api.login(email, password);
-      setAuthToken(result.token, { remember: options.remember ?? true });
-      setRememberPreference(options.remember ?? true);
+      // Step 1: public KDF parameters. v2 accounts derive an authKey from
+      // them and never send the password; v1 (legacy) accounts fall back to
+      // the password once and are migrated below.
+      try {
+        const prelogin = await api.prelogin(email);
 
-      // The server said the password is correct; derive the KEK locally to
-      // unwrap the master key and private key.
-      const session = await unlockUserKeyMaterial(password, materialOf(result.user));
+        let result: AuthResponse;
+        let session: CryptoSession;
 
-      setUser(result.user);
-      setKeys(session);
-      setStatus('unlocked');
+        if (prelogin.authVersion >= 2) {
+          // Split derivation: KEK stays here, only the second half is sent.
+          const { kek, authKey } = await deriveKekAndAuthKey(
+            password,
+            fromBase64(prelogin.kdfSalt),
+            prelogin.kdfIterations,
+          );
+          result = await api.login(email, { authKey });
+          session = await unlockUserKeyMaterial(password, materialOf(result.user), kek);
+        } else {
+          result = await api.login(email, { password });
+          // The server said the password is correct; derive the KEK locally to
+          // unwrap the master key and private key.
+          session = await unlockUserKeyMaterial(password, materialOf(result.user));
+
+          // v1 -> v2 migration, best-effort: with the password still in hand,
+          // send the authKey so the server stops receiving passwords. A failure
+          // here is retried on the next login and does not break this session.
+          try {
+            const { authKey } = await deriveKekAndAuthKey(
+              password,
+              fromBase64(result.user.kdfSalt),
+              result.user.kdfIterations,
+            );
+            await api.upgradeAuth(authKey);
+          } catch {
+            /* keep the session; the upgrade is retried next login */
+          }
+        }
+
+        // Only persist the token once the local unlock has succeeded, so a
+        // failed unlock can never leave a half-authenticated session behind.
+        setAuthToken(result.token, { remember: options.remember ?? true });
+        setRememberPreference(options.remember ?? true);
+
+        setUser(result.user);
+        setKeys(session);
+        setStatus('unlocked');
+      } catch (error) {
+        // Never keep a token (stale or fresh) when login or unlock fails.
+        setAuthToken(null);
+        throw error;
+      }
     },
     [isWebCryptoSupported],
   );

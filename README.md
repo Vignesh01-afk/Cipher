@@ -419,9 +419,12 @@ Only explicitly constructed `ApiError`s expose their message. Everything else re
 
 ```
 password
-   │  PBKDF2-SHA256, random 16-byte salt, 210,000 iterations
+   │  PBKDF2-SHA256, random 16-byte salt, 210,000 iterations, 512-bit output
+   ├──► authKey  (second 256 bits, base64) ──► bcrypt-hashed by the server as the
+   │                                            login credential; the server never
+   │                                            sees the password (authVersion 2)
    ▼
-KEK  (AES-GCM-256, non-extractable, never leaves memory)
+KEK  (first 256 bits, AES-GCM-256, non-extractable, never leaves memory)
    │  AES-GCM, random 96-bit nonce  ──► wrappedMasterKey + masterKeyIv   [stored server-side]
    ▼
 master key  (AES-256, random)
@@ -438,21 +441,27 @@ note key  (AES-256, random per note)
 note payload  JSON { v, title, content, tags }  ──► ciphertext          [stored server-side]
 ```
 
+The split matters: PBKDF2 output is block-structured, so the first 256 bits
+are identical to the pre-split 256-bit derivation (existing wrapped keys keep
+unlocking), while the second 256 bits - a value that cannot be inverted into
+the KEK - are all the server ever receives.
+
 ### Registration
 
 1. A random 16-byte PBKDF2 salt and a 32-byte master key are generated.
-2. The KEK is derived from the password and used to wrap the master key (`encryptBytes(kek, masterKeyRaw)`).
+2. The password is expanded with PBKDF2 into 512 bits: the first half becomes the KEK (used to wrap the master key via `encryptBytes(kek, masterKeyRaw)`), the second half becomes the `authKey`.
 3. An RSA-OAEP-2048 key pair is generated. The PKCS#8 private key is wrapped with the master key. The SPKI public key stays in the clear.
-4. The password (for bcrypt) and the wrapped blobs are sent to `POST /auth/register`.
+4. The `authKey` (never the password) and the wrapped blobs are sent to `POST /auth/register`, where bcrypt hashes the authKey as the login credential (`authVersion = 2`).
 5. The unwrapped `masterKey` and `privateKey` stay in memory for the session.
 6. Raw key bytes are zero-filled after use (`wipe`), as best-effort hygiene — JavaScript cannot guarantee erasure of intermediate copies.
 
 ### Login and unlock
 
-1. `POST /auth/login` verifies the bcrypt hash and returns the user's wrapped key material.
-2. The browser repeats the PBKDF2 derivation with the stored salt and iteration count.
-3. The KEK unwraps `wrappedMasterKey`, and the master key unwraps `wrappedPrivateKey`.
-4. A wrong password fails at AES-GCM **authentication**, not on the server — the server only ever compared a bcrypt hash.
+1. `POST /auth/prelogin { email }` returns the public KDF parameters (`authVersion`, `kdfSalt`, `kdfIterations`). Unknown emails get deterministic pseudo-parameters of the same shape, so the endpoint cannot be used to enumerate accounts.
+2. On `authVersion 2` the browser derives 512 bits locally and sends only the second half as `authKey`; the password never leaves the browser. On legacy `authVersion 1` accounts the password is sent once, and the client immediately migrates the account with `POST /auth/upgrade-auth` (authenticated, idempotent).
+3. `POST /auth/login` verifies the bcrypt hash of the credential and returns the user's wrapped key material.
+4. The browser reuses the locally derived KEK (first 256 bits) to unwrap `wrappedMasterKey`, and the master key unwraps `wrappedPrivateKey`.
+5. A wrong password fails at AES-GCM **authentication**, not on the server — the server only ever compared a bcrypt hash.
 
 ### Writing a note
 
@@ -630,16 +639,16 @@ Use two browser profiles (for example a normal window and a private/incognito wi
 | Note keys | Wrapped in the database, unwrapped in memory | AES-GCM-256 under the master key |
 | Master key | Wrapped in the database, unwrapped in memory | PBKDF2-derived KEK |
 | RSA private key | Wrapped in the database, unwrapped in memory | The master key |
-| Password | In transit once; bcrypt hash at rest | TLS + bcrypt cost 12 |
+| Password | Never transmitted on `authVersion 2` accounts (the server bcrypt-hashes the derived `authKey` instead); bcrypt hash at rest | TLS + bcrypt cost 12 + PBKDF2 split derivation |
 | Session token | `localStorage` | JWT expiry, HTTPS |
 
 ### Adversaries considered
 
 **1. A curious or compromised server operator.**
-Can read the whole database: bcrypt hashes, wrapped keys, ciphertext, nonces and the full sharing graph. Cannot recover note plaintext, the master key, note keys or the private key, because unwrapping requires the password-derived KEK, which is never transmitted. Cannot search note content or learn titles.
+Can read the whole database: bcrypt hashes, wrapped keys, ciphertext, nonces and the full sharing graph. Cannot recover note plaintext, the master key, note keys or the private key, because unwrapping requires the password-derived KEK, which is never transmitted - and on `authVersion 2` accounts the password itself never reaches the server either (only the second half of a 512-bit PBKDF2 derivation, which is bcrypt-stored and cannot be inverted into the KEK). The KDF salt and iteration count it does store are public by design. Cannot search note content or learn titles. Legacy `authVersion 1` accounts still send the password once per login until the client migrates them via `POST /auth/upgrade-auth`.
 
 **2. A database thief.**
-Gains everything in (1) plus write access. Can delete or corrupt data and can mount offline brute-force against bcrypt hashes. Cannot decrypt notes. The strongest available attack is a **password-guessing** attack against a stolen bcrypt hash: success yields the password, and therefore the KEK and every note of that user. This is why the 210,000-iteration PBKDF2 step and the registration strength meter both push for strong, unique passwords.
+Gains everything in (1) plus write access. Can delete or corrupt data and can mount offline brute-force against bcrypt hashes. Cannot decrypt notes. The strongest available attack is a **credential-guessing** attack against a stolen bcrypt hash: on `authVersion 2` a guess yields only the authKey (offline-checked by bcrypt) - an attacker who guesses right still needs to run the client-side PBKDF2 against a *guessed password* to obtain the KEK, which is why the 210,000-iteration PBKDF2 step and the registration strength meter both push for strong, unique passwords. This is also why the recovery verifier is an HKDF value with a dedicated info string: it verifies a recovery key without ever storing or transmitting one.
 
 **3. A malicious recipient.**
 Can read exactly the notes shared with them, and can keep anything they have read. Revocation does not claw that back.
@@ -666,7 +675,7 @@ Stated honestly, because an encrypted-notes app is only trustworthy if it is pre
 
 1. **Revocation is not cryptographic erasure.** See [Revocation model](#revocation-model). A recipient who decrypted or exported a note before revocation keeps that content, and the note key copy they hold would still open the current ciphertext.
 2. **The note key is not rotated.** Because a share reuses the note key, an ex-recipient's wrapped key is still mathematically valid against the note's ciphertext. They are stopped by access control, not by cryptography. Key rotation on revoke is the documented next step.
-3. **Password reset requires the recovery key.** The password derives the only key that can unlock the vault, so a forgotten password cannot be reset by the server. Instead, a one-time recovery key (shown once at registration, `RCVR-…`, regenerable from Settings → Recovery key) re-wraps the master key under a new password entirely in the browser. The server stores only a recovery-key-wrapped blob and a salted hash for verification - it still cannot decrypt anything. If BOTH the password and the recovery key are lost, the notes are unrecoverable by anyone; that is a property of correct end-to-end encryption, not a bug.
+3. **Password reset requires the recovery key.** The password derives the only key that can unlock the vault, so a forgotten password cannot be reset by the server. Instead, a one-time recovery key (shown once at registration, `RCVR-…`, regenerable from Settings → Recovery key) re-wraps the master key under a new password entirely in the browser. The raw recovery key never crosses the wire: the browser sends only an HKDF verifier (info string `ciphernote-recovery-verifier`), which the server stores as a peppered, constant-time-compared hash - it still cannot decrypt anything, nor recover the key from the verifier. If BOTH the password and the recovery key are lost, the notes are unrecoverable by anyone; that is a property of correct end-to-end encryption, not a bug.
 4. **Metadata is visible to the server.** User IDs, note IDs, timestamps, payload sizes, the nonce and the sharing graph (including revocation times) are all stored. Content is protected; the relationship graph is not.
 5. **Sessions are bearer tokens in `localStorage`.** Any script running in the page origin can read the token. That grants API access until expiry (`12h` by default) but still not note plaintext, because keys live in memory and die with the tab. `httpOnly` cookies plus CSRF protection would be the hardening step; a token denylist would make logout server-enforced.
 6. **Account enumeration.** Registration reveals whether an email is taken, and `/users/lookup` performs exact-match lookups, so any authenticated user can confirm whether an address is registered. The spec requires lookup-by-email sharing, which makes this inherent; rate limiting and generic responses would mitigate it.

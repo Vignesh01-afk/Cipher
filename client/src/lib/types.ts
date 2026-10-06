@@ -88,6 +88,18 @@ export interface AuthResponse {
   user: KeyMaterial;
 }
 
+/**
+ * Response of POST /auth/prelogin. Public KDF parameters fetched before a
+ * login credential can be built: `authVersion` decides whether the client
+ * derives and sends an authKey (v2) or falls back to the legacy password
+ * (v1). Unknown emails receive deterministic pseudo-values of the same shape.
+ */
+export interface PreloginResponse {
+  authVersion: number;
+  kdfSalt: string;
+  kdfIterations: number;
+}
+
 /** Response of POST /auth/recovery/challenge (see server routes/auth.ts). */
 export interface RecoveryChallengeResponse {
   displayName: string;

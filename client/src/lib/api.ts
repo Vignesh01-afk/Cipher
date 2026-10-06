@@ -8,6 +8,7 @@ import type {
   OtpRequestResponse,
   OtpResetResponse,
   OtpVerifyResponse,
+  PreloginResponse,
   PublicProfile,
   RecoveryChallengeResponse,
   SecureFileDto,
@@ -36,8 +37,10 @@ const TOKEN_STORAGE_KEY = 'ciphernote.session.token';
  *  - local dev: Vite proxies /api -> http://localhost:4000 (see vite.config.ts)
  *  - deployed:  Vercel serves the API as a same-origin function at /api
  * Set VITE_API_BASE_URL only to point the client at a different origin.
+ * (`import.meta.env` is optional-chained so this module can also be imported
+ * by non-Vite tooling, e.g. the Node test runner.)
  */
-export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '');
+export const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '');
 
 export class ApiError extends Error {
   readonly status: number;
@@ -175,7 +178,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 export interface RegisterPayload {
   email: string;
   displayName: string;
-  password: string;
+  /**
+   * Split-derivation credential: the second 256 bits of the 512-bit PBKDF2
+   * output. The password itself never reaches the server (authVersion 2).
+   */
+  authKey: string;
   publicKey: string;
   wrappedPrivateKey: string;
   privateKeyIv: string;
@@ -190,7 +197,8 @@ export interface RegisterPayload {
 export interface GoogleRegisterPayload {
   signupToken: string;
   displayName: string;
-  password: string;
+  /** Split-derivation credential (see RegisterPayload). */
+  authKey: string;
   publicKey: string;
   wrappedPrivateKey: string;
   privateKeyIv: string;
@@ -219,8 +227,31 @@ export const api = {
     return request<AuthResponse>('/auth/register', { method: 'POST', body: payload });
   },
 
-  async login(email: string, password: string): Promise<AuthResponse> {
-    return request<AuthResponse>('/auth/login', { method: 'POST', body: { email, password } });
+  /**
+   * Public KDF parameters for building a login credential. Must be called
+   * before `login`: `authVersion` decides authKey (v2) vs legacy password.
+   */
+  async prelogin(email: string): Promise<PreloginResponse> {
+    return request<PreloginResponse>('/auth/prelogin', { method: 'POST', body: { email } });
+  },
+
+  /**
+   * Signs in with exactly one credential: `authKey` (split derivation, the
+   * normal path) or the legacy raw `password` (authVersion 1 accounts only).
+   */
+  async login(
+    email: string,
+    credential: { authKey?: string; password?: string },
+  ): Promise<AuthResponse> {
+    return request<AuthResponse>('/auth/login', { method: 'POST', body: { email, ...credential } });
+  },
+
+  /** v1 -> v2 migration: stores the authKey hash after a password login. */
+  async upgradeAuth(authKey: string): Promise<{ ok: boolean; authVersion: number }> {
+    return request<{ ok: boolean; authVersion: number }>('/auth/upgrade-auth', {
+      method: 'POST',
+      body: { authKey },
+    });
   },
 
   async me(): Promise<{ user: KeyMaterial }> {
@@ -305,29 +336,30 @@ export const api = {
   // --- Password recovery ------------------------------------------------------
 
   async setupRecovery(payload: {
-    recoveryKey: string;
     kdfSalt: string;
     kdfIterations: number;
     wrappedMasterKeyRecovery: string;
     masterKeyRecoveryIv: string;
-    recoveryKeyHash: string;
+    /** HKDF verifier computed in the browser; the raw key never leaves it. */
+    recoveryVerifier: string;
   }): Promise<void> {
     await request<{ ok: boolean }>('/auth/recovery/setup', { method: 'POST', body: payload });
   },
 
   async recoveryChallenge(payload: {
     email: string;
-    recoveryKey: string;
-    recoveryKeyHash: string;
+    /** HKDF verifier computed in the browser; the raw key never leaves it. */
+    recoveryVerifier: string;
   }): Promise<RecoveryChallengeResponse> {
     return request<RecoveryChallengeResponse>('/auth/recovery/challenge', { method: 'POST', body: payload });
   },
 
   async recoveryReset(payload: {
     email: string;
-    recoveryKey: string;
-    recoveryKeyHash: string;
-    newPassword: string;
+    /** HKDF verifier computed in the browser; the raw key never leaves it. */
+    recoveryVerifier: string;
+    /** Split-derivation credential for the NEW password (never the password). */
+    authKey: string;
     kdfSalt: string;
     kdfIterations: number;
     wrappedMasterKey: string;
@@ -355,7 +387,8 @@ export const api = {
 
   async resetPasswordWithOtp(payload: {
     resetToken: string;
-    newPassword: string;
+    /** Split-derivation credential for the NEW password (never the password). */
+    authKey: string;
     kdfSalt: string;
     kdfIterations: number;
     wrappedMasterKey: string;

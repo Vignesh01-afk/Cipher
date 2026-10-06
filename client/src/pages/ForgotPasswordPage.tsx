@@ -13,7 +13,7 @@ import {
   decryptBytes,
   importAesKey,
   importPrivateKey,
-  recoveryKeyDigest,
+  recoveryVerifier,
   unwrapMasterKeyWithRecoveryKey,
 } from '../lib/crypto';
 
@@ -64,13 +64,14 @@ export function ForgotPasswordPage(): JSX.Element {
     setError(null);
 
     try {
-      const keyHash = await recoveryKeyDigest(recoveryKey.trim());
+      // The raw key stays in this browser: only the HKDF verifier derived
+      // from it is ever sent to the server.
+      const verifier = await recoveryVerifier(recoveryKey.trim());
 
       // 1. Verify the key and fetch the recovery-wrapped key material.
       const challenge = await api.recoveryChallenge({
         email: email.trim(),
-        recoveryKey: recoveryKey.trim(),
-        recoveryKeyHash: keyHash,
+        recoveryVerifier: verifier,
       });
 
       // 2. Unwrap the master key with the recovery KEK (local only).
@@ -93,12 +94,13 @@ export function ForgotPasswordPage(): JSX.Element {
       // 4. Rebuild the password hierarchy under the new password.
       const material = await buildResetMaterial(newPassword, masterKeyRaw, privateKeyPkcs8);
 
-      // 5. Complete the reset; the server burns the recovery key.
+      // 5. Complete the reset; the server burns the recovery key. Only the
+      //    split authKey derived from the NEW password is sent - never the
+      //    password itself.
       const result = await api.recoveryReset({
         email: email.trim(),
-        recoveryKey: recoveryKey.trim(),
-        recoveryKeyHash: keyHash,
-        newPassword,
+        recoveryVerifier: verifier,
+        authKey: material.authKey,
         kdfSalt: material.kdfSalt,
         kdfIterations: material.kdfIterations,
         wrappedMasterKey: material.wrappedMasterKey,

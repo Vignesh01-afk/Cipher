@@ -13,6 +13,7 @@
     "dev:client": "npm --prefix client run dev",
     "build": "npm --prefix server run build && npm --prefix client run build",
     "typecheck": "npm --prefix server run typecheck && npm --prefix client run typecheck",
+    "test": "npm --prefix server run test && npm --prefix client run test",
     "start": "npm --prefix server run start"
   },
   "engines": {

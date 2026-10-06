@@ -1,19 +1,24 @@
-import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { KeyRound, ShieldAlert, ShieldCheck, AlertTriangle, Copy, CheckCheck } from 'lucide-react';
 import { useToast } from '../context/ToastContext';
 import { Button } from '../components/Button';
 import { AuthShell } from './AuthShell';
 
+/**
+ * Shows the freshly generated recovery key exactly once.
+ *
+ * The key arrives via React router state (in-memory only) - it is never
+ * persisted to sessionStorage/localStorage, so a reload or a Back navigation
+ * cannot resurrect it from disk. On acknowledge the local copy is dropped.
+ */
 export function RecoveryKeyHandoffPage(): JSX.Element {
   const toast = useToast();
   const navigate = useNavigate();
-  const [recoveryKey, setRecoveryKey] = useState<string | null>(null);
+  const location = useLocation();
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    setRecoveryKey(sessionStorage.getItem('ciphernote.recovery.pending'));
-  }, []);
+  const state = location.state as { recoveryKey?: unknown } | null;
+  const recoveryKey = typeof state?.recoveryKey === 'string' ? state.recoveryKey : null;
 
   const handleCopy = async () => {
     if (!recoveryKey) return;
@@ -25,6 +30,11 @@ export function RecoveryKeyHandoffPage(): JSX.Element {
     } catch {
       toast.error('Could not copy');
     }
+  };
+
+  const handleAcknowledged = () => {
+    // Drop the in-memory copy before navigating away.
+    navigate('/dashboard', { replace: true });
   };
 
   if (!recoveryKey) {
@@ -99,7 +109,7 @@ export function RecoveryKeyHandoffPage(): JSX.Element {
             <Copy className="h-4 w-4" />
             Copy key
           </Button>
-          <Button variant="primary" onClick={() => { sessionStorage.removeItem('ciphernote.recovery.pending'); navigate('/dashboard', { replace: true }); }}>
+          <Button variant="primary" onClick={handleAcknowledged}>
             <CheckCheck className="h-4 w-4" />
             I saved it — continue
           </Button>

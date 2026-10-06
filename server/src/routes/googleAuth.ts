@@ -276,7 +276,11 @@ googleAuthRouter.post(
     }
 
     const { hashPassword } = await import('../lib/password');
-    const passwordHash = await hashPassword(input.password);
+    const credential = input.authKey ?? input.password;
+    if (!credential) {
+      throw ApiError.badRequest('A credential is required', 'VALIDATION_ERROR');
+    }
+    const passwordHash = await hashPassword(credential);
 
     const escrow =
       input.masterKeyRaw && isEscrowConfigured()
@@ -289,6 +293,8 @@ googleAuthRouter.post(
         displayName: input.displayName.trim(),
         cipherId: await generateCipherId(),
         passwordHash,
+        // authKey -> split scheme (v2); a legacy raw password -> v1.
+        authVersion: input.authKey ? 2 : 1,
         googleId: claims.sub,
         publicKey: input.publicKey,
         wrappedPrivateKey: input.wrappedPrivateKey,

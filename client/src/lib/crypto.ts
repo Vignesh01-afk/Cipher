@@ -11,12 +11,24 @@
  *
  * Key hierarchy
  * -------------
- *   password --PBKDF2(salt, iterations)--> KEK        (never leaves memory)
+ *   password --PBKDF2(salt, iterations, 512 bits)--> KEK (first 256 bits)
+ *                                                 \-> authKey (last 256 bits)
  *   KEK      --AES-GCM--------------------> Master Key (wrapped, stored server-side)
  *   Master Key --AES-GCM------------------> Note Key   (wrapped per note, stored server-side)
  *   Note Key --AES-GCM--------------------> Note payload {title, content, tags}
  *
  *   Note Key --RSA-OAEP(recipient public key)--> per-recipient wrapped key
+ *
+ * Split derivation (authVersion 2)
+ * --------------------------------
+ * PBKDF2 output is block-structured (T1 || T2 || ...), so the first 256 bits
+ * of a 512-bit derivation are byte-identical to a standalone 256-bit
+ * derivation with the same password/salt/iterations. That means:
+ *   - the KEK is unchanged for accounts created before the split,
+ *   - only the SECOND 256 bits (the authKey) are ever sent to the server,
+ *     where bcrypt stores it instead of the raw password.
+ * The server can therefore never recompute the KEK, even though it stores the
+ * KDF salt and iteration count.
  *
  * The server holds only wrapped keys and ciphertext, so it cannot decrypt a
  * note even if its database is fully compromised.
@@ -27,6 +39,8 @@ const PBKDF2_HASH = 'SHA-256';
 const GCM_IV_BYTES = 12; // 96-bit nonce, the recommended size for AES-GCM
 const SALT_BYTES = 16;
 const RSA_MODULUS_BITS = 2048;
+/** 512-bit PBKDF2 output: 256-bit KEK + 256-bit authKey. */
+const AUTH_SECRET_BITS = 512;
 
 /** Bump when the payload/format changes; stored per note for forward evolution. */
 export const ENCRYPTION_VERSION = 1;
@@ -87,7 +101,13 @@ export function wipe(bytes: Uint8Array | null | undefined): void {
 
 // --- Symmetric primitives --------------------------------------------------
 
-/** Derives the password-based key-encryption-key. Non-extractable by design. */
+/**
+ * Derives the password-based key-encryption-key. Non-extractable by design.
+ *
+ * Implemented as the first 256 bits of the 512-bit split derivation, which is
+ * byte-identical to a direct 256-bit PBKDF2 derivation (PBKDF2 blocks) - so
+ * key material wrapped before the split still unwraps unchanged.
+ */
 export async function deriveKeyEncryptionKey(
   password: string,
   salt: Uint8Array,
@@ -104,6 +124,44 @@ export async function deriveKeyEncryptionKey(
     false,
     ['encrypt', 'decrypt'],
   );
+}
+
+/** Result of the split password derivation (authVersion 2). */
+export interface SplitKeyDerivation {
+  /** First 256 bits: the KEK. Never leaves the browser. */
+  kek: CryptoKey;
+  /** Second 256 bits, base64: sent to the server as the login credential. */
+  authKey: string;
+}
+
+/**
+ * Derives 512 bits from the password in ONE PBKDF2 pass and splits them:
+ *   [0..32)  -> KEK (identical to `deriveKeyEncryptionKey`)
+ *   [32..64) -> authKey, the bcrypt-hashed credential the server sees
+ *
+ * The raw password is never sent to the server on this path.
+ */
+export async function deriveKekAndAuthKey(
+  password: string,
+  salt: Uint8Array,
+  iterations: number,
+): Promise<SplitKeyDerivation> {
+  const baseKey = await crypto.subtle.importKey('raw', ab(textEncoder.encode(password)), 'PBKDF2', false, [
+    'deriveBits',
+  ]);
+
+  const bits = new Uint8Array(
+    await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', salt: ab(salt), iterations, hash: PBKDF2_HASH },
+      baseKey,
+      AUTH_SECRET_BITS,
+    ),
+  );
+
+  const kek = await importAesKey(bits.subarray(0, AES_KEY_BITS / 8), false);
+  const authKey = toBase64(bits.subarray(AES_KEY_BITS / 8));
+  wipe(bits);
+  return { kek, authKey };
 }
 
 export async function generateAesKey(): Promise<{ key: CryptoKey; raw: Uint8Array }> {
@@ -306,11 +364,17 @@ export interface CryptoSession {
  */
 export async function createUserKeyMaterial(
   password: string,
-): Promise<{ material: UserKeyMaterial; session: CryptoSession; masterKeyRaw: Uint8Array }> {
+): Promise<{
+  material: UserKeyMaterial;
+  session: CryptoSession;
+  masterKeyRaw: Uint8Array;
+  /** Second half of the split derivation: the credential sent to the server. */
+  authKey: string;
+}> {
   const salt = randomBytes(SALT_BYTES);
   const iterations = DEFAULT_KDF_ITERATIONS;
 
-  const kek = await deriveKeyEncryptionKey(password, salt, iterations);
+  const { kek, authKey } = await deriveKekAndAuthKey(password, salt, iterations);
 
   const { key: masterKey, raw: masterKeyRaw } = await generateAesKey();
   const wrappedMaster = await encryptBytes(kek, masterKeyRaw);
@@ -334,6 +398,7 @@ export async function createUserKeyMaterial(
     // The caller sends it once over TLS; the server stores only its own
     // AES-GCM wrap of these bytes, never the bytes themselves.
     masterKeyRaw: new Uint8Array(masterKeyRaw),
+    authKey,
   };
 }
 
@@ -349,13 +414,17 @@ export class KeyUnlockError extends Error {
  * key and private key that the server has been holding (encrypted) for us.
  *
  * The server never learns the password-derived key, so a wrong password fails
- * here rather than on the server.
+ * here rather than on the server. Callers on the split-auth path may pass the
+ * KEK they already derived (with the authKey) to avoid a second PBKDF2 pass.
  */
 export async function unlockUserKeyMaterial(
   password: string,
   material: UserKeyMaterial,
+  prederivedKek?: CryptoKey,
 ): Promise<CryptoSession> {
-  const kek = await deriveKeyEncryptionKey(password, fromBase64(material.kdfSalt), material.kdfIterations);
+  const kek =
+    prederivedKek ??
+    (await deriveKeyEncryptionKey(password, fromBase64(material.kdfSalt), material.kdfIterations));
 
   let masterKeyRaw: Uint8Array;
   try {
@@ -422,10 +491,37 @@ export async function deriveRecoveryKek(
   return deriveKeyEncryptionKey(recoveryKey, salt, iterations);
 }
 
-/** Salted SHA-256 of the raw recovery key (hex). Sent instead of the key. */
-export async function recoveryKeyDigest(recoveryKey: string): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', ab(textEncoder.encode(recoveryKey)));
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+/**
+ * Domain separator for the recovery verifier. Distinct from the KEK
+ * derivation info so the verifier can never be reused as (or derived from)
+ * key material that unwraps the vault.
+ */
+const RECOVERY_VERIFIER_INFO = 'ciphernote-recovery-verifier';
+
+/**
+ * HKDF-SHA256(recoveryKey, info=RECOVERY_VERIFIER_INFO) -> hex.
+ *
+ * This is what gets sent to the server instead of the recovery key itself:
+ *   - the server can verify a presented verifier but cannot derive the raw
+ *     key from it (preimage resistance),
+ *   - HKDF with a dedicated `info` string domain-separates it from the PBKDF2
+ *     recovery-KEK derivation, so the two values are independent.
+ */
+export async function recoveryVerifier(recoveryKey: string): Promise<string> {
+  const baseKey = await crypto.subtle.importKey('raw', ab(textEncoder.encode(recoveryKey)), 'HKDF', false, [
+    'deriveBits',
+  ]);
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: 'HKDF',
+      hash: 'SHA-256',
+      salt: new Uint8Array(0),
+      info: ab(textEncoder.encode(RECOVERY_VERIFIER_INFO)),
+    },
+    baseKey,
+    256,
+  );
+  return [...new Uint8Array(bits)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**
@@ -437,12 +533,11 @@ export async function buildRecoverySetup(
   recoveryKey: string,
   masterKey: CryptoKey,
 ): Promise<{
-  recoveryKey: string;
   kdfSalt: string;
   kdfIterations: number;
   wrappedMasterKeyRecovery: string;
   masterKeyRecoveryIv: string;
-  recoveryKeyHash: string;
+  recoveryVerifier: string;
 }> {
   const salt = randomBytes(16);
   const iterations = DEFAULT_KDF_ITERATIONS;
@@ -454,12 +549,12 @@ export async function buildRecoverySetup(
   wipe(masterKeyRaw);
 
   return {
-    recoveryKey,
     kdfSalt: toBase64(salt),
     kdfIterations: iterations,
     wrappedMasterKeyRecovery: wrapped.ciphertext,
     masterKeyRecoveryIv: wrapped.iv,
-    recoveryKeyHash: await recoveryKeyDigest(recoveryKey),
+    // Only the HKDF verifier leaves the browser - never `recoveryKey`.
+    recoveryVerifier: await recoveryVerifier(recoveryKey),
   };
 }
 
@@ -496,10 +591,12 @@ export async function buildResetMaterial(
   wrappedPrivateKey: string;
   privateKeyIv: string;
   masterKey: CryptoKey;
+  /** Split-derivation credential stored server-side instead of the password. */
+  authKey: string;
 }> {
   const salt = randomBytes(16);
   const iterations = DEFAULT_KDF_ITERATIONS;
-  const kek = await deriveKeyEncryptionKey(newPassword, salt, iterations);
+  const { kek, authKey } = await deriveKekAndAuthKey(newPassword, salt, iterations);
 
   const wrappedMaster = await encryptBytes(kek, masterKeyRaw);
   const masterKey = await importAesKey(masterKeyRaw, false);
@@ -514,6 +611,7 @@ export async function buildResetMaterial(
     wrappedPrivateKey: wrappedPrivate.ciphertext,
     privateKeyIv: wrappedPrivate.iv,
     masterKey,
+    authKey,
   };
 }
 
@@ -532,12 +630,14 @@ export async function buildOtpResetMaterial(
   wrappedMasterKey: string;
   masterKeyIv: string;
   masterKey: CryptoKey;
+  /** Split-derivation credential stored server-side instead of the password. */
+  authKey: string;
 }> {
   const masterKeyRaw = fromBase64(masterKeyRawBase64);
 
   const salt = randomBytes(16);
   const iterations = DEFAULT_KDF_ITERATIONS;
-  const kek = await deriveKeyEncryptionKey(newPassword, salt, iterations);
+  const { kek, authKey } = await deriveKekAndAuthKey(newPassword, salt, iterations);
 
   const wrappedMaster = await encryptBytes(kek, masterKeyRaw);
   const masterKey = await importAesKey(masterKeyRaw, false);
@@ -549,6 +649,7 @@ export async function buildOtpResetMaterial(
     wrappedMasterKey: wrappedMaster.ciphertext,
     masterKeyIv: wrappedMaster.iv,
     masterKey,
+    authKey,
   };
 }
 

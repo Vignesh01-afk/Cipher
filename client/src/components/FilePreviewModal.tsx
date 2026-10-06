@@ -3,11 +3,17 @@ import { File as FileIcon, FileText, Film, Image as ImageIcon, Music, ShieldChec
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { downloadAndDecryptFile, type SecureFileWithNoteKey } from '../lib/files';
+import { downloadAndDecryptFile, safePreviewKind, TEXT_MIME_TYPES, type SecureFileWithNoteKey } from '../lib/files';
 import { formatBytes, formatDateTime } from '../lib/format';
 import { Modal } from './Modal';
 import { Spinner } from './Spinner';
 import { ErrorState } from './States';
+
+/**
+ * Decrypted text previews larger than this are truncated in the <pre>; the
+ * full plaintext stays in memory and never touches the DOM all at once.
+ */
+const MAX_TEXT_PREVIEW_CHARS = 250_000;
 
 /**
  * Secure file viewer.
@@ -43,7 +49,14 @@ export function FilePreviewModal({
       urlRef.current = null;
     }
     setBlobUrl(null);
+    setTextContent(null);
   }, []);
+
+  /** For text/plain previews we read the plaintext bytes out of the Blob so we
+   * can render them as static text in a <pre> instead of handing a blob URL to
+   * a renderer.
+   */
+  const [textContent, setTextContent] = useState<string | null>(null);
 
   useEffect(() => {
     if (!file || !keys) {
@@ -55,8 +68,16 @@ export function FilePreviewModal({
     setError(null);
 
     downloadAndDecryptFile(file, keys, noteKey)
-      .then((blob) => {
+      .then(async (blob) => {
         if (cancelled) return;
+        if (safePreviewKind(file.mimeType) === 'text') {
+          // text/plain: decode the bytes here and render static text in a
+          // <pre>. No object URL, no iframe, no script execution path.
+          const decoded = await blob.text();
+          if (cancelled) return;
+          setTextContent(decoded);
+          return;
+        }
         const url = URL.createObjectURL(blob);
         urlRef.current = url;
         setBlobUrl(url);
@@ -90,21 +111,13 @@ export function FilePreviewModal({
 
   if (!file) return null;
 
-  const mime = file.mimeType || 'application/octet-stream';
-  // SECURITY: `file.mimeType` is attacker-controllable metadata (set by the
-  // uploader). It must never select a same-origin rendering context that can
-  // execute script. Only image/audio/video render natively in the browser
-  // (they cannot execute JS); PDFs and text/* are NOT rendered in an iframe
-  // because a malicious uploader could label an HTML/SVG payload as PDF or
-  // text/plain and get same-origin script execution. Those fall back to the
-  // safe "no in-app preview" card below.
-  const kind: 'image' | 'video' | 'audio' | 'other' = mime.startsWith('image/')
-    ? 'image'
-    : mime.startsWith('video/')
-      ? 'video'
-      : mime.startsWith('audio/')
-        ? 'audio'
-        : 'other';
+  // `file.mimeType` is attacker-controllable metadata (set by the uploader).
+  // It must never decide whether the browser renders this payload in an
+  // executable context. Use the allowlist-derived preview kind, which renders
+  // images/audio/video natively, renders text/plain as static text, renders
+  // PDFs in a sandboxed iframe, and treats everything else (including
+  // text/html and image/svg+xml) as "no preview".
+  const kind = safePreviewKind(file.mimeType);
 
   return (
     <Modal
@@ -149,13 +162,29 @@ export function FilePreviewModal({
         <video src={blobUrl} controls className="mx-auto max-h-[60vh] w-full rounded-lg" />
       ) : blobUrl && kind === 'audio' ? (
         <audio src={blobUrl} controls className="w-full" />
+      ) : textContent !== null ? (
+        <pre
+          className="max-h-[60vh] overflow-auto rounded-lg bg-stone-950/5 dark:bg-stone-950/40 p-4 text-xs font-mono leading-5 text-stone-800 dark:text-stone-200"
+          style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+          aria-label={`Decrypted file contents: ${file.filename}`}
+        >
+          {textContent.slice(0, MAX_TEXT_PREVIEW_CHARS)}
+          {textContent.length > MAX_TEXT_PREVIEW_CHARS ? '\n\n… preview truncated …' : ''}
+        </pre>
+      ) : blobUrl && kind === 'pdf' ? (
+        <iframe
+          src={blobUrl}
+          className="mx-auto max-h-[70vh] w-full rounded-lg"
+          sandbox=""
+          title={`PDF preview for ${file.filename}`}
+        />
       ) : blobUrl ? (
         <div className="flex flex-col items-center gap-3 py-10 text-center">
           <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">
             <FileIcon className="h-6 w-6" />
           </span>
           <p className="text-sm text-stone-600 dark:text-stone-300">
-            No in-app preview is available for <span className="font-mono text-xs">{mime}</span>.
+            No in-app preview is available for this file.
           </p>
           <p className="max-w-sm text-xs text-stone-500 dark:text-stone-400">
             Export is disabled for security: the decrypted bytes only exist in this tab's memory and are never written to disk.
@@ -176,6 +205,6 @@ export function FileKindIcon({ mime, className = 'h-4 w-4' }: { mime: string; cl
   if (mime.startsWith('image/')) return <ImageIcon className={className} />;
   if (mime.startsWith('video/')) return <Film className={className} />;
   if (mime.startsWith('audio/')) return <Music className={className} />;
-  if (mime === 'application/pdf' || mime.startsWith('text/')) return <FileText className={className} />;
+  if (mime === 'application/pdf' || TEXT_MIME_TYPES.has(mime)) return <FileText className={className} />;
   return <FileIcon className={className} />;
 }

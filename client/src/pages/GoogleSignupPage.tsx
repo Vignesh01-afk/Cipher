@@ -72,8 +72,10 @@ export function GoogleSignupPage(): JSX.Element {
       sessionStorage.removeItem('ciphernote.google.displayName');
 
       if (recovery) {
-        sessionStorage.setItem('ciphernote.recovery.pending', recovery);
-        navigate('/recovery-key', { replace: true });
+        // Router state only (in-memory): the raw recovery key is never written
+        // to sessionStorage/localStorage, and the entry is replaced so Back
+        // cannot re-surface it.
+        navigate('/recovery-key', { replace: true, state: { recoveryKey: recovery } });
         return;
       }
 

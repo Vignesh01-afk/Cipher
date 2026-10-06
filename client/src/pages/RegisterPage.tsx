@@ -40,8 +40,10 @@ export function RegisterPage(): JSX.Element {
     try {
       const recovery = await register({ email: email.trim(), displayName: displayName.trim(), password });
       if (recovery) {
-        sessionStorage.setItem('ciphernote.recovery.pending', recovery);
-        navigate('/recovery-key', { replace: true });
+        // Router state only (in-memory): the raw recovery key is never written
+        // to sessionStorage/localStorage, and the entry is replaced so Back
+        // cannot re-surface it.
+        navigate('/recovery-key', { replace: true, state: { recoveryKey: recovery } });
         return;
       }
       toast.warning('Account created without a recovery key', 'Generate one from Settings → Recovery key.');

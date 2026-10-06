@@ -1,20 +1,20 @@
 import { Router } from 'express';
-import { randomBytes } from 'node:crypto';
-import crypto from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import rateLimit from 'express-rate-limit';
 import { prisma } from '../db';
 import { env } from '../env';
 import { AuditAction, recordAudit, requestIp } from '../lib/audit';
 import { ApiError, asyncHandler, parseBody } from '../lib/http';
-import { createHash } from 'node:crypto';
 import { burnPasswordComparison, hashPassword, verifyPassword } from '../lib/password';
 import {
   normaliseEmail,
   loginSchema,
+  preloginSchema,
   registerSchema,
   recoverySetupSchema,
   recoveryChallengeSchema,
   recoveryResetSchema,
+  upgradeAuthSchema,
 } from '../lib/schemas';
 import { toKeyMaterial } from '../lib/serialize';
 import { signSessionToken } from '../lib/jwt';
@@ -43,9 +43,11 @@ const credentialsLimiter = rateLimit({
  * The client generates all key material locally and sends only:
  *   - the public key (safe to share),
  *   - the private key wrapped with the user's master key,
- *   - the master key wrapped with a password-derived key.
- * The server cannot unwrap any of it, and the password it hashes is never
- * stored in a form that can decrypt anything.
+ *   - the master key wrapped with a password-derived key,
+ *   - the authKey (second half of the split PBKDF2 derivation) that the
+ *     server bcrypt-hashes as the login credential.
+ * The server never receives the password (authVersion 2), and nothing it
+ * stores can decrypt anything.
  */
 authRouter.post(
   '/register',
@@ -53,13 +55,17 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const input = parseBody(registerSchema, req.body);
     const email = normaliseEmail(input.email);
+    const credential = input.authKey ?? input.password;
+    if (!credential) {
+      throw ApiError.badRequest('A credential is required', 'VALIDATION_ERROR');
+    }
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       throw ApiError.conflict('An account with that email address already exists', 'EMAIL_TAKEN');
     }
 
-    const passwordHash = await hashPassword(input.password);
+    const passwordHash = await hashPassword(credential);
 
     // Optional escrow of the raw master key (enables OTP-only password
     // reset later). The key is wrapped with a server-side secret immediately
@@ -75,6 +81,8 @@ authRouter.post(
         displayName: input.displayName.trim(),
         cipherId: await generateCipherId(),
         passwordHash,
+        // authKey -> split scheme (v2); a legacy raw password -> v1.
+        authVersion: input.authKey ? 2 : 1,
         publicKey: input.publicKey,
         wrappedPrivateKey: input.wrappedPrivateKey,
         privateKeyIv: input.privateKeyIv,
@@ -104,11 +112,55 @@ authRouter.post(
 );
 
 /**
+ * POST /api/auth/prelogin
+ *
+ * Public KDF parameters, fetched BEFORE building a login credential:
+ * the client needs `authVersion` (password vs authKey) plus the salt and
+ * iteration count to derive the 512-bit secret locally.
+ *
+ * Unknown emails receive deterministic pseudo-parameters derived from an HMAC
+ * of the address: the response is identical on every probe for the same
+ * email and shaped exactly like a real account's, so this endpoint cannot be
+ * used to enumerate accounts. The pseudo authVersion is drawn from the HMAC
+ * so fabricated accounts mimic both schemes, not just one.
+ */
+authRouter.post(
+  '/prelogin',
+  credentialsLimiter,
+  asyncHandler(async (req, res) => {
+    const input = parseBody(preloginSchema, req.body);
+    const email = normaliseEmail(input.email);
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { authVersion: true, kdfSalt: true, kdfIterations: true },
+    });
+
+    if (user) {
+      // kdfSalt / kdfIterations / authVersion are public by design: they are
+      // needed to derive the credential and reveal nothing that unwraps keys.
+      res.json({ authVersion: user.authVersion, kdfSalt: user.kdfSalt, kdfIterations: user.kdfIterations });
+      return;
+    }
+
+    const mac = createHmac('sha256', env.jwtSecret).update(`prelogin:${email}`).digest();
+    res.json({
+      authVersion: mac[0]! % 2 === 0 ? 1 : 2,
+      kdfSalt: mac.subarray(0, 16).toString('base64'),
+      kdfIterations: 210_000,
+    });
+  }),
+);
+
+/**
  * POST /api/auth/login
  *
- * The server verifies the bcrypt hash, then hands back the user's wrapped key
- * material. The browser repeats the PBKDF2 derivation locally to unwrap it -
- * the server never sees the resulting keys.
+ * Verifies the bcrypt credential, then hands back the user's wrapped key
+ * material. On the split scheme (authVersion 2) the credential is the authKey
+ * - the second half of a 512-bit PBKDF2 derivation - and the server has never
+ * seen, and cannot recompute, the first half (the KEK). Legacy v1 accounts
+ * still authenticate with the raw password and are migrated by the client
+ * via POST /auth/upgrade-auth after a successful login.
  */
 authRouter.post(
   '/login',
@@ -116,17 +168,29 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const input = parseBody(loginSchema, req.body);
     const email = normaliseEmail(input.email);
+    const usingAuthKey = typeof input.authKey === 'string';
+    const credential = input.authKey ?? input.password ?? '';
 
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       // Spend comparable time so that response latency does not disclose
       // whether an account exists for this address.
-      await burnPasswordComparison(input.password);
+      await burnPasswordComparison(credential);
       throw ApiError.unauthorized('Incorrect email or password', 'INVALID_CREDENTIALS');
     }
 
-    const passwordMatches = await verifyPassword(input.password, user.passwordHash);
-    if (!passwordMatches) {
+    // The presented credential must match the scheme the hash was made with:
+    // a v2 account never accepts a raw password (the server no longer stores
+    // anything derived from it) and a v1 account never accepts an authKey.
+    const schemeMatches = usingAuthKey ? user.authVersion >= 2 : user.authVersion === 1;
+    let credentialMatches = false;
+    if (schemeMatches) {
+      credentialMatches = await verifyPassword(credential, user.passwordHash);
+    } else {
+      await burnPasswordComparison(credential);
+    }
+
+    if (!credentialMatches) {
       await recordAudit({
         userId: user.id,
         action: AuditAction.LOGIN_FAILED,
@@ -167,6 +231,47 @@ authRouter.get(
 );
 
 /**
+ * POST /api/auth/upgrade-auth
+ *
+ * Legacy (v1) -> split (v2) migration, called by the client right after a
+ * successful password login. The client re-derives 512 bits locally and sends
+ * only the SECOND half; the server bcrypt-hashes it and bumps authVersion to
+ * 2. The first half (the KEK) is byte-identical to the old direct 256-bit
+ * derivation - PBKDF2 output is block-structured - so every key already
+ * wrapped under the KEK keeps unlocking without re-encryption.
+ *
+ * Idempotent: upgrading an already-v2 account is a no-op.
+ */
+authRouter.post(
+  '/upgrade-auth',
+  requireAuth,
+  credentialsLimiter,
+  asyncHandler(async (req, res) => {
+    const input = parseBody(upgradeAuthSchema, req.body);
+    const userId = currentUserId(req);
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, authVersion: true },
+    });
+    if (!user) {
+      throw ApiError.unauthorized('This account no longer exists', 'ACCOUNT_MISSING');
+    }
+    if (user.authVersion >= 2) {
+      res.json({ ok: true, authVersion: user.authVersion });
+      return;
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: await hashPassword(input.authKey), authVersion: 2 },
+    });
+
+    res.json({ ok: true, authVersion: 2 });
+  }),
+);
+
+/**
  * POST /api/auth/logout
  *
  * Sessions are stateless JWTs, so logout is a client-side token discard plus an
@@ -191,16 +296,23 @@ authRouter.post(
 //
 // Zero-knowledge design: the server NEVER learns the recovery key or any key
 // that can decrypt notes. It stores (a) the master key wrapped under a
-// recovery-key-derived KEK and (b) a salted SHA-256 hash used to verify the
-// key. An attacker with the full database still needs the user's recovery key
-// (or password) to unwrap anything.
+// recovery-key-derived KEK and (b) a peppered hash of the client-computed
+// VERIFIER (HKDF-SHA256 of the key with the info string
+// "ciphernote-recovery-verifier") used to verify a presented key. An attacker
+// with the full database still needs the user's recovery key (or password) to
+// unwrap anything.
 
-/** Server-side verification hash: SHA-256(salt || presented hash input). */
-function verifyRecoveryHash(recoveryKeyHash: string, storedSalt: string, storedHash: string): boolean {
-  const expected = createHash('sha256').update(`${storedSalt}:${recoveryKeyHash}`).digest('hex');
+/**
+ * Server-side verification hash for the recovery verifier:
+ * SHA-256(serverSalt || verifier), compared in constant time. The verifier
+ * itself is a one-way HKDF value, so neither this row nor the verifier alone
+ * reveals the raw recovery key.
+ */
+function verifyRecoveryVerifier(recoveryVerifier: string, storedSalt: string, storedHash: string): boolean {
+  const expected = createHash('sha256').update(`${storedSalt}:${recoveryVerifier}`).digest('hex');
   const a = Buffer.from(expected, 'hex');
   const b = Buffer.from(storedHash, 'hex');
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+  return a.length === b.length && timingSafeEqual(a, b);
 }
 
 /**
@@ -208,7 +320,8 @@ function verifyRecoveryHash(recoveryKeyHash: string, storedSalt: string, storedH
  *
  * Called during registration (or re-generation in settings). The browser has
  * derived a KEK from the fresh recovery key and re-wrapped the master key
- * under it. Store the wrap + derivation params + verification hash.
+ * under it, then computed the HKDF verifier. Store the wrap + derivation
+ * params + verifier hash - never the raw key, which stays in the browser.
  */
 authRouter.post(
   '/recovery/setup',
@@ -218,7 +331,7 @@ authRouter.post(
     const input = parseBody(recoverySetupSchema, req.body);
 
     const serverSalt = randomBytes(16).toString('hex');
-    const pepperedHash = createHash('sha256').update(`${serverSalt}:${input.recoveryKeyHash}`).digest('hex');
+    const pepperedHash = createHash('sha256').update(`${serverSalt}:${input.recoveryVerifier}`).digest('hex');
 
     await prisma.user.update({
       where: { id: userId },
@@ -227,7 +340,7 @@ authRouter.post(
         masterKeyRecoveryIv: input.masterKeyRecoveryIv,
         recoveryKdfSalt: input.kdfSalt,
         recoveryKdfIterations: input.kdfIterations,
-        recoveryKeyHash: `${serverSalt}:${pepperedHash}`,
+        recoveryVerifier: `${serverSalt}:${pepperedHash}`,
         recoveryKeyUsedAt: null,
       },
     });
@@ -248,10 +361,10 @@ authRouter.post(
  * POST /api/auth/recovery/challenge
  *
  * Pre-reset check from the forgot-password page: does this recovery key match
- * the account? Returns the wrapped master key + derivation params so the
- * browser can decrypt it IN MEMORY and derive the new password KEK. The
- * server still cannot unwrap anything, and the key is not burned until the
- * reset endpoint completes successfully.
+ * the account? The browser sends only the HKDF verifier. On success the
+ * server returns the wrapped master key + derivation params so the browser
+ * can decrypt it IN MEMORY and derive the new password KEK. The server still
+ * cannot unwrap anything, and nothing is burned until the reset completes.
  */
 authRouter.post(
   '/recovery/challenge',
@@ -261,8 +374,8 @@ authRouter.post(
     const email = normaliseEmail(input.email);
 
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || !user.recoveryKeyHash || !user.wrappedMasterKeyRecovery || !user.recoveryKdfSalt) {
-      await burnPasswordComparison(input.recoveryKey);
+    if (!user || !user.recoveryVerifier || !user.wrappedMasterKeyRecovery || !user.recoveryKdfSalt) {
+      await burnPasswordComparison(input.recoveryVerifier);
       throw ApiError.badRequest('This recovery key does not match the account', 'RECOVERY_KEY_INVALID');
     }
 
@@ -273,8 +386,8 @@ authRouter.post(
       );
     }
 
-    const [serverSalt, storedHash] = user.recoveryKeyHash.split(':');
-    if (!serverSalt || !storedHash || !verifyRecoveryHash(input.recoveryKeyHash, serverSalt, storedHash)) {
+    const [serverSalt, storedHash] = user.recoveryVerifier.split(':');
+    if (!serverSalt || !storedHash || !verifyRecoveryVerifier(input.recoveryVerifier, serverSalt, storedHash)) {
       await recordAudit({
         userId: user.id,
         action: AuditAction.RECOVERY_CHALLENGE_FAILED,
@@ -282,7 +395,7 @@ authRouter.post(
         targetId: user.id,
         ipAddress: requestIp(req),
       });
-      await burnPasswordComparison(input.recoveryKey);
+      await burnPasswordComparison(input.recoveryVerifier);
       throw ApiError.badRequest('This recovery key does not match the account', 'RECOVERY_KEY_INVALID');
     }
 
@@ -311,8 +424,11 @@ authRouter.post(
  *
  * Completes the reset. By now the browser has: unwrapped the master key with
  * the recovery KEK, derived a NEW password KEK, re-wrapped the master key
- * under it, and re-wrapped the private key too. The server stores the new
- * bcrypt hash and the new wraps, and burns the recovery key.
+ * under it, and sent the split authKey for the new password. The server
+ * stores the new bcrypt hash and the new wraps, and burns the recovery key.
+ *
+ * The write is atomic (`updateMany` conditioned on `recoveryKeyUsedAt: null`)
+ * so two concurrent resets cannot both succeed: the loser sees count 0.
  */
 authRouter.post(
   '/recovery/reset',
@@ -320,10 +436,14 @@ authRouter.post(
   asyncHandler(async (req, res) => {
     const input = parseBody(recoveryResetSchema, req.body);
     const email = normaliseEmail(input.email);
+    const credential = input.authKey ?? input.newPassword;
+    if (!credential) {
+      throw ApiError.badRequest('A credential is required', 'VALIDATION_ERROR');
+    }
 
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || !user.recoveryKeyHash) {
-      await burnPasswordComparison(input.newPassword);
+    if (!user || !user.recoveryVerifier) {
+      await burnPasswordComparison(credential);
       throw ApiError.badRequest('This recovery key does not match the account', 'RECOVERY_KEY_INVALID');
     }
 
@@ -334,8 +454,8 @@ authRouter.post(
       );
     }
 
-    const [serverSalt, storedHash] = user.recoveryKeyHash.split(':');
-    if (!serverSalt || !storedHash || !verifyRecoveryHash(input.recoveryKeyHash, serverSalt, storedHash)) {
+    const [serverSalt, storedHash] = user.recoveryVerifier.split(':');
+    if (!serverSalt || !storedHash || !verifyRecoveryVerifier(input.recoveryVerifier, serverSalt, storedHash)) {
       await recordAudit({
         userId: user.id,
         action: AuditAction.RECOVERY_RESET_FAILED,
@@ -343,16 +463,18 @@ authRouter.post(
         targetId: user.id,
         ipAddress: requestIp(req),
       });
-      await burnPasswordComparison(input.newPassword);
+      await burnPasswordComparison(credential);
       throw ApiError.badRequest('This recovery key does not match the account', 'RECOVERY_KEY_INVALID');
     }
 
-    const passwordHash = await hashPassword(input.newPassword);
+    const passwordHash = await hashPassword(credential);
 
-    const updated = await prisma.user.update({
-      where: { id: user.id },
+    const result = await prisma.user.updateMany({
+      where: { id: user.id, recoveryKeyUsedAt: null },
       data: {
         passwordHash,
+        // Which credential we just stored decides the login scheme.
+        authVersion: input.authKey ? 2 : 1,
         kdfSalt: input.kdfSalt,
         kdfIterations: input.kdfIterations,
         wrappedMasterKey: input.wrappedMasterKey,
@@ -371,6 +493,19 @@ authRouter.post(
           : {}),
       },
     });
+
+    if (result.count === 0) {
+      // A concurrent reset burned the key between our check and this write.
+      throw ApiError.badRequest(
+        'This recovery key has already been used and cannot be used again',
+        'RECOVERY_KEY_USED',
+      );
+    }
+
+    const updated = await prisma.user.findUnique({ where: { id: user.id } });
+    if (!updated) {
+      throw ApiError.internal('Account disappeared during reset', 'ACCOUNT_MISSING');
+    }
 
     await recordAudit({
       userId: user.id,

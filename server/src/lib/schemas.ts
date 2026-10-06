@@ -29,49 +29,108 @@ const ciphertextSchema = z
 /** Note identifier as produced by Prisma's cuid(). */
 export const idParamSchema = z.string().min(1).max(64);
 
+// --- Split password authentication (authVersion 2) ---------------------------
+
+/**
+ * The authKey is the SECOND 256 bits of a 512-bit PBKDF2 derivation performed
+ * in the browser. The FIRST 256 bits become the key-encryption-key and are
+ * never sent. The server bcrypt-hashes this value instead of the password, so
+ * the stored credential cannot be used to recompute the KEK (PBKDF2 is not
+ * invertible from either half alone, and the KEK half never leaves the
+ * browser).
+ *
+ * Base64 of 64 bytes is always exactly 88 characters (86 data chars + '==').
+ */
+export const authKeySchema = z
+  .string()
+  .regex(/^[A-Za-z0-9+/]{86}==$/, 'Must be base64 encoding exactly 512 bits');
+
+/**
+ * Enforces "exactly one credential": the preferred `authKey` (v2) XOR the
+ * legacy raw-password field (`password` / `newPassword`, v1). Applied after
+ * zod strips unknown keys, so only fields this schema knows about count.
+ */
+function credentialFields<T extends { authKey?: string | undefined }>(schema: z.ZodType<T>) {
+  return schema.refine(
+    (value) => {
+      const record = value as Record<string, unknown>;
+      const provided = ['authKey', 'password', 'newPassword'].filter(
+        (key) => typeof record[key] === 'string' && record[key] !== '',
+      ).length;
+      return provided === 1;
+    },
+    { message: 'Provide exactly one credential (authKey, or the legacy password field)' },
+  );
+}
+
 // --- Authentication --------------------------------------------------------
 
-export const registerSchema = z.object({
-  email: z.string().email('Enter a valid email address').max(254),
-  displayName: z.string().trim().min(1, 'Enter a display name').max(80),
-  password: z.string().min(8, 'Use at least 8 characters').max(200),
-  publicKey: keyBlobSchema,
-  wrappedPrivateKey: keyBlobSchema,
-  privateKeyIv: ivSchema,
-  kdfSalt: keyBlobSchema,
-  kdfIterations: z
-    .number()
-    .int()
-    .min(env.minKdfIterations)
-    .max(env.maxKdfIterations),
-  wrappedMasterKey: keyBlobSchema,
-  masterKeyIv: ivSchema,
-  /** Raw master key for the server-side escrow wrap (OTP reset). Optional: older clients omit it. */
-  masterKeyRaw: keyBlobSchema.optional(),
-});
+export const registerSchema = credentialFields(
+  z.object({
+    email: z.string().email('Enter a valid email address').max(254),
+    displayName: z.string().trim().min(1, 'Enter a display name').max(80),
+    /** Preferred: split-derivation authKey (authVersion 2). */
+    authKey: authKeySchema.optional(),
+    /** Legacy clients sent the raw password (authVersion 1). */
+    password: z.string().min(8, 'Use at least 8 characters').max(200).optional(),
+    publicKey: keyBlobSchema,
+    wrappedPrivateKey: keyBlobSchema,
+    privateKeyIv: ivSchema,
+    kdfSalt: keyBlobSchema,
+    kdfIterations: z
+      .number()
+      .int()
+      .min(env.minKdfIterations)
+      .max(env.maxKdfIterations),
+    wrappedMasterKey: keyBlobSchema,
+    masterKeyIv: ivSchema,
+    /** Raw master key for the server-side escrow wrap (OTP reset). Optional: older clients omit it. */
+    masterKeyRaw: keyBlobSchema.optional(),
+  }),
+);
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 
-export const loginSchema = z.object({
-  email: z.string().email('Enter a valid email address').max(254),
-  password: z.string().min(1, 'Enter your password').max(200),
-});
+export const loginSchema = credentialFields(
+  z.object({
+    email: z.string().email('Enter a valid email address').max(254),
+    /** Preferred: split-derivation authKey (authVersion 2 accounts). */
+    authKey: authKeySchema.optional(),
+    /** Legacy: raw password, accepted only for authVersion 1 accounts. */
+    password: z.string().min(1, 'Enter your password').max(200).optional(),
+  }),
+);
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
+/** POST /auth/prelogin - public KDF parameters needed to build a credential. */
+export const preloginSchema = z.object({
+  email: z.string().email('Enter a valid email address').max(254),
+});
+
+export type PreloginInput = z.infer<typeof preloginSchema>;
+
+/** POST /auth/upgrade-auth - v1 -> v2 migration, authenticated. */
+export const upgradeAuthSchema = z.object({
+  authKey: authKeySchema,
+});
+
+export type UpgradeAuthInput = z.infer<typeof upgradeAuthSchema>;
+
 // --- Password recovery ------------------------------------------------------
 /**
- * Recovery key. The user's browser generates a 256-bit secret and wraps the
- * master key under it; the server only ever sees the wrapped output, the
- * derivation parameters and a salted hash for verification.
+ * Recovery flow payloads. The raw recovery key NEVER crosses the wire: the
+ * browser sends `recoveryVerifier`, an HKDF-SHA256 value computed locally
+ * with the domain-separated info string "ciphernote-recovery-verifier". The
+ * server stores a peppered, constant-time-compared hash of that verifier and
+ * cannot recover the key (or any decryption key) from it.
  */
-export const recoveryKeySchema = z
+export const recoveryVerifierSchema = z
   .string()
-  .regex(/^RCVR-[A-Za-z0-9_-]{43}$/, 'Malformed recovery key');
+  .regex(/^[a-f0-9]{64}$/, 'Must be the hex recovery verifier');
 
 /** POST /auth/recovery/setup - store the recovery-wrapped master key. */
 export const recoverySetupSchema = z.object({
-  recoveryKey: recoveryKeySchema,
   kdfSalt: keyBlobSchema,
   kdfIterations: z
     .number()
@@ -80,8 +139,8 @@ export const recoverySetupSchema = z.object({
     .max(env.maxKdfIterations),
   wrappedMasterKeyRecovery: keyBlobSchema,
   masterKeyRecoveryIv: ivSchema,
-  /** SHA-256(salt || raw recovery key bytes), hex - never the key itself. */
-  recoveryKeyHash: z.string().regex(/^[a-f0-9]{64}$/, 'Must be a hex SHA-256 digest'),
+  /** HKDF verifier of the raw recovery key, hex - never the key itself. */
+  recoveryVerifier: recoveryVerifierSchema,
 });
 
 export type RecoverySetupInput = z.infer<typeof recoverySetupSchema>;
@@ -89,33 +148,35 @@ export type RecoverySetupInput = z.infer<typeof recoverySetupSchema>;
 /** POST /auth/recovery/challenge - verify a recovery key without resetting. */
 export const recoveryChallengeSchema = z.object({
   email: z.string().email('Enter a valid email address').max(254),
-  recoveryKey: recoveryKeySchema,
-  /** Salted hash the server compares; the raw key never crosses the wire. */
-  recoveryKeyHash: z.string().regex(/^[a-f0-9]{64}$/, 'Must be a hex SHA-256 digest'),
+  /** HKDF verifier computed in the browser; the raw key never crosses the wire. */
+  recoveryVerifier: recoveryVerifierSchema,
 });
 
 export type RecoveryChallengeInput = z.infer<typeof recoveryChallengeSchema>;
 
 /** POST /auth/recovery/reset - the actual password reset. */
-export const recoveryResetSchema = z.object({
-  email: z.string().email('Enter a valid email address').max(254),
-  recoveryKey: recoveryKeySchema,
-  recoveryKeyHash: z.string().regex(/^[a-f0-9]{64}$/, 'Must be a hex SHA-256 digest'),
-  /** New bcrypt-hashed password (hashed in the browser? No - bcrypt is server-side.) */
-  newPassword: z.string().min(8, 'Use at least 8 characters').max(200),
-  /** Fresh KDF params for the new password KEK. */
-  kdfSalt: keyBlobSchema,
-  kdfIterations: z
-    .number()
-    .int()
-    .min(env.minKdfIterations)
-    .max(env.maxKdfIterations),
-  /** Master key re-wrapped under the NEW password-derived KEK. */
-  wrappedMasterKey: keyBlobSchema,
-  masterKeyIv: ivSchema,
-  /** Raw master key so the server can refresh its escrow copy. Optional for compatibility. */
-  masterKeyRaw: keyBlobSchema.optional(),
-});
+export const recoveryResetSchema = credentialFields(
+  z.object({
+    email: z.string().email('Enter a valid email address').max(254),
+    recoveryVerifier: recoveryVerifierSchema,
+    /** Preferred: split-derivation authKey for the NEW password (authVersion 2). */
+    authKey: authKeySchema.optional(),
+    /** Legacy clients sent the raw new password (authVersion 1). */
+    newPassword: z.string().min(8, 'Use at least 8 characters').max(200).optional(),
+    /** Fresh KDF params for the new password KEK. */
+    kdfSalt: keyBlobSchema,
+    kdfIterations: z
+      .number()
+      .int()
+      .min(env.minKdfIterations)
+      .max(env.maxKdfIterations),
+    /** Master key re-wrapped under the NEW password-derived KEK. */
+    wrappedMasterKey: keyBlobSchema,
+    masterKeyIv: ivSchema,
+    /** Raw master key so the server can refresh its escrow copy. Optional for compatibility. */
+    masterKeyRaw: keyBlobSchema.optional(),
+  }),
+);
 
 export type RecoveryResetInput = z.infer<typeof recoveryResetSchema>;
 
@@ -138,22 +199,27 @@ export const otpVerifySchema = z.object({
 export type OtpVerifyInput = z.infer<typeof otpVerifySchema>;
 
 /** Completes the reset: a short-lived signed token authorises it. */
-export const otpResetSchema = z.object({
-  resetToken: z.string().min(10).max(1024),
-  newPassword: z.string().min(8, 'Use at least 8 characters').max(200),
-  /** Fresh KDF params + password wrap built client-side from the recovered master key. */
-  kdfSalt: keyBlobSchema,
-  kdfIterations: z
-    .number()
-    .int()
-    .min(env.minKdfIterations)
-    .max(env.maxKdfIterations),
-  wrappedMasterKey: keyBlobSchema,
-  masterKeyIv: ivSchema,
-  // wrappedPrivateKey is NOT part of this request: the private key is wrapped
-  // with the master key, which the OTP flow does not change, so the stored
-  // wrap remains valid.
-});
+export const otpResetSchema = credentialFields(
+  z.object({
+    resetToken: z.string().min(10).max(1024),
+    /** Preferred: split-derivation authKey for the NEW password (authVersion 2). */
+    authKey: authKeySchema.optional(),
+    /** Legacy clients sent the raw new password (authVersion 1). */
+    newPassword: z.string().min(8, 'Use at least 8 characters').max(200).optional(),
+    /** Fresh KDF params + password wrap built client-side from the recovered master key. */
+    kdfSalt: keyBlobSchema,
+    kdfIterations: z
+      .number()
+      .int()
+      .min(env.minKdfIterations)
+      .max(env.maxKdfIterations),
+    wrappedMasterKey: keyBlobSchema,
+    masterKeyIv: ivSchema,
+    // wrappedPrivateKey is NOT part of this request: the private key is wrapped
+    // with the master key, which the OTP flow does not change, so the stored
+    // wrap remains valid.
+  }),
+);
 
 export type OtpResetInput = z.infer<typeof otpResetSchema>;
 
@@ -175,24 +241,29 @@ export type GoogleAuthInput = z.infer<typeof googleAuthSchema>;
  * short-lived JWT the /auth/google endpoint returned; the rest matches the
  * classic register payload (all key material is generated in the browser).
  */
-export const googleRegisterSchema = z.object({
-  signupToken: z.string().min(20).max(2048),
-  displayName: z.string().trim().min(1, 'Enter a display name').max(80),
-  password: z.string().min(8, 'Use at least 8 characters').max(200),
-  publicKey: keyBlobSchema,
-  wrappedPrivateKey: keyBlobSchema,
-  privateKeyIv: ivSchema,
-  kdfSalt: keyBlobSchema,
-  kdfIterations: z
-    .number()
-    .int()
-    .min(env.minKdfIterations)
-    .max(env.maxKdfIterations),
-  wrappedMasterKey: keyBlobSchema,
-  masterKeyIv: ivSchema,
-  /** Raw master key for the server-side escrow wrap (OTP reset). */
-  masterKeyRaw: keyBlobSchema.optional(),
-});
+export const googleRegisterSchema = credentialFields(
+  z.object({
+    signupToken: z.string().min(20).max(2048),
+    displayName: z.string().trim().min(1, 'Enter a display name').max(80),
+    /** Preferred: split-derivation authKey (authVersion 2). */
+    authKey: authKeySchema.optional(),
+    /** Legacy clients sent the raw password (authVersion 1). */
+    password: z.string().min(8, 'Use at least 8 characters').max(200).optional(),
+    publicKey: keyBlobSchema,
+    wrappedPrivateKey: keyBlobSchema,
+    privateKeyIv: ivSchema,
+    kdfSalt: keyBlobSchema,
+    kdfIterations: z
+      .number()
+      .int()
+      .min(env.minKdfIterations)
+      .max(env.maxKdfIterations),
+    wrappedMasterKey: keyBlobSchema,
+    masterKeyIv: ivSchema,
+    /** Raw master key for the server-side escrow wrap (OTP reset). */
+    masterKeyRaw: keyBlobSchema.optional(),
+  }),
+);
 
 export type GoogleRegisterInput = z.infer<typeof googleRegisterSchema>;
 

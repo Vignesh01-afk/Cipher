@@ -35,6 +35,94 @@ export const MAX_FILE_BYTES = 25 * 1024 * 1024;
 export const FILE_ENCRYPTION_VERSION = 1;
 export const FILE_ALGORITHM = 'AES-GCM-256';
 
+/**
+ * MIME types that are safe to preview in-app.
+ *
+ * Images, audio and video render natively through media elements and cannot
+ * execute script. PDFs are rendered in a sandboxed iframe so the browser's
+ * PDF viewer (an untrusted plugin path) cannot reach the app origin.
+ *
+ * `application/pdf` is included for the sandboxed preview; `text/plain` is
+ * NOT rendered through an iframe - it is decoded to text and shown in a
+ * <pre> so there is no same-origin script execution path at all.
+ */
+export const PREVIEWABLE_MIME_TYPES = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'video/mp4',
+  'video/webm',
+  'application/pdf',
+]);
+
+/** Any `audio/*` type renders natively in <audio> and cannot execute script. */
+export const AUDIO_MIME_PREFIX = 'audio/';
+
+/** Text-like types we will safely render as text, never as a media/iframe blob. */
+export const TEXT_MIME_TYPES = new Set(['text/plain']);
+
+/**
+ * Strips any parameters (e.g. `; charset=utf-8`) and lowercases, so lookups
+ * against the allowlist are exact.
+ */
+function baseMimeType(mimeType: string | null | undefined): string {
+  return (mimeType ?? '').split(';')[0]!.trim().toLowerCase();
+}
+
+/**
+ * Maps an uploader-provided MIME type to a safe preview kind.
+ *
+ * Uploader-controlled `file.mimeType` is never trusted to decide whether a
+ * payload should render as media, iframe or text. Unknown or disallowed types
+ * (including `text/html` and `image/svg+xml`) are treated as "no preview".
+ */
+export type SafePreviewKind = 'image' | 'video' | 'audio' | 'pdf' | 'text' | 'none';
+
+export function safePreviewKind(mimeType: string | null | undefined): SafePreviewKind {
+  const mime = baseMimeType(mimeType) || 'application/octet-stream';
+
+  if (mime === 'application/pdf') return 'pdf';
+  if (TEXT_MIME_TYPES.has(mime)) return 'text';
+  if (mime.startsWith(AUDIO_MIME_PREFIX)) return 'audio';
+  if (PREVIEWABLE_MIME_TYPES.has(mime)) {
+    return mime.startsWith('image/') ? 'image' : 'video';
+  }
+  // Everything else - including text/html, image/svg+xml, image/* variants
+  // outside the allowlist and any unknown type - is "no preview".
+  return 'none';
+}
+
+/**
+ * Blob type to use for an in-memory object URL.
+ *
+ * The Blob MIME is what the browser uses to choose a renderer, so it must be
+ * derived from an allowlist, not from the uploader-provided `mimeType`.
+ * Anything not in the allowlist becomes `application/octet-stream`, which will
+ * not render as HTML/SVG/script in this origin.
+ */
+export function safePreviewBlobType(mimeType: string | null | undefined): string {
+  const kind = safePreviewKind(mimeType);
+  if (kind === 'none') return 'application/octet-stream';
+  if (kind === 'text') return 'text/plain';
+  // `safePreviewKind` only returns a render kind for allowlisted types, so
+  // this is always one of them (parameters stripped, lowercased).
+  return baseMimeType(mimeType) || 'application/octet-stream';
+}
+
+/**
+ * Normalize a MIME type for storage / round-tripping.
+ *
+ * Used by both the upload path and the download path so the server-side
+ * `mimeType` column and the Blob type are both derived from the same
+ * allowlist semantics rather than raw browser input.
+ */
+export function normalizeFileMimeType(mimeType: string | null | undefined): string {
+  const kind = safePreviewKind(mimeType);
+  if (kind === 'none') return 'application/octet-stream';
+  return baseMimeType(mimeType) || 'application/octet-stream';
+}
+
 export class FileTooLargeError extends Error {
   constructor() {
     super('Files up to 25 MB can be sent. Choose a smaller file.');
@@ -100,7 +188,7 @@ export function buildFileUploadPayload(prepared: PreparedUpload, noteId: string)
   return {
     noteId,
     filename: prepared.file.name,
-    mimeType: prepared.file.type || 'application/octet-stream',
+    mimeType: normalizeFileMimeType(prepared.file.type),
     plaintextBytes: prepared.plaintextBytes,
     ciphertext: prepared.encrypted.ciphertext,
     fileIv: prepared.encrypted.iv,
@@ -253,8 +341,12 @@ export async function downloadAndDecryptFile(
   const ciphertextBytes = new Uint8Array(await response.arrayBuffer());
   const plaintext = await decryptRawBytes(fileKey, ciphertextBytes, file.fileIv);
 
+  // SECURITY: the Blob MIME must not come from the uploader-controlled
+  // `file.mimeType` - a text/html or image/svg+xml label would hand the
+  // browser an executable renderer in this origin. Use the allowlisted type
+  // only.
   return new Blob([plaintext as unknown as BlobPart], {
-    type: file.mimeType || 'application/octet-stream',
+    type: safePreviewBlobType(file.mimeType),
   });
 }
 

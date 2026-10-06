@@ -150,18 +150,26 @@ passwordOtpRouter.post(
   asyncHandler(async (req, res) => {
     const input = parseBody(otpResetSchema, req.body);
     const payload = verifyPasswordResetToken(input.resetToken);
+    // Preferred: the split authKey for the new password. `newPassword` is the
+    // legacy field kept for older clients.
+    const credential = input.authKey ?? input.newPassword;
+    if (!credential) {
+      throw ApiError.badRequest('A credential is required', 'VALIDATION_ERROR');
+    }
 
     const user = await prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user) {
       throw ApiError.badRequest('This account no longer exists', 'ACCOUNT_MISSING');
     }
 
-    const passwordHash = await hashPassword(input.newPassword);
+    const passwordHash = await hashPassword(credential);
 
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: {
         passwordHash,
+        // Which credential we just stored decides the login scheme.
+        authVersion: input.authKey ? 2 : 1,
         kdfSalt: input.kdfSalt,
         kdfIterations: input.kdfIterations,
         wrappedMasterKey: input.wrappedMasterKey,
