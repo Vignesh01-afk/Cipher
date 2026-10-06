@@ -15,6 +15,14 @@ async function openUser(
 }
 
 async function gotoChat(page: Page): Promise<void> {
+  // The 'Chat' link is the sidebar item on /dashboard/notes/shared/... and the
+  // topbar back button on chat sub-pages. When already on /chat the sidebar item
+  // is inactive and Playwright's getByRole('link') won't resolve it, so detect
+  // that first and skip the click.
+  if (page.url().startsWith('/chat')) {
+    await page.waitForURL(/\/chat$/);
+    return;
+  }
   await page.getByRole('link', { name: 'Chat', exact: true }).click();
   await page.waitForURL(/\/chat$/);
 }

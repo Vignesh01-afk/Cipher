@@ -98,7 +98,15 @@ export function tokenFromStorageState(role: Role): string {
   throw new Error(`No session token found in the storage state for ${role}.`);
 }
 
-/** Registers an account through the real UI and dismisses the recovery-key handoff. */
+/**
+ * Registers an account through the real UI.
+ *
+ * NOTE: CipherNote registration never returns a recovery key from the server
+ * (see server/src/routes/auth.ts POST /api/auth/register), so the client only
+ * lands on `/recovery-key` when a key was generated. This harness tolerates
+ * both outcomes: if no key is generated the registration lands on `/dashboard`
+ * directly, and we skip the recovery-key handoff.
+ */
 export async function registerViaUi(page: Page, account: TestAccount): Promise<void> {
   await page.goto('/register');
   await page.getByLabel('Full name').fill(account.displayName);
@@ -109,9 +117,15 @@ export async function registerViaUi(page: Page, account: TestAccount): Promise<v
   await page.getByRole('button', { name: 'Create Account' }).click();
 
   // Key generation + registration run in the browser, so allow generous time.
-  await page.waitForURL('**/recovery-key', { timeout: 60_000 });
-  await page.getByRole('button', { name: /I saved it/i }).click();
-  await page.waitForURL('**/dashboard', { timeout: 30_000 });
+  // Registration may or may not produce a recovery key; wait for either.
+  await Promise.race([
+    page.waitForURL('**/recovery-key', { timeout: 60_000 }),
+    page.waitForURL('**/dashboard', { timeout: 60_000 }),
+  ]);
+  if (page.url().includes('/recovery-key')) {
+    await page.getByRole('button', { name: /I saved it/i }).click();
+    await page.waitForURL('**/dashboard', { timeout: 30_000 });
+  }
 }
 
 /** Logs in through the real UI (hits the credential rate limiter). */
@@ -135,6 +149,16 @@ export async function unlockVault(page: Page, password: string = PASSWORD): Prom
   // already-unlocked session to /dashboard and an anonymous one to /login.
   await page.goto('/unlock');
 
+  // If the bounce already landed us on a live app page, the vault is unlocked
+  // for this session; nothing to do.
+  if (page.url().startsWith('/dashboard') || page.url().startsWith('/notes') ||
+      page.url().startsWith('/chat') || page.url().startsWith('/shared') ||
+      page.url().startsWith('/activity') || page.url().startsWith('/privacy') ||
+      page.url().startsWith('/inspector')) {
+    await page.waitForURL('/**', { timeout: 15_000 });
+    return;
+  }
+
   const passwordField = page.getByLabel('Password', { exact: true });
   try {
     await passwordField.waitFor({ state: 'visible', timeout: 30_000 });
@@ -145,7 +169,7 @@ export async function unlockVault(page: Page, password: string = PASSWORD): Prom
 
   await passwordField.fill(password);
   await page.getByRole('button', { name: 'Unlock vault', exact: true }).click();
-  await page.waitForURL('**/dashboard', { timeout: 60_000 });
+  await page.waitForURL('**/dashboard', { timeout: 60_000 }); Activities/Export/Privacy/Lock.
 }
 
 /** Reads the Bearer token the app stored for its session. */

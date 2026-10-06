@@ -47,8 +47,15 @@ test.describe('Authenticated shell', () => {
   test('the profile dropdown opens and navigates', async ({ page }) => {
     await unlockVault(page, book.alice.password);
 
-    // The avatar shows the user's initials ("Alice E2E" -> "AE").
-    await page.getByRole('button', { name: 'AE' }).click();
+    // The avatar shows the user's initials. Display names embed a per-run id
+    // ("Alice E2E <runId>"), so derive the expected initials with the same
+    // rule Avatar.tsx uses: first letter of the first and last words.
+    const words = book.alice.displayName.trim().split(/\s+/).filter(Boolean);
+    const initials =
+      words.length === 1
+        ? words[0]!.slice(0, 2).toUpperCase()
+        : `${words[0]![0]}${words[words.length - 1]![0]}`.toUpperCase();
+    await page.getByRole('button', { name: initials }).click();
     const menu = page.getByRole('menu').or(page.getByRole('listbox'));
     await expect(menu.first()).toBeVisible();
 

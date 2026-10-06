@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { env } from './env';
+import { prisma } from './db';
 import { apiRouter } from './routes';
 import { errorHandler, notFoundHandler } from './middleware/error';
 
@@ -44,9 +45,20 @@ export function createApp(): express.Express {
   // the stream twice and corrupted large upload bodies.
   app.use(express.json({ limit: env.maxFileUploadBodyBytes }));
 
-  app.get('/api/health', (_req, res) => {
+  // `ok` only proves the process is up. `dbOk` probes the database so callers
+  // (deploy checks, the E2E pre-flight) can tell "API up" from "API can serve".
+  // The response stays 200 either way so the process is never marked unhealthy
+  // just because a managed Postgres scaled to zero.
+  app.get('/api/health', async (_req, res) => {
+    let dbOk = true;
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch {
+      dbOk = false;
+    }
     res.json({
       ok: true,
+      dbOk,
       service: 'ciphernote-api',
       encryption: {
         noteCipher: 'AES-GCM-256',

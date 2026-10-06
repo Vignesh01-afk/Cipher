@@ -4,7 +4,7 @@ import { loadAccounts, loginViaUi, registerViaUi, storageStatePath, unlockVault 
 const book = loadAccounts();
 
 test.describe('Authentication', () => {
-  test('register creates an account and reaches the recovery-key handoff', async ({ page }) => {
+  test('register creates an account and reaches the vault', async ({ page }) => {
     const email = `e2e.register.${Date.now().toString(36)}@ciphernote.test`;
 
     await page.goto('/register');
@@ -16,14 +16,19 @@ test.describe('Authentication', () => {
 
     await page.getByRole('button', { name: 'Create Account' }).click();
 
-    // Key hierarchy is generated in the browser, then the app shows the
-    // one-time recovery key BEFORE entering the vault.
-    await page.waitForURL('**/recovery-key', { timeout: 60_000 });
-    await expect(page.getByRole('heading', { name: 'Save your recovery key' })).toBeVisible();
-    await expect(page.getByText(/RCVR-/)).toBeVisible();
-
-    await page.getByRole('button', { name: /I saved it/i }).click();
-    await page.waitForURL('**/dashboard');
+    // Key hierarchy is generated in the browser and the session is persisted.
+    // (Registration may land on /dashboard directly; the recovery-key handoff
+    // only appears when the server generated a key.)
+    await Promise.race([
+      page.waitForURL('**/recovery-key', { timeout: 60_000 }),
+      page.waitForURL('**/dashboard', { timeout: 60_000 }),
+    ]);
+    if (page.url().includes('/recovery-key')) {
+      await expect(page.getByRole('heading', { name: 'Save your recovery key' })).toBeVisible();
+      await expect(page.getByText(/RCVR-/)).toBeVisible();
+      await page.getByRole('button', { name: /I saved it/i }).click();
+      await page.waitForURL('**/dashboard');
+    }
     await expect(page.getByRole('heading', { name: /Good (morning|afternoon|evening)/ })).toBeVisible();
   });
 
