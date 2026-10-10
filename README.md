@@ -63,7 +63,7 @@ No custom cryptography is used anywhere. Every primitive comes from the platform
 
 | Layer | Technology |
 | --- | --- |
-| Frontend | React 18, Vite 5, TypeScript, Tailwind CSS 3, React Router 6, Lucide React icons |
+| Frontend | React 19, Vite 8, TypeScript, Tailwind CSS 4, React Router 7, Phosphor icons |
 | Backend | Node.js, Express 4, TypeScript, Zod validation, Helmet, express-rate-limit |
 | Database | PostgreSQL via Prisma ORM |
 | File storage | Private local disk or a private Supabase Storage bucket, selected by `STORAGE_DRIVER` |
@@ -694,7 +694,7 @@ Use two browser profiles (for example a normal window and a private/incognito wi
 | Master key | Wrapped in the database, unwrapped in memory | PBKDF2-derived KEK |
 | RSA private key | Wrapped in the database, unwrapped in memory | The master key |
 | Password | Never transmitted on `authVersion 2` accounts (the server bcrypt-hashes the derived `authKey` instead); bcrypt hash at rest | TLS + bcrypt cost 12 + PBKDF2 split derivation |
-| Session token | `localStorage` | JWT expiry, HTTPS |
+| Session token | `localStorage` | JWT expiry (`2h` by default), HTTPS |
 
 ### Adversaries considered
 
@@ -731,7 +731,7 @@ Stated honestly, because an encrypted-notes app is only trustworthy if it is pre
 2. **The note key is not rotated.** Because a share reuses the note key, an ex-recipient's wrapped key is still mathematically valid against the note's ciphertext. They are stopped by access control, not by cryptography. Key rotation on revoke is the documented next step.
 3. **Password reset requires the recovery key.** The password derives the only key that can unlock the vault, so a forgotten password cannot be reset by the server. Instead, a one-time recovery key (shown once at registration, `RCVR-…`, regenerable from Settings → Recovery key) re-wraps the master key under a new password entirely in the browser. The raw recovery key never crosses the wire: the browser sends only an HKDF verifier (info string `ciphernote-recovery-verifier`), which the server stores as a peppered, constant-time-compared hash - it still cannot decrypt anything, nor recover the key from the verifier. If BOTH the password and the recovery key are lost, the notes are unrecoverable by anyone; that is a property of correct end-to-end encryption, not a bug.
 4. **Metadata is visible to the server.** User IDs, note IDs, timestamps, payload sizes, the nonce and the sharing graph (including revocation times) are all stored. Content is protected; the relationship graph is not.
-5. **Sessions are bearer tokens in `localStorage`.** Any script running in the page origin can read the token. That grants API access until expiry (`12h` by default) but still not note plaintext, because keys live in memory and die with the tab. `httpOnly` cookies plus CSRF protection would be the hardening step; a token denylist would make logout server-enforced.
+5. **Sessions are bearer tokens in `localStorage`.** Any script running in the page origin can read the token. That grants API access until expiry (`2h` by default) but still not note plaintext, because keys live in memory and die with the tab. `httpOnly` cookies plus CSRF protection would be the hardening step; a token denylist would make logout server-enforced.
 6. **Account enumeration.** Registration reveals whether an email is taken, and `/users/lookup` performs exact-match lookups, so any authenticated user can confirm whether an address is registered. The spec requires lookup-by-email sharing, which makes this inherent; rate limiting and generic responses would mitigate it.
 7. **Revoked users get an explicit `403`.** This reveals that a note exists but is not accessible, rather than hiding existence behind a `404`. It was chosen for clarity in the demo and UI; returning `404` everywhere is the stricter alternative.
 8. **`payloadBytes` leaks length.** Note size is visible, and very short bodies can be distinguished from long ones. Padding would mitigate this at a storage cost.
