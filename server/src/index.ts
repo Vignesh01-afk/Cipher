@@ -1,6 +1,6 @@
 import { createServer } from 'node:http';
 import { env } from './env';
-import { prisma } from './db';
+import { prisma, onReady } from './db';
 import { createApp } from './app';
 import { attachSocketServer } from './socket';
 
@@ -22,6 +22,11 @@ server.listen(env.port, () => {
   console.log(`[ciphernote] CORS origin(s): ${env.clientOrigin}`);
   console.log('[ciphernote] Socket.IO attached - realtime chat enabled.');
   console.log('[ciphernote] The server stores ciphertext only - it holds no note keys.');
+  // Warm up the database once the socket layer is up. Neon (and other managed
+  // Postgres) scale compute to zero between requests, so the first real
+  // request is not the one that pays for the wake-up. The warm-up retries on
+  // its own (2 s, then 4 s) and never blocks startup.
+  void onReady();
 });
 
 async function shutdown(signal: string): Promise<void> {

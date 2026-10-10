@@ -18,7 +18,7 @@ export const notesRouter = Router();
  */
 async function loadAccess(req: Request): Promise<NoteAccess> {
   const userId = currentUserId(req);
-  const noteId = req.params.id;
+  const noteId = String(req.params.id);
 
   try {
     return await requireNoteAccess(noteId, userId);
@@ -63,7 +63,7 @@ notesRouter.get(
       orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
       include: noteInclude,
       take: limit + 1,
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      ...(cursor ? { cursor: { id: String(cursor) }, skip: 1 } : {}),
     });
 
     const hasMore = rows.length > limit;
@@ -154,10 +154,10 @@ notesRouter.patch(
   asyncHandler(async (req, res) => {
     const userId = currentUserId(req);
     const input = parseBody(updateNoteSchema, req.body);
-    await requireNoteOwnership(req.params.id, userId);
+    await requireNoteOwnership(String(req.params.id), userId);
 
     const note = await prisma.note.update({
-      where: { id: req.params.id },
+      where: { id: String(req.params.id) },
       data: {
         ...(input.ciphertext !== undefined ? { ciphertext: input.ciphertext } : {}),
         ...(input.iv !== undefined ? { iv: input.iv } : {}),
@@ -195,7 +195,7 @@ notesRouter.delete(
   requireAuth,
   asyncHandler(async (req, res) => {
     const userId = currentUserId(req);
-    const note = await requireNoteOwnership(req.params.id, userId);
+    const note = await requireNoteOwnership(String(req.params.id), userId);
 
     await prisma.note.delete({ where: { id: note.id } });
 
@@ -221,10 +221,10 @@ notesRouter.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const userId = currentUserId(req);
-    await requireNoteOwnership(req.params.id, userId);
+    await requireNoteOwnership(String(req.params.id), userId);
 
     const shares = await prisma.noteShare.findMany({
-      where: { noteId: req.params.id },
+      where: { noteId: String(req.params.id) },
       orderBy: { createdAt: 'desc' },
       include: { sharedWith: { select: { id: true, displayName: true, email: true } } },
     });
@@ -248,7 +248,7 @@ notesRouter.post(
   asyncHandler(async (req, res) => {
     const userId = currentUserId(req);
     const input = parseBody(createShareSchema, req.body);
-    const note = await requireNoteOwnership(req.params.id, userId);
+    const note = await requireNoteOwnership(String(req.params.id), userId);
 
     if (input.userId === userId) {
       throw ApiError.badRequest('You already own this note', 'CANNOT_SHARE_WITH_SELF');
@@ -317,8 +317,8 @@ notesRouter.delete(
   requireAuth,
   asyncHandler(async (req, res) => {
     const ownerId = currentUserId(req);
-    const note = await requireNoteOwnership(req.params.id, ownerId);
-    const targetUserId = req.params.userId;
+    const note = await requireNoteOwnership(String(req.params.id), ownerId);
+    const targetUserId = String(req.params.userId);
 
     if (targetUserId === ownerId) {
       throw ApiError.badRequest('You cannot revoke your own access', 'CANNOT_REVOKE_OWNER');

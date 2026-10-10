@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import BrandMark from '../components/BrandMark';
-import { ShieldCheck, KeyRound, Wallet } from 'lucide-react';
+import { ShieldCheck, Key, Wallet } from '@phosphor-icons/react';
 
 interface AuthShellProps {
   children: ReactNode;
@@ -8,18 +8,18 @@ interface AuthShellProps {
 }
 
 const TRUST_CHIPS = [
-  { icon: KeyRound, label: 'End-to-End', sub: 'Encryption' },
+  { icon: Key, label: 'End-to-End', sub: 'Encryption' },
   { icon: ShieldCheck, label: 'Secure', sub: 'Sharing' },
   { icon: Wallet, label: 'Full', sub: 'Control' },
 ];
 
-export function AuthShell({ children, width = 'md' }: AuthShellProps): JSX.Element {
+export function AuthShell({ children, width = 'md' }: AuthShellProps): React.ReactElement {
   return (
     <div className="relative flex min-h-screen overflow-hidden bg-stone-50 dark:bg-[#0B0F19]">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-40 -top-40 h-[32rem] w-[32rem] rounded-full bg-brand/15 blur-3xl dark:bg-brand/20" />
-        <div className="absolute -right-32 top-10 h-[26rem] w-[26rem] rounded-full bg-violet-400/15 blur-3xl dark:bg-violet-400/15" />
-        <div className="absolute -bottom-32 left-1/3 h-[32rem] w-[32rem] rounded-full bg-pink-400/10 blur-3xl dark:bg-pink-400/10" />
+        <div className="absolute -left-40 -top-40 h-[32rem] w-[32rem] rounded-md bg-brand/15 blur-3xl dark:bg-brand/20" />
+        <div className="absolute -right-32 top-10 h-[26rem] w-[26rem] rounded-md bg-violet-400/15 blur-3xl dark:bg-violet-400/15" />
+        <div className="absolute -bottom-32 left-1/3 h-[32rem] w-[32rem] rounded-md bg-pink-400/10 blur-3xl dark:bg-pink-400/10" />
 
         <svg className="absolute bottom-0 left-0 h-64 w-full opacity-50 dark:opacity-40" viewBox="0 0 1440 320" preserveAspectRatio="none">
           <defs>
@@ -41,7 +41,7 @@ export function AuthShell({ children, width = 'md' }: AuthShellProps): JSX.Eleme
       <div className="relative z-10 grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-5 py-10 lg:grid-cols-[1.05fr_1fr] lg:gap-16 lg:px-8">
         <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
           <div className="flex items-center gap-3 lg:gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_12px_30px_-10px_rgba(122,88,247,0.9)]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-md     text-white ">
               <BrandMark size="lg" aria-hidden="true" />
             </div>
             <span className="text-2xl font-bold tracking-tight text-stone-900 dark:text-white sm:text-3xl">
@@ -57,7 +57,7 @@ export function AuthShell({ children, width = 'md' }: AuthShellProps): JSX.Eleme
           <div className="mt-8 hidden gap-6 lg:flex">
             {TRUST_CHIPS.map((chip) => (
               <div key={chip.label} className="flex flex-col items-center gap-2 text-center">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/60 bg-white/70 text-brand-600 backdrop-blur dark:border-white/10 dark:bg-white/[0.06] dark:text-brand-300">
+                <div className="flex h-11 w-11 items-center justify-center rounded-md border border-white/60 bg-surface/70 text-brand-600  dark:border-white/10 dark:bg-surface/[0.06] dark:text-brand-300">
                   <chip.icon className="h-5 w-5" />
                 </div>
                 <span className="text-[11px] font-semibold leading-tight text-stone-600 dark:text-stone-300">
@@ -71,9 +71,9 @@ export function AuthShell({ children, width = 'md' }: AuthShellProps): JSX.Eleme
 
           <p className="mt-10 hidden items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] text-stone-400 dark:text-stone-500 lg:flex">
             <span>Secure</span>
-            <span className="h-1 w-1 rounded-full bg-current opacity-60" />
+            <span className="h-1 w-1 rounded-md bg-current opacity-60" />
             <span>Encrypted</span>
-            <span className="h-1 w-1 rounded-full bg-current opacity-60" />
+            <span className="h-1 w-1 rounded-md bg-current opacity-60" />
             <span>Yours</span>
           </p>
         </div>

@@ -292,7 +292,7 @@ export function attachSocketServer(httpServer: HttpServer): SocketServer {
     socket.on('disconnecting', () => {
       void (async () => {
         const rooms = [...socket.rooms]
-          .filter((r) => r.startsWith('conversation:'))
+          .filter((r: string) => r.startsWith('conversation:'))
           .map((r) => r.slice('conversation:'.length));
         for (const conversationId of rooms) {
           // Only broadcast offline if the user has no other live socket here.

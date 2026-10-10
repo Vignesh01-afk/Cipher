@@ -5,7 +5,7 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   error?: string;
 }
 
-export function Textarea({ label, error, className = '', id, ...rest }: TextareaProps): JSX.Element {
+export function Textarea({ label, error, className = '', id, ...rest }: TextareaProps): React.ReactElement {
   const textareaId = id ?? (typeof rest.name === 'string' ? rest.name : undefined);
 
   return (

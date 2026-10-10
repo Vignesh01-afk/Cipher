@@ -169,7 +169,7 @@ export async function unlockVault(page: Page, password: string = PASSWORD): Prom
 
   await passwordField.fill(password);
   await page.getByRole('button', { name: 'Unlock vault', exact: true }).click();
-  await page.waitForURL('**/dashboard', { timeout: 60_000 }); Activities/Export/Privacy/Lock.
+  await page.waitForURL('**/dashboard', { timeout: 60_000 });
 }
 
 /** Reads the Bearer token the app stored for its session. */

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Lock, RefreshCw, Save, ShieldCheck, Trash2 } from 'lucide-react';
+import { ArrowLeft, Lock, ArrowClockwise, FloppyDisk, ShieldCheck, Trash } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { ApiError, api } from '../lib/api';
@@ -22,7 +22,7 @@ interface NoteEditorPageProps {
   mode: 'create' | 'edit';
 }
 
-export function NoteEditorPage({ mode }: NoteEditorPageProps): JSX.Element {
+export function NoteEditorPage({ mode }: NoteEditorPageProps): React.ReactElement {
   const { noteId } = useParams<{ noteId: string }>();
   const { keys } = useAuth();
   const toast = useToast();
@@ -223,7 +223,7 @@ export function NoteEditorPage({ mode }: NoteEditorPageProps): JSX.Element {
             <TagInput value={tags} onChange={setTags} disabled={saving} />
           </div>
 
-          <div className="rounded-lg border border-stone-200 bg-stone-50/70 p-3 dark:border-stone-800 dark:bg-stone-900/60">
+          <div className="rounded-md border border-stone-200 bg-stone-50/70 p-3 dark:border-stone-800 dark:bg-stone-900/60">
             <p className="flex items-start gap-2 text-xs leading-5 text-stone-500 dark:text-stone-400">
               <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-orange-700 dark:text-orange-500" />
               On save, a payload is built, sealed with AES-GCM using a unique nonce, and the key is wrapped with your
@@ -236,7 +236,7 @@ export function NoteEditorPage({ mode }: NoteEditorPageProps): JSX.Element {
               Cancel
             </Link>
             <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? <Spinner /> : mode === 'create' ? <Save className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" />}
+              {saving ? <Spinner /> : mode === 'create' ? <FloppyDisk className="h-4 w-4" /> : <ArrowClockwise className="h-4 w-4" />}
               {saving
                 ? 'Encrypting and saving…'
                 : mode === 'create'

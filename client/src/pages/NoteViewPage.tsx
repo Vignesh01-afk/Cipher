@@ -1,18 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import {
-  ArrowLeft,
-  Calendar,
-  KeyRound,
-  Lock,
-  Pencil,
-  Share2,
-  ShieldCheck,
-  Tag,
-  Trash2,
-  Unlock,
-  UserRound,
-} from 'lucide-react';
+
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { ApiError, api } from '../lib/api';
@@ -24,8 +12,10 @@ import { LoadingBlock } from '../components/Spinner';
 import { ErrorState } from '../components/States';
 import { NoteFilesPanel } from '../components/NoteFilesPanel';
 import { SecurityBadge } from '../components/SecurityBadge';
+import { ArrowLeft, ShieldCheck, PencilSimple, ShareNetwork, Trash, Lock, LockOpen, Key, User, Calendar, Tag } from '@phosphor-icons/react';
+import type { ReactElement } from 'react';
 
-export function NoteViewPage(): JSX.Element {
+export function NoteViewPage(): ReactElement {
   const { noteId } = useParams<{ noteId: string }>();
   const { keys } = useAuth();
   const toast = useToast();
@@ -152,11 +142,11 @@ export function NoteViewPage(): JSX.Element {
           {isOwner ? (
             <>
               <Link to={`/notes/${note.id}/edit`} className="btn btn-secondary btn-sm">
-                <Pencil className="h-3.5 w-3.5" />
+                <PencilSimple className="h-3.5 w-3.5" />
                 Edit
               </Link>
               <button type="button" className="btn btn-primary btn-sm" onClick={() => setShareOpen(true)}>
-                <Share2 className="h-3.5 w-3.5" />
+                <ShareNetwork className="h-3.5 w-3.5" />
                 Share
               </button>
               <button
@@ -164,7 +154,7 @@ export function NoteViewPage(): JSX.Element {
                 className="btn btn-secondary btn-sm text-rose-600 dark:text-rose-400"
                 onClick={() => setConfirmDelete(true)}
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash className="h-3.5 w-3.5" />
                 Delete
               </button>
             </>
@@ -175,11 +165,11 @@ export function NoteViewPage(): JSX.Element {
       <article className="card p-6">
         <div className="flex flex-wrap items-center gap-2">
           <span className={`badge ${isOwner ? 'badge-cyan' : 'badge-amber'}`}>
-            {isOwner ? <Lock className="h-3 w-3" /> : <Unlock className="h-3 w-3" />}
+            {isOwner ? <Lock className="h-3 w-3" /> : <LockOpen className="h-3 w-3" />}
             {isOwner ? 'Owned by you' : 'Shared with you'}
           </span>
           <span className="badge badge-emerald">
-            <KeyRound className="h-3 w-3" />
+            <Key className="h-3 w-3" />
             {note.algorithm} · v{note.encryptionVersion}
           </span>
           {isOwner ? (
@@ -197,7 +187,7 @@ export function NoteViewPage(): JSX.Element {
 
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
           <span className="inline-flex items-center gap-1.5">
-            <UserRound className="h-3.5 w-3.5" />
+            <User className="h-3.5 w-3.5" />
             {note.owner.displayName} · {note.owner.email}
           </span>
           <span className="inline-flex items-center gap-1.5">

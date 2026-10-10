@@ -29,13 +29,13 @@ export async function requireNoteAccess(noteId: string, userId: string): Promise
     throw ApiError.notFound('That note does not exist', 'NOTE_NOT_FOUND');
   }
 
-  const activeShares = note.shares.filter((share) => share.revokedAt === null);
+  const activeShares = note.shares.filter((share: NoteShare) => share.revokedAt === null);
 
   if (note.ownerId === userId) {
     return { note, role: 'owner', share: null, activeShares };
   }
 
-  const share = activeShares.find((candidate) => candidate.sharedWithId === userId);
+  const share = activeShares.find((candidate: NoteShare) => candidate.sharedWithId === userId);
   if (!share) {
     // Deliberately explicit instead of a 404: the revoked user gets a clear
     // signal that access was withdrawn. See the threat model in the README for

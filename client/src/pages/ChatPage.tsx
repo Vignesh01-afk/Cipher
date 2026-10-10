@@ -1,24 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  ArrowLeft,
-  Check,
-  CheckCheck,
-  Clock,
-  FileText,
-  Info,
-  Lock,
-  MessageSquarePlus,
-  Paperclip,
-  Search,
-  Send,
-  ShieldCheck,
-  Smile,
-  Trash2,
-  Ban,
-  Share2,
-  X,
-} from 'lucide-react';
+
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Spinner } from '../components/Spinner';
@@ -38,6 +20,8 @@ import {
 } from '../lib/chatCrypto';
 import { ensureJoined, emitIfConnected, getChatSocket } from '../lib/chatSocket';
 import { chatPublicKeyCache } from '../lib/chatKeys';
+import { Lock, ChatTeardropText, MagnifyingGlass, Clock, ShareNetwork, Info, ShieldCheck, FileText, Checks, Paperclip, Smiley, PaperPlaneTilt, X } from '@phosphor-icons/react';
+import type { ReactElement } from 'react';
 import type {
   ChatMessageDto,
   ChatUserDto,
@@ -78,7 +62,7 @@ function timeLabel(iso: string): string {
   return new Date(iso).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
-export function ChatPage(): JSX.Element {
+export function ChatPage(): ReactElement {
   const { user, keys } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
@@ -782,14 +766,14 @@ export function ChatPage(): JSX.Element {
                 className="btn btn-primary"
                 onClick={() => setSearchOpen(true)}
               >
-                <MessageSquarePlus className="h-4 w-4" />
+                <ChatTeardropText className="h-4 w-4" />
                 New Chat
               </button>
             </div>
 
             <div className="mt-4">
               <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                 <input
                   type="search"
                   className="input pl-10"
@@ -805,7 +789,7 @@ export function ChatPage(): JSX.Element {
             {searchOpen ? (
               <div className="mt-4 card p-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Search className="h-4 w-4 shrink-0 text-stone-400" />
+                  <MagnifyingGlass className="h-4 w-4 shrink-0 text-stone-400" />
                   <span className="text-xs font-semibold uppercase tracking-wide text-stone-400">Users</span>
                   <span className="text-xs text-stone-400">·</span>
                   <span className="text-xs font-semibold uppercase tracking-wide text-stone-400">
@@ -843,7 +827,7 @@ export function ChatPage(): JSX.Element {
                           disabled={startingChat}
                           onClick={() => void startChatWith(target)}
                         >
-                          {startingChat ? <Spinner /> : <MessageSquarePlus className="h-4 w-4" />}
+                          {startingChat ? <Spinner /> : <ChatTeardropText className="h-4 w-4" />}
                           Start chat
                         </button>
                       </li>
@@ -857,7 +841,7 @@ export function ChatPage(): JSX.Element {
 
       {conversations.length === 0 ? (
             <div className="card p-8 text-center">
-              <MessageSquarePlus className="mx-auto h-8 w-8 text-stone-400" />
+              <ChatTeardropText className="mx-auto h-8 w-8 text-stone-400" />
               <h2 className="mt-3 text-lg font-semibold text-stone-900 dark:text-white">No conversations yet</h2>
               <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
                 Start a secure chat with any of your CipherNote contacts.
@@ -867,7 +851,7 @@ export function ChatPage(): JSX.Element {
                 className="mt-4 btn btn-primary"
                 onClick={() => setSearchOpen(true)}
               >
-                <MessageSquarePlus className="h-4 w-4" />
+                <ChatTeardropText className="h-4 w-4" />
                 New chat
               </button>
             </div>
@@ -879,7 +863,7 @@ export function ChatPage(): JSX.Element {
               >
                 <div className="p-4 pb-2">
                   <div className="relative">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                    <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                     <input
                       type="search"
                       className="input pl-10"
@@ -963,7 +947,7 @@ export function ChatPage(): JSX.Element {
                           onClick={() => setShareNoteOpen(true)}
                           aria-label="Share a note in this chat"
                         >
-                          <Share2 className="h-4 w-4" />
+                          <ShareNetwork className="h-4 w-4" />
                         </button>
                         <button
                           type="button"
@@ -1038,7 +1022,7 @@ export function ChatPage(): JSX.Element {
                                     <span>{timeLabel(msg.createdAt)}</span>
                                     {!isMe ? (
                                       <span className="flex items-center gap-1 text-[11px] text-stone-400">
-                                        <CheckCheck className="h-3 w-3" />
+                                        <Checks className="h-3 w-3" />
                                         {msg.status === 'sent' ? 'Delivered' : msg.status === 'failed' ? 'Failed' : 'Sending…'}
                                       </span>
                                     ) : null}
@@ -1069,7 +1053,7 @@ export function ChatPage(): JSX.Element {
                       {inConvSearch ? (
                         <div className="mt-4 card p-4">
                           <div className="flex items-center gap-2">
-                            <Search className="h-4 w-4 shrink-0 text-stone-400" />
+                            <MagnifyingGlass className="h-4 w-4 shrink-0 text-stone-400" />
                             <span className="text-xs font-semibold uppercase tracking-wide text-stone-400">
                               In this chat
                             </span>
@@ -1119,7 +1103,7 @@ export function ChatPage(): JSX.Element {
                             className="btn btn-secondary p-2"
                             aria-label="Emoji"
                           >
-                            <Smile className="h-4 w-4" />
+                            <Smiley className="h-4 w-4" />
                           </button>
                           <textarea
                             ref={composerRef}
@@ -1144,7 +1128,7 @@ export function ChatPage(): JSX.Element {
                           disabled={sending || !convCrypto || !draft.trim()}
                           aria-label="Send message"
                         >
-                          {sending ? <Spinner /> : <Send className="h-4 w-4" />}
+                          {sending ? <Spinner /> : <PaperPlaneTilt className="h-4 w-4" />}
                         </button>
                       </div>
                       <p className="mt-2 flex items-center gap-1.5 text-[11px] text-stone-400 dark:text-stone-500">
@@ -1155,7 +1139,7 @@ export function ChatPage(): JSX.Element {
                   </>
                 ) : (
                   <div className="card flex flex-col items-center justify-center py-20 text-center">
-                    <MessageSquarePlus className="h-8 w-8 text-stone-400" />
+                    <ChatTeardropText className="h-8 w-8 text-stone-400" />
                     <h3 className="mt-3 text-base font-semibold text-stone-800 dark:text-stone-100">
                       Select a conversation
                     </h3>

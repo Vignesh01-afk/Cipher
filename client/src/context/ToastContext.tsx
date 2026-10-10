@@ -1,13 +1,5 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
-import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
+import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode, } from 'react';
+import { Warning, CheckCircle, Info, X, XCircle } from '@phosphor-icons/react';
 
 export type ToastVariant = 'success' | 'error' | 'info' | 'warning';
 
@@ -32,29 +24,29 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 const VARIANT_STYLES: Record<ToastVariant, { container: string; icon: ReactNode }> = {
   success: {
     container:
-      'border-emerald-200 bg-white text-stone-800 dark:border-emerald-500/30 dark:bg-stone-900 dark:text-stone-100',
-    icon: <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />,
+      'border-emerald-200 bg-surface text-stone-800 dark:border-emerald-500/30 dark:bg-stone-900 dark:text-stone-100',
+    icon: <CheckCircle className="h-5 w-5 shrink-0 text-emerald-500" />,
   },
   error: {
     container:
-      'border-rose-200 bg-white text-stone-800 dark:border-rose-500/30 dark:bg-stone-900 dark:text-stone-100',
+      'border-rose-200 bg-surface text-stone-800 dark:border-rose-500/30 dark:bg-stone-900 dark:text-stone-100',
     icon: <XCircle className="h-5 w-5 shrink-0 text-rose-500" />,
   },
   warning: {
     container:
-      'border-amber-200 bg-white text-stone-800 dark:border-amber-500/30 dark:bg-stone-900 dark:text-stone-100',
-    icon: <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />,
+      'border-amber-200 bg-surface text-stone-800 dark:border-amber-500/30 dark:bg-stone-900 dark:text-stone-100',
+    icon: <Warning className="h-5 w-5 shrink-0 text-amber-500" />,
   },
   info: {
     container:
-      'border-cyan-200 bg-white text-stone-800 dark:border-cyan-500/30 dark:bg-stone-900 dark:text-stone-100',
+      'border-cyan-200 bg-surface text-stone-800 dark:border-cyan-500/30 dark:bg-stone-900 dark:text-stone-100',
     icon: <Info className="h-5 w-5 shrink-0 text-cyan-500" />,
   },
 };
 
 const TOAST_TIMEOUT_MS = 5200;
 
-export function ToastProvider({ children }: { children: ReactNode }): JSX.Element {
+export function ToastProvider({ children }: { children: ReactNode }): React.ReactElement {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const counter = useRef(0);
 
@@ -96,7 +88,7 @@ export function ToastProvider({ children }: { children: ReactNode }): JSX.Elemen
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border px-4 py-3 shadow-lg shadow-stone-900/5 animate-fade-in-up ${VARIANT_STYLES[toast.variant].container}`}
+            className={`pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-md border px-4 py-3    ${VARIANT_STYLES[toast.variant].container}`}
           >
             {VARIANT_STYLES[toast.variant].icon}
             <div className="min-w-0 flex-1">
@@ -110,7 +102,7 @@ export function ToastProvider({ children }: { children: ReactNode }): JSX.Elemen
             <button
               type="button"
               onClick={() => dismiss(toast.id)}
-              className="rounded-md p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-200"
+              className="rounded-md p-1 text-stone-400  hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-200"
               aria-label="Dismiss notification"
             >
               <X className="h-4 w-4" />

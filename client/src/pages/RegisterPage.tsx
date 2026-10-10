@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertTriangle, Check, Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
+import { Warning, Check, Eye, EyeSlash, Lock, Envelope, User } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { AuthShell } from './AuthShell';
@@ -14,7 +14,7 @@ import {
   passwordPolicyError,
 } from '../lib/passwordStrength';
 
-export function RegisterPage(): JSX.Element {
+export function RegisterPage(): React.ReactElement {
   const { register, isWebCryptoSupported } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
@@ -81,7 +81,7 @@ export function RegisterPage(): JSX.Element {
     <AuthShell width="lg">
       <div className="space-y-5">
         <div className="flex flex-col items-center text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_12px_30px_-10px_rgba(122,88,247,0.9)]">
+          <span className="flex h-14 w-14 items-center justify-center rounded-md     text-white ">
             <Lock className="h-6 w-6" />
           </span>
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-stone-900 dark:text-white">Create your account</h1>
@@ -91,8 +91,8 @@ export function RegisterPage(): JSX.Element {
         </div>
 
         {!isWebCryptoSupported ? (
-          <div className="card-interactive flex items-start gap-3 rounded-2xl border border-rose-200/80 bg-rose-50/40 p-4 dark:border-rose-500/20 dark:bg-rose-500/5">
-            <AlertTriangle className="h-5 w-5 shrink-0 text-rose-500" />
+          <div className="card-interactive flex items-start gap-3 rounded-md border border-rose-200/80 bg-rose-50/40 p-4 dark:border-rose-500/20 dark:bg-rose-500/5">
+            <Warning className="h-5 w-5 shrink-0 text-rose-500" />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-rose-800 dark:text-rose-200">Web Crypto required</p>
               <p className="mt-0.5 text-sm leading-6 text-rose-700/90 dark:text-rose-200/80">
@@ -103,8 +103,8 @@ export function RegisterPage(): JSX.Element {
           </div>
         ) : null}
         {error ? (
-          <div className="card-interactive flex items-start gap-3 rounded-2xl border border-rose-200/80 bg-rose-50/40 p-4 dark:border-rose-500/20 dark:bg-rose-500/5">
-            <AlertTriangle className="h-5 w-5 shrink-0 text-rose-500" />
+          <div className="card-interactive flex items-start gap-3 rounded-md border border-rose-200/80 bg-rose-50/40 p-4 dark:border-rose-500/20 dark:bg-rose-500/5">
+            <Warning className="h-5 w-5 shrink-0 text-rose-500" />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-rose-800 dark:text-rose-200">Registration failed</p>
               <p className="mt-0.5 text-sm leading-6 text-rose-700/90 dark:text-rose-200/80">{error}</p>
@@ -132,7 +132,7 @@ export function RegisterPage(): JSX.Element {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={busy}
-            leftAddon={<Mail className="h-4 w-4" />}
+            leftAddon={<Envelope className="h-4 w-4" />}
           />
           <div className="mt-1">
             <label className="label" htmlFor="password">Password</label>
@@ -152,19 +152,19 @@ export function RegisterPage(): JSX.Element {
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400  hover:text-slate-600"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPassword ? <EyeSlash className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
             {password ? (
               <div className="mt-2">
                 <div className="flex items-center gap-2">
-                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/50 dark:bg-white/[0.06]">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-md bg-surface/50 dark:bg-surface/[0.06]">
                     <div
-                      className={`h-full rounded-full transition-all duration-300 ${TONE_BAR[strength.tone]}`}
+                      className={`h-full rounded-md   ${TONE_BAR[strength.tone]}`}
                       style={{ width: `${(strength.score / 5) * 100}%` }}
                     />
                   </div>
@@ -174,7 +174,7 @@ export function RegisterPage(): JSX.Element {
                   <ul className="mt-2 space-y-1">
                     {strength.suggestions.slice(0, 2).map((suggestion) => (
                       <li key={suggestion} className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
-                        <AlertTriangle className="h-3 w-3" />
+                        <Warning className="h-3 w-3" />
                         {suggestion}
                       </li>
                     ))}
@@ -182,7 +182,7 @@ export function RegisterPage(): JSX.Element {
                 ) : (
                   <p className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
                     <Check className="h-3 w-3" />
-                    Good — this password derives your key-encryption-key with PBKDF2.
+                    Good, this password derives your key-encryption-key with PBKDF2.
                   </p>
                 )}
                 {passwordError ? <p className="field-error">{passwordError}</p> : null}
@@ -220,7 +220,7 @@ export function RegisterPage(): JSX.Element {
             </span>
           </label>
 
-          <div className="rounded-xl border border-amber-200/60 bg-amber-50/50 p-3 dark:border-amber-500/20 dark:bg-amber-500/5">
+          <div className="rounded-md border border-amber-200/60 bg-amber-50/50 p-3 dark:border-amber-500/20 dark:bg-amber-500/5">
             <p className="text-xs leading-5 text-amber-800 dark:text-amber-200">
               A recovery key is generated right after registration. It is the only way to reset a forgotten password.
             </p>
@@ -232,9 +232,9 @@ export function RegisterPage(): JSX.Element {
         </form>
 
         <div className="my-5 flex items-center gap-3">
-          <span className="h-px flex-1 bg-white/10" />
+          <span className="h-px flex-1 bg-surface/10" />
           <span className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-400 dark:text-stone-500">or</span>
-          <span className="h-px flex-1 bg-white/10" />
+          <span className="h-px flex-1 bg-surface/10" />
         </div>
 
         <Button variant="secondary" className="w-full" onClick={() => onGoogleSignUp()} disabled={busy}>

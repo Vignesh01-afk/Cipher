@@ -16,25 +16,28 @@ import {
   upgradeAuthSchema,
 } from './schemas';
 
-/** Canonical authKey: base64 of exactly 64 bytes (512 bits) -> 88 chars. */
-const VALID_AUTH_KEY = Buffer.alloc(64, 7).toString('base64');
+/** Canonical authKey: base64 of exactly 32 bytes (256 bits) -> 44 chars. */
+const VALID_AUTH_KEY = Buffer.alloc(32, 7).toString('base64');
 
 describe('authKeySchema', () => {
-  test('accepts base64 of exactly 512 bits', () => {
-    assert.equal(VALID_AUTH_KEY.length, 88);
+  test('accepts base64 of exactly 256 bits', () => {
+    assert.equal(VALID_AUTH_KEY.length, 44);
     assert.equal(authKeySchema.safeParse(VALID_AUTH_KEY).success, true);
   });
 
   test('rejects the wrong key length', () => {
-    const short = Buffer.alloc(32, 7).toString('base64'); // 256 bits
+    const short = Buffer.alloc(16, 7).toString('base64'); // 128 bits
     assert.equal(authKeySchema.safeParse(short).success, false);
+    // The full 512-bit derivation (what must NEVER leave the browser).
+    const full = Buffer.alloc(64, 7).toString('base64');
+    assert.equal(authKeySchema.safeParse(full).success, false);
     const long = Buffer.alloc(96, 7).toString('base64');
     assert.equal(authKeySchema.safeParse(long).success, false);
   });
 
   test('rejects base64url, whitespace and hex', () => {
     // 0xFF bytes produce '/' in standard base64; base64url swaps it for '_'.
-    const base64url = Buffer.alloc(64, 0xff).toString('base64').replace(/\//g, '_');
+    const base64url = Buffer.alloc(32, 0xff).toString('base64').replace(/\//g, '_');
     assert.equal(authKeySchema.safeParse(base64url).success, false);
     assert.equal(authKeySchema.safeParse(` ${VALID_AUTH_KEY} `).success, false);
     assert.equal(authKeySchema.safeParse('a'.repeat(64)).success, false);

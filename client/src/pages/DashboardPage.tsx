@@ -1,18 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  FileText,
-  Users,
-  MessageCircle,
-  Lock,
-  ShieldCheck,
-  ArrowRight,
-  FilePlus2,
-  ServerOff,
-  ScrollText,
-  FilePlus,
-  Search,
-} from 'lucide-react';
+
 import { useOwnNotes, useSharedNotes } from '../hooks/useNotes';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
@@ -24,8 +12,10 @@ import { EmptyState } from '../components/EmptyState';
 import { NoteCard } from '../components/NoteCard';
 import { ErrorState } from '../components/States';
 import { Skeleton, SkeletonText } from '../components/Skeleton';
+import { FilePlus, MagnifyingGlass, FileText, Users, ChatsCircle, Scroll, ArrowRight, ShieldCheck, Lock, WifiSlash } from '@phosphor-icons/react';
+import type { ReactElement } from 'react';
 
-export function DashboardPage(): JSX.Element {
+export function DashboardPage(): ReactElement {
   const { user } = useAuth();
   const navigate = useNavigate();
   const own = useOwnNotes();
@@ -83,7 +73,7 @@ export function DashboardPage(): JSX.Element {
             </p>
           </div>
           <Button variant="primary" onClick={() => navigate('/notes/new')}>
-            <FilePlus2 className="h-4 w-4" />
+            <FilePlus className="h-4 w-4" />
             New Note
           </Button>
         </div>
@@ -96,7 +86,7 @@ export function DashboardPage(): JSX.Element {
           }}
         >
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <MagnifyingGlass className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
               type="search"
               className="input pl-10"
@@ -106,7 +96,7 @@ export function DashboardPage(): JSX.Element {
             />
           </div>
           <Button type="submit" variant="secondary">
-            <Search className="h-4 w-4" />
+            <MagnifyingGlass className="h-4 w-4" />
             Search locally
           </Button>
         </form>
@@ -162,7 +152,7 @@ export function DashboardPage(): JSX.Element {
               <span className="stat-card-url">Start a conversation</span>
             </div>
             <span className="stat-card-icon">
-              <MessageCircle className="h-5 w-5" />
+              <ChatsCircle className="h-5 w-5" />
             </span>
           </div>
         </button>
@@ -180,7 +170,7 @@ export function DashboardPage(): JSX.Element {
               <span className="stat-card-url">View full log</span>
             </div>
             <span className="stat-card-icon">
-              <ScrollText className="h-5 w-5" />
+              <Scroll className="h-5 w-5" />
             </span>
           </div>
         </button>
@@ -258,7 +248,7 @@ export function DashboardPage(): JSX.Element {
               Vault unlocked in this tab
             </div>
             <div className="mt-2 flex items-center gap-2 rounded-xl bg-white/60 px-3 py-2 text-xs text-stone-500 dark:bg-white/[0.04] dark:text-stone-400">
-              <ServerOff className="h-3.5 w-3.5 shrink-0" />
+              <WifiSlash className="h-3.5 w-3.5 shrink-0" />
               The API cannot decrypt any note, even with full database access
             </div>
           </section>
@@ -276,7 +266,7 @@ export function DashboardPage(): JSX.Element {
               <ul className="mt-3 space-y-3">
                 {logs.map((log) => {
                   const matching = getAuditActionMeta(log.action);
-                  const Icon = matching?.icon ?? Search;
+                  const Icon = matching?.icon ?? MagnifyingGlass;
                   return (
                     <li key={log.createdAt} className="flex items-start gap-3">
                       <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/70 text-stone-500 dark:bg-white/[0.06] dark:text-stone-400">
@@ -301,7 +291,7 @@ export function DashboardPage(): JSX.Element {
   );
 }
 
-function SkeletonBlock({ label = 'Loading…' }: { label?: string }): JSX.Element {
+function SkeletonBlock({ label = 'Loading…' }: { label?: string }): ReactElement {
   return (
     <div className="flex items-center justify-center gap-3 py-12 text-sm text-stone-500 dark:text-stone-400">
       <div className="h-5 w-5 animate-pulse rounded-full border-2 border-brand/30 border-t-brand" />

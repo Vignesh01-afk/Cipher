@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
-import { CheckCircle2, AlertTriangle, Info, XCircle, X } from 'lucide-react';
+import { CheckCircle, Warning, Info, XCircle, X } from '@phosphor-icons/react';
 
 export type ToastVariant = 'success' | 'error' | 'warning' | 'info';
 
@@ -20,14 +20,14 @@ interface ToastContextValue {
 
 const TOAST_TIMEOUT_MS = 5200;
 
-function ToastIcon({ variant }: { variant: ToastVariant }): JSX.Element {
-  if (variant === 'success') return <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-500" />;
+function ToastIcon({ variant }: { variant: ToastVariant }): React.ReactElement {
+  if (variant === 'success') return <CheckCircle className="h-5 w-5 shrink-0 text-emerald-500" />;
   if (variant === 'error') return <XCircle className="h-5 w-5 shrink-0 text-rose-500" />;
-  if (variant === 'warning') return <AlertTriangle className="h-5 w-5 shrink-0 text-amber-500" />;
+  if (variant === 'warning') return <Warning className="h-5 w-5 shrink-0 text-amber-500" />;
   return <Info className="h-5 w-5 shrink-0 text-blue-500" />;
 }
 
-function ToastItemComponent({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => void }): JSX.Element {
+function ToastItemComponent({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => void }): React.ReactElement {
   return (
     <div className="toast">
       <div className="flex items-start gap-3">
@@ -40,7 +40,7 @@ function ToastItemComponent({ toast, onDismiss }: { toast: ToastItem; onDismiss:
           type="button"
           onClick={onDismiss}
           aria-label="Dismiss notification"
-          className="rounded-md p-1 text-slate-400 transition hover:bg-white/60 hover:text-slate-600 dark:hover:bg-white/[0.08] dark:hover:text-slate-200"
+          className="rounded-md p-1 text-slate-400  hover:bg-surface/60 hover:text-slate-600 dark:hover:bg-surface/[0.08] dark:hover:text-slate-200"
         >
           <X className="h-4 w-4" />
         </button>
@@ -51,7 +51,7 @@ function ToastItemComponent({ toast, onDismiss }: { toast: ToastItem; onDismiss:
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
-export function ToastProvider({ children }: { children: ReactNode }): JSX.Element {
+export function ToastProvider({ children }: { children: ReactNode }): React.ReactElement {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const counter = useRef(0);
 

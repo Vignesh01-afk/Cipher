@@ -18,7 +18,7 @@ interface DropdownProps {
   rootRef?: (node: HTMLElement | null) => void;
 }
 
-export function Dropdown({ trigger, className = '', align = 'left', children, rootRef }: DropdownProps): JSX.Element {
+export function Dropdown({ trigger, className = '', align = 'left', children, rootRef }: DropdownProps): React.ReactElement {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -50,7 +50,7 @@ export function Dropdown({ trigger, className = '', align = 'left', children, ro
     >
       <button
         type="button"
-        className="flex items-center gap-1.5 rounded-full border border-white/60 bg-white/70 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-white/90 active:bg-white dark:border-white/[0.10] dark:bg-white/[0.06] dark:text-slate-200 dark:hover:bg-white/[0.12]"
+        className="flex items-center gap-1.5 rounded-md border border-white/60 bg-surface/70 px-3 py-1.5 text-sm font-medium text-slate-700  hover:bg-surface/90 active:bg-surface dark:border-white/[0.10] dark:bg-surface/[0.06] dark:text-slate-200 dark:hover:bg-surface/[0.12]"
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-haspopup="menu"
@@ -62,7 +62,7 @@ export function Dropdown({ trigger, className = '', align = 'left', children, ro
         <DropdownCloseContext.Provider value={() => setOpen(false)}>
           <div
             ref={panelRef}
-            className="absolute z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-white/10 bg-white/95 p-1 shadow-2xl shadow-brand/10 backdrop-blur-xl animate-scale-in dark:border-white/[0.08] dark:bg-[#12173A]"
+            className="absolute z-50 mt-2 w-56 overflow-hidden rounded-md border border-white/10 bg-surface/95 p-1     dark:border-white/[0.08] dark:bg-[#12173A]"
             style={{
               right: align === 'right' ? '0' : 'auto',
               left: align === 'left' ? '0' : 'auto',
@@ -76,7 +76,7 @@ export function Dropdown({ trigger, className = '', align = 'left', children, ro
   );
 }
 
-export function DropdownMenu({ items, className }: { items: DropdownItem[]; className?: string }): JSX.Element {
+export function DropdownMenu({ items, className }: { items: DropdownItem[]; className?: string }): React.ReactElement {
   const close = useContext(DropdownCloseContext);
   return (
     <div className={`py-1 ${className ?? ''}`} role="menu" aria-label="Options">
@@ -85,10 +85,10 @@ export function DropdownMenu({ items, className }: { items: DropdownItem[]; clas
           key={index}
           type="button"
           role="menuitem"
-          className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors ${
+          className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm  ${
             item.disabled
               ? 'cursor-not-allowed text-slate-400 dark:text-slate-500'
-              : 'text-slate-700 hover:bg-white/60 hover:text-slate-900 dark:text-slate-200 dark:hover:bg-white/[0.06]'
+              : 'text-slate-700 hover:bg-surface/60 hover:text-slate-900 dark:text-slate-200 dark:hover:bg-surface/[0.06]'
           } ${item.className ?? ''}`}
           onClick={() => {
             item.onSelect();

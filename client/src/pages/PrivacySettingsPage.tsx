@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { EyeOff, KeyRound, MonitorX, ShieldCheck, Timer, Waves } from 'lucide-react';
+import { EyeSlash, Key, Monitor, ShieldCheck, Timer, Waves } from '@phosphor-icons/react';
 import { AUTO_LOCK_OPTIONS, usePrivacy } from '../context/PrivacyContext';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -17,7 +17,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
  *  - watermark (session identity + timestamp)
  *  - auto-lock (inactivity timer -> drops in-memory keys)
  */
-export function PrivacySettingsPage(): JSX.Element {
+export function PrivacySettingsPage(): React.ReactElement {
   const { settings, updateSettings } = usePrivacy();
   const { setupRecoveryKey } = useAuth();
   const toast = useToast();
@@ -32,8 +32,8 @@ export function PrivacySettingsPage(): JSX.Element {
       <section className="card p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand-600 dark:bg-brand/15 dark:text-brand-300">
-              <EyeOff className="h-5 w-5" />
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-brand/10 text-brand-600 dark:bg-brand/15 dark:text-brand-300">
+              <EyeSlash className="h-5 w-5" />
             </span>
             <div>
               <h2 className="text-base font-semibold text-stone-900 dark:text-white">Privacy Mode</h2>
@@ -136,7 +136,7 @@ export function PrivacySettingsPage(): JSX.Element {
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <SecurityBadge />
           <span className="badge badge-slate">
-            <MonitorX className="h-3 w-3" />
+            <Monitor className="h-3 w-3" />
             Capture detection: {settings.captureProtection ? 'on' : 'off'}
           </span>
           <span className="badge badge-slate">
@@ -148,7 +148,7 @@ export function PrivacySettingsPage(): JSX.Element {
 
       <section className="card p-5">
         <h2 className="flex items-center gap-2 text-sm font-semibold text-stone-900 dark:text-white">
-          <KeyRound className="h-4 w-4 text-brand-600 dark:text-brand-300" />
+          <Key className="h-4 w-4 text-brand-600 dark:text-brand-300" />
           Recovery key
         </h2>
         <p className="mt-2 text-xs leading-5 text-stone-500 dark:text-stone-400">
@@ -159,7 +159,7 @@ export function PrivacySettingsPage(): JSX.Element {
           Generate a new recovery key
         </button>
         {newKey ? (
-          <div className="mt-3 rounded-xl border border-brand/25 bg-brand/[0.06] p-3 dark:border-brand/25 dark:bg-brand/[0.08]">
+          <div className="mt-3 rounded-md border border-brand/25 bg-brand/[0.06] p-3 dark:border-brand/25 dark:bg-brand/[0.08]">
             <p className="select-all break-all font-mono text-xs font-semibold text-stone-800 dark:text-stone-100">{newKey}</p>
             <p className="mt-2 text-[11px] text-amber-700 dark:text-amber-300">
               Shown once. Copy it to a safe place - the previous key is now invalid.
@@ -230,7 +230,7 @@ export function PrivacySettingsPage(): JSX.Element {
         }
       />
 
-      <section className="rounded-2xl border border-amber-300 bg-amber-50/70 p-5 dark:border-amber-500/30 dark:bg-amber-500/5">
+      <section className="rounded-md border border-amber-300 bg-amber-50/70 p-5 dark:border-amber-500/30 dark:bg-amber-500/5">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
           What Privacy Mode cannot do
         </h2>

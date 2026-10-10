@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Lock, ShieldCheck, Users, ChevronDown } from 'lucide-react';
+import { ArrowRight, Lock, ShieldCheck, Users, CaretDown } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 
-export function LandingPage(): JSX.Element {
+export function LandingPage(): React.ReactElement {
   const { status } = useAuth();
 
   return (
@@ -10,7 +10,7 @@ export function LandingPage(): JSX.Element {
       <header className="card-glass border-b border-white/10 px-4 py-4 sm:px-6">
         <div className="flex items-center justify-between">
           <Link to="/dashboard" className="flex items-center gap-3 group">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_8px_24px_-10px_rgba(122,88,247,0.9)]">
+            <span className="flex h-10 w-10 items-center justify-center rounded-md     text-white ">
               <Lock className="h-5 w-5" />
             </span>
             <span className="text-xl font-bold tracking-tight text-stone-900 dark:text-white">
@@ -25,7 +25,7 @@ export function LandingPage(): JSX.Element {
               </Link>
             ) : (
               <Link to="/login" className="btn btn-primary btn-sm">
-                Sign in <ChevronDown className="h-3.5 w-3.5" />
+                Sign in <CaretDown className="h-3.5 w-3.5" />
               </Link>
             )}
           </div>
@@ -35,7 +35,7 @@ export function LandingPage(): JSX.Element {
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-12 sm:py-20">
         <div className="mx-auto max-w-4xl text-center">
           <div className="mb-6 flex justify-center">
-            <span className="flex h-18 w-18 items-center justify-center rounded-3xl bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_20px_60px_-20px_rgba(122,88,247,0.9)]">
+            <span className="flex h-18 w-18 items-center justify-center rounded-md     text-white ">
               <Lock className="h-9 w-9" />
             </span>
           </div>
@@ -61,7 +61,7 @@ export function LandingPage(): JSX.Element {
 
           <div className="mt-10 grid gap-6 sm:grid-cols-3">
             <div className="card p-5">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
+              <span className="flex h-10 w-10 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
                 <ShieldCheck className="h-5 w-5" />
               </span>
               <h3 className="mt-3 text-sm font-bold text-stone-900 dark:text-white">End-to-end encrypted</h3>
@@ -70,7 +70,7 @@ export function LandingPage(): JSX.Element {
               </p>
             </div>
             <div className="card p-5">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10 text-brand-600 dark:text-brand-300">
+              <span className="flex h-10 w-10 items-center justify-center rounded-md bg-brand/10 text-brand-600 dark:text-brand-300">
                 <Users className="h-5 w-5" />
               </span>
               <h3 className="mt-3 text-sm font-bold text-stone-900 dark:text-white">Share & revoke</h3>
@@ -79,7 +79,7 @@ export function LandingPage(): JSX.Element {
               </p>
             </div>
             <div className="card p-5">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400">
+              <span className="flex h-10 w-10 items-center justify-center rounded-md bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400">
                 <Lock className="h-5 w-5" />
               </span>
               <h3 className="mt-3 text-sm font-bold text-stone-900 dark:text-white">Zero-knowledge core</h3>

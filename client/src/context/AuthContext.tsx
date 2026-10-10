@@ -93,7 +93,7 @@ function materialOf(user: KeyMaterial): UserKeyMaterial {
   };
 }
 
-export function AuthProvider({ children }: { children: ReactNode }): JSX.Element {
+export function AuthProvider({ children }: { children: ReactNode }): React.ReactElement {
   const [status, setStatus] = useState<AuthStatus>('loading');
   const [user, setUser] = useState<KeyMaterial | null>(null);
   const [keys, setKeys] = useState<CryptoSession | null>(null);

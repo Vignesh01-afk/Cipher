@@ -7,7 +7,7 @@ interface ToggleProps {
 }
 
 /** Accessible switch used by the privacy settings. */
-export function Toggle({ checked, onChange, label, description, disabled }: ToggleProps): JSX.Element {
+export function Toggle({ checked, onChange, label, description, disabled }: ToggleProps): React.ReactElement {
   return (
     <div className="flex items-start justify-between gap-4 py-2.5">
       <div className="min-w-0">
@@ -23,12 +23,12 @@ export function Toggle({ checked, onChange, label, description, disabled }: Togg
         aria-label={label}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600 disabled:cursor-not-allowed disabled:opacity-50 ${
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-md  focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600 disabled:cursor-not-allowed disabled:opacity-50 ${
           checked ? 'bg-orange-700' : 'bg-stone-300 dark:bg-stone-700'
         }`}
       >
         <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+          className={`inline-block h-4 w-4 transform rounded-md bg-surface shadow  ${
             checked ? 'translate-x-6' : 'translate-x-1'
           }`}
         />

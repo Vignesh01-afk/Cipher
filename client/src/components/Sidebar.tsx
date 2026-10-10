@@ -1,17 +1,9 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import {
-  Home,
-  FileText,
-  MessageCircle,
-  Users,
-  ScrollText,
-  Settings,
-  LogOut,
-  Lock,
-  ChevronRight,
-} from 'lucide-react';
+
 import BrandMark from './BrandMark';
 import { useAuth } from '../context/AuthContext';
+import { House, FileText, ChatsCircle, Users, Scroll, Gear, Lock, CaretRight, SignOut } from '@phosphor-icons/react';
+import type { ReactElement } from 'react';
 
 interface SidebarProps {
   open: boolean;
@@ -19,22 +11,22 @@ interface SidebarProps {
 }
 
 const NAV_ITEMS = [
-  { to: '/dashboard', label: 'Home', icon: Home },
+  { to: '/dashboard', label: 'Home', icon: House },
   { to: '/notes', label: 'Notes', icon: FileText },
-  { to: '/chat', label: 'Chat', icon: MessageCircle },
+  { to: '/chat', label: 'Chat', icon: ChatsCircle },
   { to: '/shared', label: 'Shared', icon: Users },
-  { to: '/activity', label: 'Audit Log', icon: ScrollText },
+  { to: '/activity', label: 'Audit Log', icon: Scroll },
   {
     to: '/settings',
     label: 'Settings',
-    icon: Settings,
+    icon: Gear,
     children: [
       { to: '/privacy', label: 'Privacy Mode', icon: Lock },
     ],
   },
 ];
 
-export function Sidebar({ open, onClose }: SidebarProps): JSX.Element {
+export function Sidebar({ open, onClose }: SidebarProps): ReactElement {
   const { lock, logout } = useAuth();
   const location = useLocation();
 
@@ -105,7 +97,7 @@ export function Sidebar({ open, onClose }: SidebarProps): JSX.Element {
                 <item.icon className="nav-icon" />
                 <span className="nav-label">{item.label}</span>
                 {item.children ? (
-                  <ChevronRight className="ml-auto h-3.5 w-3.5 text-stone-400" />
+                  <CaretRight className="ml-auto h-3.5 w-3.5 text-stone-400" />
                 ) : null}
               </NavLink>
             </div>
@@ -137,7 +129,7 @@ export function Sidebar({ open, onClose }: SidebarProps): JSX.Element {
               onClick={() => void logout()}
               title="Sign out of your session"
             >
-              <LogOut className="h-3.5 w-3.5" />
+              <SignOut className="h-3.5 w-3.5" />
               Sign out
             </button>
           </div>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { File as FileIcon, FileText, Film, Image as ImageIcon, Music, ShieldCheck, Trash2 } from 'lucide-react';
+import { File as FileIcon, FileText, FilmSlate, Image as ImageIcon, MusicNote, ShieldCheck, Trash } from '@phosphor-icons/react';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -35,7 +35,7 @@ export function FilePreviewModal({
   canDelete: boolean;
   onClose: () => void;
   onDeleted?: () => void;
-}): JSX.Element | null {
+}): React.ReactElement | null {
   const { keys } = useAuth();
   const toast = useToast();
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
@@ -134,7 +134,7 @@ export function FilePreviewModal({
               className="btn btn-danger btn-sm"
               onClick={() => void handleDelete()}
             >
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash className="h-3.5 w-3.5" />
               Delete
             </button>
           ) : null}
@@ -149,7 +149,7 @@ export function FilePreviewModal({
       ) : error ? (
         <ErrorState title="Could not open this file" message={error} />
       ) : blobUrl && kind === 'image' ? (
-        <div className="overflow-hidden rounded-lg border border-stone-200 bg-stone-950/5 dark:border-stone-800 dark:bg-stone-950/40">
+        <div className="overflow-hidden rounded-md border border-stone-200 bg-stone-950/5 dark:border-stone-800 dark:bg-stone-950/40">
           <img
             src={blobUrl}
             alt={file.filename}
@@ -159,12 +159,12 @@ export function FilePreviewModal({
           />
         </div>
       ) : blobUrl && kind === 'video' ? (
-        <video src={blobUrl} controls className="mx-auto max-h-[60vh] w-full rounded-lg" />
+        <video src={blobUrl} controls className="mx-auto max-h-[60vh] w-full rounded-md" />
       ) : blobUrl && kind === 'audio' ? (
         <audio src={blobUrl} controls className="w-full" />
       ) : textContent !== null ? (
         <pre
-          className="max-h-[60vh] overflow-auto rounded-lg bg-stone-950/5 dark:bg-stone-950/40 p-4 text-xs font-mono leading-5 text-stone-800 dark:text-stone-200"
+          className="max-h-[60vh] overflow-auto rounded-md bg-stone-950/5 dark:bg-stone-950/40 p-4 text-xs font-mono leading-5 text-stone-800 dark:text-stone-200"
           style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
           aria-label={`Decrypted file contents: ${file.filename}`}
         >
@@ -174,13 +174,13 @@ export function FilePreviewModal({
       ) : blobUrl && kind === 'pdf' ? (
         <iframe
           src={blobUrl}
-          className="mx-auto max-h-[70vh] w-full rounded-lg"
+          className="mx-auto max-h-[70vh] w-full rounded-md"
           sandbox=""
           title={`PDF preview for ${file.filename}`}
         />
       ) : blobUrl ? (
         <div className="flex flex-col items-center gap-3 py-10 text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">
+          <span className="flex h-12 w-12 items-center justify-center rounded-md bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400">
             <FileIcon className="h-6 w-6" />
           </span>
           <p className="text-sm text-stone-600 dark:text-stone-300">
@@ -192,7 +192,7 @@ export function FilePreviewModal({
         </div>
       ) : null}
 
-      <p className="mt-4 flex items-start gap-2 rounded-lg border border-orange-200 bg-orange-50/60 p-3 text-xs leading-5 text-orange-950 dark:border-orange-600/30 dark:bg-orange-600/5 dark:text-orange-100/90">
+      <p className="mt-4 flex items-start gap-2 rounded-md border border-orange-200 bg-orange-50/60 p-3 text-xs leading-5 text-orange-950 dark:border-orange-600/30 dark:bg-orange-600/5 dark:text-orange-100/90">
         <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         This preview came from ciphertext that was decrypted inside your browser. The server never saw the plaintext.
       </p>
@@ -201,10 +201,10 @@ export function FilePreviewModal({
 }
 
 /** Small icon by MIME family, used in file lists. */
-export function FileKindIcon({ mime, className = 'h-4 w-4' }: { mime: string; className?: string }): JSX.Element {
+export function FileKindIcon({ mime, className = 'h-4 w-4' }: { mime: string; className?: string }): React.ReactElement {
   if (mime.startsWith('image/')) return <ImageIcon className={className} />;
-  if (mime.startsWith('video/')) return <Film className={className} />;
-  if (mime.startsWith('audio/')) return <Music className={className} />;
+  if (mime.startsWith('video/')) return <FilmSlate className={className} />;
+  if (mime.startsWith('audio/')) return <MusicNote className={className} />;
   if (mime === 'application/pdf' || TEXT_MIME_TYPES.has(mime)) return <FileText className={className} />;
   return <FileIcon className={className} />;
 }

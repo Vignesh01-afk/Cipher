@@ -33,8 +33,8 @@ const chatLimiter = rateLimit({
 chatRouter.use(requireAuth, chatLimiter);
 
 /** The membership row for `userId` in a member list, or undefined. */
-function memberOf<T extends { userId: string }>(members: T[], userId: string): T | undefined {
-  return members.find((m) => m.userId === userId);
+function memberOf<T extends { userId: string; wrappedConversationKey?: string; keyAlgorithm?: string }>(members: T[], userId: string): T | undefined {
+  return members.find((m: T) => m.userId === userId);
 }
 
 async function requireMembership(conversationId: string, userId: string) {
@@ -68,7 +68,7 @@ async function requireMembership(conversationId: string, userId: string) {
 chatRouter.get(
   '/users/search',
   asyncHandler(async (req, res) => {
-    const parsed = userSearchSchema.safeParse({ q: req.query.q });
+    const parsed = userSearchSchema.safeParse({ q: String(req.query.q) });
     if (!parsed.success) {
       throw ApiError.badRequest(parsed.error.issues[0]?.message ?? 'Invalid search', 'VALIDATION_ERROR');
     }
@@ -90,7 +90,7 @@ chatRouter.get(
 
     // Deliberately omit email: chat addressing is by public handle.
     res.json({
-      users: users.map((u) => ({
+      users: users.map((u: { id: string; displayName: string; cipherId: string; username: string | null; publicKey: string }) => ({
         id: u.id,
         displayName: u.displayName,
         cipherId: u.cipherId,
@@ -128,8 +128,8 @@ chatRouter.get(
       orderBy: { conversation: { updatedAt: 'desc' } },
     });
 
-    const conversations = memberships.map((membership) => {
-      const others = membership.conversation.members.filter((m) => m.userId !== userId);
+    const conversations = memberships.map((membership: typeof memberships[number]) => {
+      const others = membership.conversation.members.filter((m: typeof membership.conversation.members[number]) => m.userId !== userId);
       const last = membership.conversation.messages[0] ?? null;
       const unread = last && last.senderId !== userId && (!membership.lastReadAt || last.createdAt > membership.lastReadAt) ? 1 : 0;
 
@@ -141,7 +141,7 @@ chatRouter.get(
         lastReadAt: membership.lastReadAt,
         wrappedConversationKey: membership.wrappedConversationKey,
         keyAlgorithm: membership.keyAlgorithm,
-        participants: others.map((m) => ({
+        participants: others.map((m: typeof membership.conversation.members[number]) => ({
           id: m.user.id,
           displayName: m.user.displayName,
           cipherId: m.user.cipherId,
@@ -281,7 +281,7 @@ chatRouter.get(
   '/conversations/:id',
   asyncHandler(async (req, res) => {
     const userId = currentUserId(req);
-    const { conversation } = await requireMembership(req.params.id, userId);
+    const { conversation } = await requireMembership(String(req.params.id), userId);
 
     res.json({
       conversation: {
@@ -315,7 +315,7 @@ chatRouter.get(
   '/conversations/:id/messages',
   asyncHandler(async (req, res) => {
     const userId = currentUserId(req);
-    const { conversation } = await requireMembership(req.params.id, userId);
+    const { conversation } = await requireMembership(String(req.params.id), userId);
 
     const parsed = paginationSchema.safeParse({
       cursor: req.query.cursor,
@@ -363,11 +363,11 @@ chatRouter.post(
   '/conversations/:id/messages',
   asyncHandler(async (req, res) => {
     const userId = currentUserId(req);
-    const { conversation } = await requireMembership(req.params.id, userId);
+    const { conversation } = await requireMembership(String(req.params.id), userId);
     const input = sendChatMessageSchema.parse(req.body);
 
     // Every wrapped key must target an actual member of THIS conversation.
-    const memberIds = new Set(conversation.members.map((m) => m.userId));
+    const memberIds = new Set(conversation.members.map((m: typeof conversation.members[number]) => m.userId));
     const wraps = input.wrappedConversationKeys ?? {};
     for (const target of Object.keys(wraps)) {
       if (!memberIds.has(target)) {
@@ -378,8 +378,8 @@ chatRouter.post(
     const blocked = await prisma.chatBlock.findFirst({
       where: {
         OR: conversation.members
-          .filter((m) => m.userId !== userId)
-          .map((m) => ({ blockerId: m.userId, blockedId: userId })),
+          .filter((m: typeof conversation.members[number]) => m.userId !== userId)
+          .map((m: typeof conversation.members[number]) => ({ blockerId: m.userId, blockedId: userId })),
       },
     });
     if (blocked) {
@@ -391,8 +391,7 @@ chatRouter.post(
       await prisma.$transaction(
         Object.entries(wraps).map(([memberId, wrapped]) =>
           prisma.conversationMember.updateMany({
-            where: { conversationId: conversation.id, userId: memberId },
-            data: { wrappedConversationKey: wrapped },
+            where: { conversationId: conversation.id, userId: memberId },              data: { wrappedConversationKey: wrapped as string },
           }),
         ),
       );
@@ -480,10 +479,10 @@ chatRouter.post(
   '/conversations/:id/read',
   asyncHandler(async (req, res) => {
     const userId = currentUserId(req);
-    await requireMembership(req.params.id, userId);
+    await requireMembership(String(req.params.id), userId);
 
     await prisma.conversationMember.updateMany({
-      where: { conversationId: req.params.id, userId },
+      where: { conversationId: String(req.params.id), userId },
       data: { lastReadAt: new Date() },
     });
 
@@ -496,10 +495,10 @@ chatRouter.post(
   '/conversations/:id/hide',
   asyncHandler(async (req, res) => {
     const userId = currentUserId(req);
-    await requireMembership(req.params.id, userId);
+    await requireMembership(String(req.params.id), userId);
 
     await prisma.conversationMember.updateMany({
-      where: { conversationId: req.params.id, userId },
+      where: { conversationId: String(req.params.id), userId },
       data: { hiddenAt: new Date() },
     });
 
@@ -507,7 +506,7 @@ chatRouter.post(
       userId,
       action: AuditAction.CHAT_CLEARED,
       targetType: 'USER',
-      targetId: req.params.id,
+      targetId: String(req.params.id),
       ipAddress: requestIp(req),
     });
 
@@ -520,10 +519,10 @@ chatRouter.post(
   '/conversations/:id/show',
   asyncHandler(async (req, res) => {
     const userId = currentUserId(req);
-    await requireMembership(req.params.id, userId);
+    await requireMembership(String(req.params.id), userId);
 
     await prisma.conversationMember.updateMany({
-      where: { conversationId: req.params.id, userId },
+      where: { conversationId: String(req.params.id), userId },
       data: { hiddenAt: null },
     });
 
@@ -536,7 +535,7 @@ chatRouter.delete(
   '/conversations/:id',
   asyncHandler(async (req, res) => {
     const userId = currentUserId(req);
-    const { conversation } = await requireMembership(req.params.id, userId);
+    const { conversation } = await requireMembership(String(req.params.id), userId);
 
     await prisma.conversationMember.deleteMany({
       where: { conversationId: conversation.id, userId },
@@ -573,7 +572,7 @@ chatRouter.get(
       where: { blockerId: userId },
       include: { blocked: { select: { id: true, displayName: true, cipherId: true, username: true } } },
     });
-    res.json({ blocks: blocks.map((b) => b.blocked) });
+    res.json({ blocks: blocks.map((b: typeof blocks[number]) => b.blocked) });
   }),
 );
 
@@ -611,7 +610,7 @@ chatRouter.delete(
   asyncHandler(async (req, res) => {
     const userId = currentUserId(req);
     await prisma.chatBlock.deleteMany({
-      where: { blockerId: userId, blockedId: req.params.userId },
+      where: { blockerId: userId, blockedId: String(req.params.userId) },
     });
     res.json({ ok: true });
   }),

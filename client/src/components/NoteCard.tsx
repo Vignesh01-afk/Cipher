@@ -1,15 +1,5 @@
-import {
-  Eye,
-  Lock,
-  Pencil,
-  Share2,
-  ShieldCheck,
-  Tag,
-  Trash2,
-  Unlock,
-  Users,
-  type LucideIcon,
-} from 'lucide-react';
+import { Eye, Lock, PencilSimple, ShareNetwork, ShieldCheck, Tag, Trash, LockOpen, Users } from '@phosphor-icons/react';
+import type { IconComponent } from '../lib/icons';
 import type { DecryptedNote } from '../lib/notes';
 import { notePreview } from '../lib/notes';
 import { formatRelativeTime, truncate } from '../lib/format';
@@ -22,10 +12,10 @@ interface NoteCardProps {
   onDelete?: () => void;
   onInspect?: () => void;
   /** Optional trailing action, e.g. "Chat with collaborator" on shared notes. */
-  extraAction?: { label: string; icon: LucideIcon; onClick: () => void; title?: string };
+  extraAction?: { label: string; icon: IconComponent; onClick: () => void; title?: string };
 }
 
-export function NoteCard({ note, onOpen, onEdit, onShare, onDelete, onInspect, extraAction }: NoteCardProps): JSX.Element {
+export function NoteCard({ note, onOpen, onEdit, onShare, onDelete, onInspect, extraAction }: NoteCardProps): React.ReactElement {
   const isOwner = note.role === 'owner';
   const activeShares = note.shares.filter((share) => share.isActive);
 
@@ -41,7 +31,7 @@ export function NoteCard({ note, onOpen, onEdit, onShare, onDelete, onInspect, e
           {isOwner ? (
             <Lock className="h-4 w-4 shrink-0 text-orange-700 dark:text-orange-500" aria-hidden="true" />
           ) : (
-            <Unlock className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+            <LockOpen className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden="true" />
           )}
           <h3 className="truncate text-base font-semibold text-stone-900 dark:text-stone-50" title={note.title}>
             {note.title || 'Untitled note'}
@@ -95,14 +85,14 @@ export function NoteCard({ note, onOpen, onEdit, onShare, onDelete, onInspect, e
 
         {isOwner && onEdit ? (
           <button type="button" className="btn btn-secondary btn-sm" onClick={onEdit}>
-            <Pencil className="h-3.5 w-3.5" />
+            <PencilSimple className="h-3.5 w-3.5" />
             Edit
           </button>
         ) : null}
 
         {isOwner && onShare ? (
           <button type="button" className="btn btn-secondary btn-sm" onClick={onShare}>
-            <Share2 className="h-3.5 w-3.5" />
+            <ShareNetwork className="h-3.5 w-3.5" />
             Share
           </button>
         ) : null}
@@ -138,7 +128,7 @@ export function NoteCard({ note, onOpen, onEdit, onShare, onDelete, onInspect, e
             onClick={onDelete}
             title="Delete this note"
           >
-            <Trash2 className="h-3.5 w-3.5" />
+            <Trash className="h-3.5 w-3.5" />
             Delete
           </button>
         ) : null}

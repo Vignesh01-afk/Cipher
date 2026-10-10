@@ -82,6 +82,11 @@ export function errorHandler(
       return;
     }
   }
+  if (error instanceof Error) {
+    console.error('Unhandled error:', error.message);
+  } else {
+    console.error('Unhandled error:', error);
+  }
 
   if (!env.isProduction) {
     console.error('[api] unhandled error', error);

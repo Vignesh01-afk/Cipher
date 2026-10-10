@@ -1,5 +1,5 @@
 import { useState, type KeyboardEvent } from 'react';
-import { Tag, X } from 'lucide-react';
+import { Tag, X } from '@phosphor-icons/react';
 
 interface TagInputProps {
   value: string[];
@@ -21,7 +21,7 @@ export function TagInput({
   placeholder = 'Add a tag and press Enter',
   maxTags = 12,
   disabled = false,
-}: TagInputProps): JSX.Element {
+}: TagInputProps): React.ReactElement {
   const [draft, setDraft] = useState('');
 
   function commit(raw: string): void {
@@ -57,7 +57,7 @@ export function TagInput({
             <button
               type="button"
               onClick={() => onChange(value.filter((candidate) => candidate !== tag))}
-              className="-mr-1 ml-0.5 rounded-full p-0.5 transition-colors hover:bg-orange-600/20"
+              className="-mr-1 ml-0.5 rounded-md p-0.5  hover:bg-orange-600/20"
               aria-label={`Remove tag ${tag}`}
               disabled={disabled}
             >

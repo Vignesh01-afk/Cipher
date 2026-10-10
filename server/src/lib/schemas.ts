@@ -39,11 +39,11 @@ export const idParamSchema = z.string().min(1).max(64);
  * invertible from either half alone, and the KEK half never leaves the
  * browser).
  *
- * Base64 of 64 bytes is always exactly 88 characters (86 data chars + '==').
+ * Base64 of 32 bytes is always exactly 44 characters (43 data chars + '=').
  */
 export const authKeySchema = z
   .string()
-  .regex(/^[A-Za-z0-9+/]{86}==$/, 'Must be base64 encoding exactly 512 bits');
+  .regex(/^[A-Za-z0-9+/]{43}=$/, 'Must be base64 encoding exactly 256 bits');
 
 /**
  * Enforces "exactly one credential": the preferred `authKey` (v2) XOR the
@@ -330,7 +330,7 @@ export const sendChatMessageSchema = z.object({
    * copy); every member already has a wrap from conversation creation.
    */
   wrappedConversationKeys: z
-    .record(z.string().min(32).max(1024))
+    .record(z.string(), z.string().min(32).max(1024))
     .refine((keys) => Object.keys(keys).length >= 1 && Object.keys(keys).length <= 16, {
       message: 'Provide between 1 and 16 wrapped conversation keys',
     })

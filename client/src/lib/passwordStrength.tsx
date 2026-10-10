@@ -118,7 +118,7 @@ export const TONE_BAR: Record<StrengthResult['tone'], string> = {
 };
 
 /** The Google "G" logo, shared by the login and register pages. */
-export function GoogleIcon(): JSX.Element {
+export function GoogleIcon(): React.ReactElement {
   return (
     <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
       <path

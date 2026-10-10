@@ -50,8 +50,8 @@ export default function BrandMark({ size = 'sm', className = '', ...rest }: Bran
         <rect x="8" y="20" width="32" height="22" rx="7" fill="url(#cn-lock-body)" />
 
         {/* Keyhole */}
-        <circle cx="24" cy="29" r="3.1" fill="#FFFFFF" fillOpacity="0.95" />
-        <rect x="22.6" y="30.5" width="2.8" height="6" rx="1.4" fill="#FFFFFF" fillOpacity="0.95" />
+        <circle cx="24" cy="29" r="3.1" fill="#FAF8F3" fillOpacity="0.95" />
+        <rect x="22.6" y="30.5" width="2.8" height="6" rx="1.4" fill="#FAF8F3" fillOpacity="0.95" />
       </svg>
     </span>
   );

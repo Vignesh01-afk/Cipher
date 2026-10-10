@@ -15,7 +15,7 @@ export function Input({
   className = '',
   id,
   ...rest
-}: InputProps): JSX.Element {
+}: InputProps): React.ReactElement {
   // Fall back to a generated id so the <label> is always programmatically
   // associated with its input (screen readers + getByLabel locators).
   const reactId = useId();

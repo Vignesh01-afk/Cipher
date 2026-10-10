@@ -1,5 +1,5 @@
 import { type ReactNode } from 'react';
-import { User } from 'lucide-react';
+import { User } from '@phosphor-icons/react';
 
 interface AvatarProps {
   name: string;
@@ -10,7 +10,7 @@ interface AvatarProps {
   className?: string;
 }
 
-export function Avatar({ name, size = 'md', src, online, icon, className = '' }: AvatarProps): JSX.Element {
+export function Avatar({ name, size = 'md', src, online, icon, className = '' }: AvatarProps): React.ReactElement {
   const sizeClass = {
     sm: 'h-8 w-8',
     md: 'h-9 w-9',
@@ -23,7 +23,7 @@ export function Avatar({ name, size = 'md', src, online, icon, className = '' }:
   const inner = src ? (
     <img src={src} alt={name} className={`${sizeClass} rounded-full object-cover`} />
   ) : (
-    <div className={`${sizeClass} rounded-full bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-xs font-bold text-white flex items-center justify-center`}>
+    <div className={`${sizeClass} rounded-full     text-xs font-bold text-white flex items-center justify-center`}>
       {icon ?? <User className="h-4 w-4" />}
       {text}
     </div>

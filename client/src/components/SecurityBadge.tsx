@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Lock, ShieldCheck } from 'lucide-react';
+import { Lock, ShieldCheck } from '@phosphor-icons/react';
 import { Modal } from './Modal';
 
 /**
- * The "🔒 End-to-End Encrypted" indicator.
+ * The " End-to-End Encrypted" indicator.
  *
  * Every claim in the detail modal is true of this implementation:
  *  - note payloads and file blobs are AES-GCM-256 encrypted in the browser;
@@ -13,7 +13,7 @@ import { Modal } from './Modal';
  *
  * No DRM-level screenshot-protection claim is made anywhere.
  */
-export function SecurityBadge({ compact = false }: { compact?: boolean }): JSX.Element {
+export function SecurityBadge({ compact = false }: { compact?: boolean }): React.ReactElement {
   const [open, setOpen] = useState(false);
 
   return (
@@ -57,7 +57,7 @@ export function SecurityBadge({ compact = false }: { compact?: boolean }): JSX.E
             Sessions are revocable: signing out (or resetting your password) invalidates every previously issued
             session token server-side, and copying a recovery key requires re-entering your password.
           </p>
-          <p className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-xs leading-5 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/5 dark:text-amber-200/90">
+          <p className="rounded-md border border-amber-200 bg-amber-50/70 p-3 text-xs leading-5 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/5 dark:text-amber-200/90">
             Honest limitation: no web application can prevent OS-level screenshots, photos of the screen or hardware
             recorders. Privacy Mode offers practical browser-level protections only.
           </p>

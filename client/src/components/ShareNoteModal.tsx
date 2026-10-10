@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { KeyRound, Search, Share2, ShieldOff, UserCheck, Users, Link, AlertCircle } from 'lucide-react';
+import { Key, MagnifyingGlass, ShareNetwork, ShieldSlash, UserCheck, Users, Link, WarningCircle } from '@phosphor-icons/react';
 import { Modal } from './Modal';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Spinner } from './Spinner';
@@ -18,7 +18,7 @@ interface ShareNoteModalProps {
   onChanged?: () => void;
 }
 
-export function ShareNoteModal({ open, note, onClose, onChanged }: ShareNoteModalProps): JSX.Element {
+export function ShareNoteModal({ open, note, onClose, onChanged }: ShareNoteModalProps): React.ReactElement {
   const toast = useToast();
 
   const [email, setEmail] = useState('');
@@ -146,7 +146,7 @@ export function ShareNoteModal({ open, note, onClose, onChanged }: ShareNoteModa
           <div className="space-y-6">
             <section>
               <h3 className="flex items-center gap-2 text-sm font-semibold text-stone-800 dark:text-stone-100">
-                <Search className="h-4 w-4 text-orange-700 dark:text-orange-500" />
+                <MagnifyingGlass className="h-4 w-4 text-orange-700 dark:text-orange-500" />
                 Grant access
               </h3>
 
@@ -175,13 +175,13 @@ export function ShareNoteModal({ open, note, onClose, onChanged }: ShareNoteModa
                   onClick={() => void handleLookup()}
                   disabled={lookingUp || sharing || !email.trim()}
                 >
-                  {lookingUp ? <Spinner /> : <Search className="h-4 w-4" />}
+                  {lookingUp ? <Spinner /> : <MagnifyingGlass className="h-4 w-4" />}
                   Look up
                 </button>
               </div>
 
               {candidate ? (
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50/60 px-4 py-3 dark:border-emerald-500/30 dark:bg-emerald-500/5">
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-md border border-emerald-200 bg-emerald-50/60 px-4 py-3 dark:border-emerald-500/30 dark:bg-emerald-500/5">
                   <div className="flex min-w-0 items-center gap-3">
                     <UserCheck className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" />
                     <div className="min-w-0">
@@ -197,7 +197,7 @@ export function ShareNoteModal({ open, note, onClose, onChanged }: ShareNoteModa
                     onClick={() => void handleShare()}
                     disabled={sharing}
                   >
-                    {sharing ? <Spinner className="h-3.5 w-3.5" /> : <Share2 className="h-3.5 w-3.5" />}
+                    {sharing ? <Spinner className="h-3.5 w-3.5" /> : <ShareNetwork className="h-3.5 w-3.5" />}
                     Encrypt key & share
                   </button>
                 </div>
@@ -237,7 +237,7 @@ export function ShareNoteModal({ open, note, onClose, onChanged }: ShareNoteModa
                         </p>
                         <p className="truncate text-xs text-stone-500 dark:text-stone-400">{share.recipient.email}</p>
                         <p className="mt-1 flex items-center gap-1 text-[11px] text-stone-400 dark:text-stone-500">
-                          <KeyRound className="h-3 w-3" />
+                          <Key className="h-3 w-3" />
                           {share.keyAlgorithm} · granted {formatRelativeTime(share.createdAt)}
                         </p>
                       </div>
@@ -246,7 +246,7 @@ export function ShareNoteModal({ open, note, onClose, onChanged }: ShareNoteModa
                         className="btn btn-secondary btn-sm text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10"
                         onClick={() => setRevokeTarget(share)}
                       >
-                        <ShieldOff className="h-3.5 w-3.5" />
+                        <ShieldSlash className="h-3.5 w-3.5" />
                         Revoke
                       </button>
                     </li>
@@ -266,7 +266,7 @@ export function ShareNoteModal({ open, note, onClose, onChanged }: ShareNoteModa
                   {revokedShares.map((share) => (
                     <li
                       key={share.id}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-stone-200 px-3 py-2 dark:border-stone-800"
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-stone-200 px-3 py-2 dark:border-stone-800"
                     >
                       <div className="min-w-0">
                         <p className="truncate text-sm text-stone-600 line-through dark:text-stone-400">
@@ -303,7 +303,7 @@ export function ShareNoteModal({ open, note, onClose, onChanged }: ShareNoteModa
               will immediately stop being able to load this note. Every future request is rejected by the API and
               the revocation is written to your audit log.
             </p>
-            <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+            <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
               Revocation changes access control, not physics. Anything they already decrypted, copied or exported
               before this moment cannot be taken back, and the note key they hold would still open the current
               ciphertext.

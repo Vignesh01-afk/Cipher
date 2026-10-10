@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FilePlus2, ShieldCheck, Trash2, UploadCloud, FolderOpen } from 'lucide-react';
+import { FilePlus, ShieldCheck, Trash, CloudArrowUp, FolderOpen } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useOwnNotes } from '../hooks/useNotes';
@@ -26,7 +26,7 @@ import { FilePreviewModal, FileKindIcon } from '../components/FilePreviewModal';
  * note key wraps the file key. Files on notes shared with you are not listed:
  * they live in the note's own attachment panel.
  */
-export function SecureFilesPage(): JSX.Element {
+export function SecureFilesPage(): React.ReactElement {
   const { keys, user } = useAuth();
   const toast = useToast();
   const { notes, loading: notesLoading, error: notesError } = useOwnNotes();
@@ -169,7 +169,7 @@ export function SecureFilesPage(): JSX.Element {
               onClick={() => inputRef.current?.click()}
               disabled={busy || !keys || !selectedNote}
             >
-              <FilePlus2 className="h-4 w-4" />
+              <FilePlus className="h-4 w-4" />
               Attach file
             </Button>
             <input
@@ -190,7 +190,7 @@ export function SecureFilesPage(): JSX.Element {
           </p>
         ) : notes.length === 0 && !notesLoading ? (
           <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">
-            Create a note first — every encrypted file belongs to one of your notes.
+            Create a note first, every encrypted file belongs to one of your notes.
           </p>
         ) : null}
       </section>
@@ -204,7 +204,7 @@ export function SecureFilesPage(): JSX.Element {
       {phase !== 'idle' ? (
         <div className="card p-5">
           <div className="flex items-center gap-3">
-            <UploadCloud className="h-4 w-4 shrink-0 text-orange-700 dark:text-orange-500" />
+            <CloudArrowUp className="h-4 w-4 shrink-0 text-orange-700 dark:text-orange-500" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{pendingName}</p>
               <p className="text-xs text-stone-500 dark:text-stone-400">
@@ -217,9 +217,9 @@ export function SecureFilesPage(): JSX.Element {
             {phase === 'done' ? <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-500" /> : null}
           </div>
           {phase === 'uploading' ? (
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800">
+            <div className="mt-3 h-1.5 overflow-hidden rounded-md bg-stone-200 dark:bg-stone-800">
               <div
-                className="h-full rounded-full bg-orange-600 transition-[width] duration-150"
+                className="h-full rounded-md bg-orange-600  "
                 style={{ width: `${Math.round(progress * 100)}%` }}
               />
             </div>
@@ -249,7 +249,7 @@ export function SecureFilesPage(): JSX.Element {
                 onClick={() => inputRef.current?.click()}
                 disabled={!keys || !selectedNote}
               >
-                <FilePlus2 className="h-4 w-4" />
+                <FilePlus className="h-4 w-4" />
                 Attach a file
               </Button>
             }
@@ -261,9 +261,9 @@ export function SecureFilesPage(): JSX.Element {
             {files.map((file) => (
               <li
                 key={file.id}
-                className="flex flex-wrap items-center gap-3 rounded-2xl border border-white/70 p-4 transition hover:border-white/90 dark:border-white/[0.08] dark:hover:border-white/[0.12]"
+                className="flex flex-wrap items-center gap-3 rounded-md border border-white/70 p-4  hover:border-white/90 dark:border-white/[0.08] dark:hover:border-white/[0.12]"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-stone-100 text-stone-500 dark:bg-white/[0.06] dark:text-stone-400">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-stone-100 text-stone-500 dark:bg-surface/[0.06] dark:text-stone-400">
                   <FileKindIcon mime={file.mimeType} />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -286,7 +286,7 @@ export function SecureFilesPage(): JSX.Element {
                     className="btn btn-ghost btn-sm text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-500/10"
                     onClick={() => void handleDelete(file)}
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash className="h-3.5 w-3.5" />
                     Delete
                   </button>
                 ) : null}

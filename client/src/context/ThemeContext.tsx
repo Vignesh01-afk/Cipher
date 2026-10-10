@@ -25,7 +25,7 @@ function readInitialTheme(): Theme {
   return 'dark';
 }
 
-export function ThemeProvider({ children }: { children: ReactNode }): JSX.Element {
+export function ThemeProvider({ children }: { children: ReactNode }): React.ReactElement {
   const [theme, setThemeState] = useState<Theme>(readInitialTheme);
 
   useEffect(() => {

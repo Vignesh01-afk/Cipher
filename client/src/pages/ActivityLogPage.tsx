@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, FileText, Users, Shield, Lock, FilePlus2, FileX2, KeyRound, ShieldOff, Clock, AlertTriangle, CheckCircle2, LogOut, LogIn, Mail, UserPlus, ArrowRight, RefreshCw, Trash2, Ban } from 'lucide-react';
+
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
@@ -9,35 +9,37 @@ import { EmptyState } from '../components/EmptyState';
 import { ErrorState, InfoState } from '../components/States';
 import { formatRelativeTime } from '../lib/format';
 import { getAuditActionMeta, AUDIT_ACTION_CODES } from '../lib/auditActions';
+import { Pulse, FilePlus, FileText, FileX, Prohibit, ArrowClockwise, Trash, Key, Envelope, UserPlus, SignIn, SignOut, ShieldSlash, Warning, Clock } from '@phosphor-icons/react';
+import type { ReactElement } from 'react';
 
-const ICON_MAP: Record<string, typeof Activity> = {
-  NOTE_CREATE: FilePlus2,
+const ICON_MAP: Record<string, typeof Pulse> = {
+  NOTE_CREATE: FilePlus,
   NOTE_UPDATE: FileText,
-  NOTE_DELETE: FileX2,
-  USER_BLOCKED: Ban,
-  CHAT_CLEARED: RefreshCw,
-  CHAT_DELETED: Trash2,
-  CHAT_NOTE_SHARED: KeyRound,
-  CHAT_MESSAGE_SENT: Activity,
-  CHAT_STARTED: Activity,
-  OTP_REQUEST: Mail,
+  NOTE_DELETE: FileX,
+  USER_BLOCKED: Prohibit,
+  CHAT_CLEARED: ArrowClockwise,
+  CHAT_DELETED: Trash,
+  CHAT_NOTE_SHARED: Key,
+  CHAT_MESSAGE_SENT: Pulse,
+  CHAT_STARTED: Pulse,
+  OTP_REQUEST: Envelope,
   REGISTER: UserPlus,
-  LOGIN: LogIn,
-  LOGOUT: LogOut,
-  RECOVERY_RESET: KeyRound,
-  RECOVERY_SETUP: KeyRound,
-  SHARE_REVOKE: ShieldOff,
-  PASSWORD_RESET_OTP: Mail,
+  LOGIN: SignIn,
+  LOGOUT: SignOut,
+  RECOVERY_RESET: Key,
+  RECOVERY_SETUP: Key,
+  SHARE_REVOKE: ShieldSlash,
+  PASSWORD_RESET_OTP: Envelope,
   GOOGLE_REGISTER: UserPlus,
-  GOOGLE_LOGIN: LogIn,
-  GOOGLE_LINKED: Activity,
-  ACCESS_DENIED: ShieldOff,
-  OTP_VERIFY_FAILED: AlertTriangle,
-  OTP_REQUEST_FAILED: AlertTriangle,
-  RECOVERY_CHALLENGE_FAILED: AlertTriangle,
-  RECOVERY_RESET_FAILED: AlertTriangle,
-  LOGIN_FAILED: AlertTriangle,
-  GOOGLE_LOGIN_FAILED: AlertTriangle,
+  GOOGLE_LOGIN: SignIn,
+  GOOGLE_LINKED: Pulse,
+  ACCESS_DENIED: ShieldSlash,
+  OTP_VERIFY_FAILED: Warning,
+  OTP_REQUEST_FAILED: Warning,
+  RECOVERY_CHALLENGE_FAILED: Warning,
+  RECOVERY_RESET_FAILED: Warning,
+  LOGIN_FAILED: Warning,
+  GOOGLE_LOGIN_FAILED: Warning,
 };
 
 const TONE_CLASS: Record<string, string> = {
@@ -46,7 +48,7 @@ const TONE_CLASS: Record<string, string> = {
   positive: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30',
 };
 
-export function ActivityLogPage(): JSX.Element {
+export function ActivityLogPage(): ReactElement {
   const { user } = useAuth();
   const toast = useToast();
 
@@ -103,12 +105,12 @@ export function ActivityLogPage(): JSX.Element {
         </div>
       ) : logs.length === 0 ? (
         <EmptyState
-          icon={Activity}
+          icon={Pulse}
           title="No activity recorded yet"
           description="Your CipherNote account is brand new. Every note, share, login and revocation is recorded here."
           action={
             <Link to="/notes/new" className="btn btn-primary">
-              <FilePlus2 className="h-4 w-4" />
+              <FilePlus className="h-4 w-4" />
               Create a note
             </Link>
           }
@@ -118,7 +120,7 @@ export function ActivityLogPage(): JSX.Element {
           <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
             {logs.map((log) => {
               const meta = getAuditActionMeta(log.action);
-              const Icon = meta.icon ?? Activity;
+              const Icon = meta.icon ?? Pulse;
               return (
                 <article
                   key={log.createdAt}

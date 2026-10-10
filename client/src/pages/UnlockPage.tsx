@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, Lock, KeyRound, LogOut, ShieldCheck } from 'lucide-react';
+import { WarningCircle, Lock, Key, SignOut, ShieldCheck } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { AuthShell } from './AuthShell';
 import { Button } from '../components/Button';
 
-export function UnlockPage(): JSX.Element {
+export function UnlockPage(): React.ReactElement {
   const { user, unlock, logout } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
@@ -34,7 +34,7 @@ export function UnlockPage(): JSX.Element {
   return (
     <AuthShell>
       <div className="flex flex-col items-center text-center py-6">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-500 dark:text-amber-400">
+        <span className="flex h-14 w-14 items-center justify-center rounded-md bg-amber-500/15 text-amber-500 dark:text-amber-400">
           <Lock className="h-6 w-6" />
         </span>
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-stone-900 dark:text-white">Your vault is locked</h1>
@@ -51,8 +51,8 @@ export function UnlockPage(): JSX.Element {
       </div>
 
       {error ? (
-        <div className="card-interactive flex items-start gap-3 rounded-2xl border border-rose-200/80 bg-rose-50/40 p-4 dark:border-rose-500/20 dark:bg-rose-500/5">
-          <AlertCircle className="h-5 w-5 shrink-0 text-rose-500" />
+        <div className="card-interactive flex items-start gap-3 rounded-md border border-rose-200/80 bg-rose-50/40 p-4 dark:border-rose-500/20 dark:bg-rose-500/5">
+          <WarningCircle className="h-5 w-5 shrink-0 text-rose-500" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-rose-800 dark:text-rose-200">Unlock failed</p>
             <p className="mt-0.5 text-sm leading-6 text-rose-700/90 dark:text-rose-200/80">{error}</p>
@@ -99,7 +99,7 @@ export function UnlockPage(): JSX.Element {
           onClick={() => void logout()}
           disabled={busy}
         >
-          <LogOut className="h-3.5 w-3.5" />
+          <SignOut className="h-3.5 w-3.5" />
           Sign out instead
         </button>
       </div>

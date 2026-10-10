@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, KeyRound, Lock, Mail, ShieldCheck } from 'lucide-react';
+import { Warning, Key, Lock, Envelope, ShieldCheck } from '@phosphor-icons/react';
 import { useToast } from '../context/ToastContext';
 import { Spinner } from '../components/Spinner';
 import { ErrorState } from '../components/States';
@@ -37,7 +37,7 @@ import { MIN_PASSWORD_LENGTH, passwordPolicyError } from '../lib/passwordStrengt
  *
  * The server never sees the recovery key, the old keys, or any derived key.
  */
-export function ForgotPasswordPage(): JSX.Element {
+export function ForgotPasswordPage(): React.ReactElement {
   const toast = useToast();
 
   const [done, setDone] = useState(false);
@@ -137,7 +137,7 @@ export function ForgotPasswordPage(): JSX.Element {
     return (
       <AuthShell>
         <div className="flex flex-col items-center text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+          <span className="flex h-14 w-14 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
             <ShieldCheck className="h-6 w-6" />
           </span>
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-stone-900 dark:text-white">
@@ -158,7 +158,7 @@ export function ForgotPasswordPage(): JSX.Element {
     <AuthShell width="lg">
       <div className="space-y-5">
         <div className="flex flex-col items-center text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_12px_30px_-10px_rgba(122,88,247,0.9)]">
+          <span className="flex h-14 w-14 items-center justify-center rounded-md     text-white ">
             <ShieldCheck className="h-6 w-6" />
           </span>
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-stone-900 dark:text-white">
@@ -183,7 +183,7 @@ export function ForgotPasswordPage(): JSX.Element {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             disabled={busy}
-            leftAddon={<Mail className="h-4 w-4" />}
+            leftAddon={<Envelope className="h-4 w-4" />}
           />
 
           <div>
@@ -234,9 +234,9 @@ export function ForgotPasswordPage(): JSX.Element {
             />
           </div>
 
-          <div className="rounded-xl border border-amber-300 bg-amber-50/70 p-3 dark:border-amber-500/30 dark:bg-amber-500/5">
+          <div className="rounded-md border border-amber-300 bg-amber-50/70 p-3 dark:border-amber-500/30 dark:bg-amber-500/5">
             <p className="flex items-start gap-2 text-xs leading-5 text-amber-900 dark:text-amber-100/90">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <Warning className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               Without your recovery key the password cannot be reset - this is a property of end-to-end encryption.
               Resetting retires the recovery key: generate a new one from Settings after signing in.
             </p>
@@ -247,7 +247,7 @@ export function ForgotPasswordPage(): JSX.Element {
             className="w-full"
             disabled={busy || !email || !recoveryKey || newPassword.length < 8 || newPassword !== confirmPassword}
           >
-            {busy ? <Spinner /> : <KeyRound className="h-4 w-4" />}
+            {busy ? <Spinner /> : <Key className="h-4 w-4" />}
             {busy ? 'Re-wrapping your keys locally…' : 'Reset password with recovery key'}
           </Button>
         </form><p className="text-center text-sm text-stone-500 dark:text-stone-400">

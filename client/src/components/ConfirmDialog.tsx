@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { Warning } from '@phosphor-icons/react';
 import { Modal } from './Modal';
 
 interface ConfirmDialogProps {
@@ -24,12 +24,12 @@ export function ConfirmDialog({
   busy = false,
   onConfirm,
   onCancel,
-}: ConfirmDialogProps): JSX.Element {
+}: ConfirmDialogProps): React.ReactElement {
   return (
     <Modal open={open} onClose={busy ? () => undefined : onCancel} size="sm">
       <div className="space-y-3">
         <div className="flex items-start gap-3">
-          <AlertTriangle className={`h-5 w-5 shrink-0 ${destructive ? 'text-rose-500' : 'text-amber-500'}`} />
+          <Warning className={`h-5 w-5 shrink-0 ${destructive ? 'text-rose-500' : 'text-amber-500'}`} />
           <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">{message}</p>
         </div>
         <div className="flex flex-wrap justify-end gap-2">

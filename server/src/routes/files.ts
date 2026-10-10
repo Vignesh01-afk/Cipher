@@ -396,8 +396,8 @@ filesRouter.get(
   requireAuth,
   fileDownloadLimiter,
   asyncHandler(async (req, res) => {
-    const { file } = await loadFileAccess(req, req.params.id);
-    if (!idParamSchema.safeParse(req.params.id).success) {
+    const { file } = await loadFileAccess(req, String(req.params.id));
+    if (!idParamSchema.safeParse(String(req.params.id)).success) {
       throw ApiError.badRequest('Invalid file id', 'VALIDATION_ERROR');
     }
 
@@ -441,7 +441,7 @@ filesRouter.get(
   '/:id',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const { file, userId } = await loadFileAccess(req, req.params.id);
+    const { file, userId } = await loadFileAccess(req, String(req.params.id));
     const note = await prisma.note.findUnique({ where: { id: file.noteId }, select: { ownerId: true } });
     const isOwner = note?.ownerId === userId;
     res.json({
@@ -462,7 +462,7 @@ filesRouter.delete(
   '/:id',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const { file, userId } = await loadFileAccess(req, req.params.id);
+    const { file, userId } = await loadFileAccess(req, String(req.params.id));
     if (file.ownerId !== userId) {
       await requireNoteOwnership(file.noteId, userId);
     }

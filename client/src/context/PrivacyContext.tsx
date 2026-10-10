@@ -22,7 +22,7 @@ import { useAuth } from './AuthContext';
  *  - Refuse to initiate screen sharing from CipherNote itself.
  *  - Blur content when the window loses focus.
  *  - Hide content when the tab is hidden (Page Visibility API).
- *  - Screenshot protection: block the PrintScreen / Ctrl(⌘)+P-style save
+ *  - Screenshot protection: block the PrintScreen / Ctrl()+P-style save
  *    shortcuts as far as a web page can, blank the clipboard with a notice
  *    when PrintScreen is pressed, and flash-hide sensitive content.
  *  - Optional subtle watermark with the session identity and timestamp.
@@ -233,7 +233,7 @@ function installCaptureWatch(onCaptureChange: (active: boolean) => void): () => 
   };
 }
 
-export function PrivacyProvider({ children }: { children: ReactNode }): JSX.Element {
+export function PrivacyProvider({ children }: { children: ReactNode }): React.ReactElement {
   const [settings, setSettings] = useState<PrivacySettings>(loadSettings);
   const [windowBlurred, setWindowBlurred] = useState(false);
   const [tabHidden, setTabHidden] = useState(

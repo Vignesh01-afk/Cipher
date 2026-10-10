@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { FileText, Search, Share2 } from 'lucide-react';
+import { FileText, MagnifyingGlass, ShareNetwork } from '@phosphor-icons/react';
 import { Modal } from './Modal';
 import { Spinner } from './Spinner';
 import { ErrorState } from './States';
@@ -34,7 +34,7 @@ export function ChatShareNoteModal({
   conversationId,
   peer,
   onSendCard,
-}: ChatShareNoteModalProps): JSX.Element {
+}: ChatShareNoteModalProps): React.ReactElement {
   const { keys, user } = useAuth();
   const toast = useToast();
   const own = useOwnNotes();
@@ -99,7 +99,7 @@ export function ChatShareNoteModal({
     >
       <div className="space-y-3">
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+          <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
           <input
             autoFocus
             type="search"
@@ -126,9 +126,9 @@ export function ChatShareNoteModal({
             {visible.map((note) => (
               <li
                 key={note.id}
-                className="flex items-center gap-3 rounded-xl border border-orange-100 p-3 dark:border-white/[0.06]"
+                className="flex items-center gap-3 rounded-md border border-orange-100 p-3 dark:border-white/[0.06]"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-indigo-100 text-[#4A6CF7] dark:bg-[#6366F1]/15">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-indigo-100 text-[#4A6CF7] dark:bg-[#6366F1]/15">
                   <FileText className="h-4 w-4" />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -146,7 +146,7 @@ export function ChatShareNoteModal({
                   disabled={sharingNoteId !== null}
                   onClick={() => void share(note.id, note.title)}
                 >
-                  {sharingNoteId === note.id ? <Spinner /> : <Share2 className="h-3.5 w-3.5" />}
+                  {sharingNoteId === note.id ? <Spinner /> : <ShareNetwork className="h-3.5 w-3.5" />}
                   Share
                 </button>
               </li>

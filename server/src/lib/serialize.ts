@@ -149,7 +149,7 @@ export function toNoteDto(
     wrappedKey: access.wrappedKey ?? null,
     keyAlgorithm: access.keyAlgorithm ?? null,
     shares: access.includeShares
-      ? note.shares.map((share) => toShareDto(share, { includeWrappedKey: true }))
+      ? note.shares.map((share: NoteShare & { sharedWith: { id: string; displayName: string; email: string } }) => toShareDto(share, { includeWrappedKey: true }))
       : [],
   };
 }

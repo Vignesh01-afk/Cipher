@@ -20,3 +20,5 @@ apiRouter.use('/shared', sharedRouter);
 apiRouter.use('/audit', auditRouter);
 apiRouter.use('/files', filesRouter);
 apiRouter.use('/chat', chatRouter);
+
+export default apiRouter;

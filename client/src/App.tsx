@@ -21,7 +21,7 @@ import { SecurityInspectorPage } from './pages/SecurityInspectorPage';
 import { SharedWithMePage } from './pages/SharedWithMePage';
 import { UnlockPage } from './pages/UnlockPage';
 
-export default function App(): JSX.Element {
+export default function App(): React.ReactElement {
   return (
     <Routes>
       {/* Public */}

@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { FullPageLoader } from './Spinner';
 import { useAuth } from '../context/AuthContext';
 
-export function RequireUnlocked({ children }: { children: ReactNode }): JSX.Element {
+export function RequireUnlocked({ children }: { children: ReactNode }): React.ReactElement {
   const { status } = useAuth();
   const location = useLocation();
 
@@ -15,7 +15,7 @@ export function RequireUnlocked({ children }: { children: ReactNode }): JSX.Elem
   return <>{children}</>;
 }
 
-export function RequireLockedSession({ children }: { children: ReactNode }): JSX.Element {
+export function RequireLockedSession({ children }: { children: ReactNode }): React.ReactElement {
   const { status } = useAuth();
 
   if (status === 'loading') return <FullPageLoader />;
@@ -24,7 +24,7 @@ export function RequireLockedSession({ children }: { children: ReactNode }): JSX
   return <>{children}</>;
 }
 
-export function RedirectIfAuthenticated({ children }: { children: ReactNode }): JSX.Element {
+export function RedirectIfAuthenticated({ children }: { children: ReactNode }): React.ReactElement {
   const { status } = useAuth();
 
   if (status === 'loading') return <FullPageLoader />;

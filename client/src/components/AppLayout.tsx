@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Bell, Moon, Sun, ChevronDown, LogOut, User, Settings, Shield, Lock, ArrowLeft, Home, MessageSquare, FileText, Users, Sparkles } from 'lucide-react';
+import { MagnifyingGlass, Bell, Moon, Sun, CaretDown, SignOut, User, Gear, Shield, Lock, ArrowLeft, House, ChatCircle, FileText, Users, Star } from '@phosphor-icons/react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { Avatar } from './Avatar';
@@ -12,7 +12,7 @@ interface TopbarProps {
   actions?: ReactNode;
 }
 
-export function Topbar({ onOpenSidebar, actions }: TopbarProps): JSX.Element {
+export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElement {
   const { theme, toggleTheme, setTheme } = useTheme();
   const { status, user, logout } = useAuth();
   const location = useLocation();
@@ -36,9 +36,9 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): JSX.Element {
 
   const profileItems: DropdownItem[] = [
     { label: 'Profile', icon: <User className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/privacy'); } },
-    { label: 'Settings', icon: <Settings className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/settings'); } },
+    { label: 'Settings', icon: <Gear className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/settings'); } },
     { label: 'Security', icon: <Shield className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/inspector'); } },
-    { label: 'Log out', icon: <LogOut className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); void logout(); } },
+    { label: 'Log out', icon: <SignOut className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); void logout(); } },
   ];
 
   const onChatThread = location.pathname.startsWith('/chat') && location.pathname !== '/chat';
@@ -69,7 +69,7 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): JSX.Element {
 
         {!onNoteEditor ? (
           <form className="topbar-search" onSubmit={onSearch}>
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <MagnifyingGlass className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
               type="search"
               className="input pl-11"
@@ -91,7 +91,7 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): JSX.Element {
 
           {actions}
 
-          <span className={`hidden h-9 w-9 items-center justify-center rounded-full sm:inline-flex ${status === 'unlocked' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
+          <span className={`hidden h-9 w-9 items-center justify-center rounded-md sm:inline-flex ${status === 'unlocked' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
             <Lock className="h-4 w-4" />
           </span>
 
@@ -113,7 +113,7 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): JSX.Element {
   );
 }
 
-export function AppLayout({ children }: { children?: ReactNode }): JSX.Element {
+export function AppLayout({ children }: { children?: ReactNode }): React.ReactElement {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -152,7 +152,7 @@ export function AppLayout({ children }: { children?: ReactNode }): JSX.Element {
             onClick={() => navigate('/dashboard')}
             aria-label="Go to Home"
           >
-            <Home className="h-5 w-5" />
+            <House className="h-5 w-5" />
             Home
           </button>
           <button
@@ -170,7 +170,7 @@ export function AppLayout({ children }: { children?: ReactNode }): JSX.Element {
             onClick={() => navigate('/chat')}
             aria-label="Go to Chat"
           >
-            <MessageSquare className="h-5 w-5" />
+            <ChatCircle className="h-5 w-5" />
             Chat
           </button>
           <button
@@ -188,7 +188,7 @@ export function AppLayout({ children }: { children?: ReactNode }): JSX.Element {
             onClick={() => navigate('/privacy')}
             aria-label="Go to Settings"
           >
-            <Sparkles className="h-5 w-5" />
+            <Star className="h-5 w-5" />
             Settings
           </button>
         </nav>

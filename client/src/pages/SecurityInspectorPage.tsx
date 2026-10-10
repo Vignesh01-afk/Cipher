@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, KeyRound, Lock, Server, ShieldCheck, Unlock, Copy } from 'lucide-react';
+import { ArrowLeft, Key, Lock, HardDrives, ShieldCheck, LockOpen, Copy } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { api } from '../lib/api';
@@ -12,7 +12,7 @@ import { Spinner } from '../components/Spinner';
 import { SkeletonText } from '../components/Skeleton';
 import { ErrorState } from '../components/States';
 
-export function SecurityInspectorPage(): JSX.Element {
+export function SecurityInspectorPage(): React.ReactElement {
   const { noteId } = useParams<{ noteId: string }>();
   const { keys } = useAuth();
   const toast = useToast();
@@ -89,7 +89,7 @@ export function SecurityInspectorPage(): JSX.Element {
         <div className="card">
           <div className="flex items-center justify-between">
             <div className="skeleton h-6 w-32" />
-            <div className="skeleton h-10 w-24 rounded-full" />
+            <div className="skeleton h-10 w-24 rounded-md" />
           </div>
           <SkeletonText lines={6} />
         </div>
@@ -172,7 +172,7 @@ export function SecurityInspectorPage(): JSX.Element {
 
           <div className="space-y-3">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-stone-800 dark:text-stone-100">
-              <Server className="h-4 w-4 text-orange-700 dark:text-orange-500" />
+              <HardDrives className="h-4 w-4 text-orange-700 dark:text-orange-500" />
               Server-side
             </h2>
             <div className="space-y-2 text-sm text-stone-600 dark:text-stone-300">
@@ -199,7 +199,7 @@ export function SecurityInspectorPage(): JSX.Element {
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <div className="space-y-3">
             <h2 className="flex items-center gap-2 text-sm font-semibold text-stone-800 dark:text-stone-100">
-              <Unlock className="h-4 w-4 text-orange-700 dark:text-orange-500" />
+              <LockOpen className="h-4 w-4 text-orange-700 dark:text-orange-500" />
               {isOwner ? 'Owner access' : 'Recipient access'}
             </h2>
             <div className="space-y-2 text-sm text-stone-600 dark:text-stone-300">
@@ -252,7 +252,7 @@ export function SecurityInspectorPage(): JSX.Element {
           </div>
         </div>
 
-        <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-sm leading-6 text-amber-900 dark:border-amber-600/30 dark:bg-amber-500/5 dark:text-amber-100/90">
+        <div className="mt-5 rounded-md border border-amber-200 bg-amber-50/70 p-4 text-sm leading-6 text-amber-900 dark:border-amber-600/30 dark:bg-amber-500/5 dark:text-amber-100/90">
           <p className="flex items-start gap-2">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
             <span>

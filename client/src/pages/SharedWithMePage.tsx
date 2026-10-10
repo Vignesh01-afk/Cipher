@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, ShieldAlert, Unlock, Users, X, Share2, FileText, Trash2 } from 'lucide-react';
+import { MagnifyingGlass, ShieldWarning, LockOpen, Users, X, ShareNetwork, FileText, Trash } from '@phosphor-icons/react';
 import { useOwnNotes, useSharedNotes } from '../hooks/useNotes';
 import { useToast } from '../context/ToastContext';
 import { api } from '../lib/api';
@@ -34,7 +34,7 @@ interface OutgoingShare {
  * Revocation is a real `DELETE`-style call to the API; the dialog is explicit
  * that revoking removes future access but cannot recall copies already read.
  */
-export function SharedWithMePage(): JSX.Element {
+export function SharedWithMePage(): React.ReactElement {
   const navigate = useNavigate();
   const toast = useToast();
   const shared = useSharedNotes();
@@ -106,18 +106,18 @@ export function SharedWithMePage(): JSX.Element {
             </p>
           </div>
           <button type="button" className="btn btn-primary" onClick={() => setPickerOpen(true)}>
-            <Share2 className="h-4 w-4" />
+            <ShareNetwork className="h-4 w-4" />
             Share Note
           </button>
         </div>
 
-        <div className="mt-4 inline-flex rounded-xl bg-stone-100 p-1 dark:bg-white/[0.06]">
+        <div className="mt-4 inline-flex rounded-md bg-stone-100 p-1 dark:bg-surface/[0.06]">
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              className={`rounded-md px-4 py-2 text-sm font-semibold  ${
                 tab === 'by-me'
-                  ? 'bg-gradient-to-r from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_8px_20px_-10px_rgba(122,88,247,0.9)]'
+                  ? '    text-white '
                   : 'text-stone-600 dark:text-stone-300'
               }`}
               onClick={() => {
@@ -132,9 +132,9 @@ export function SharedWithMePage(): JSX.Element {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              className={`rounded-md px-4 py-2 text-sm font-semibold  ${
                 tab === 'with-me'
-                  ? 'bg-gradient-to-r from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_8px_20px_-10px_rgba(122,88,247,0.9)]'
+                  ? '    text-white '
                   : 'text-stone-600 dark:text-stone-300'
               }`}
               onClick={() => {
@@ -150,7 +150,7 @@ export function SharedWithMePage(): JSX.Element {
 
         <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
               type="search"
               className="input pl-9"
@@ -200,7 +200,7 @@ export function SharedWithMePage(): JSX.Element {
           </div>
         ) : visibleOutgoing.length === 0 ? (
           <EmptyState
-            icon={Share2}
+            icon={ShareNetwork}
             title={outgoing.length === 0 ? 'You have not shared any notes yet' : 'No active shares match'}
             description={
               outgoing.length === 0
@@ -232,7 +232,7 @@ export function SharedWithMePage(): JSX.Element {
                   {visibleOutgoing.map((row) => (
                     <tr
                       key={row.share.id}
-                      className="border-b border-white/5 transition hover:bg-white/40 last:border-0 dark:border-white/[0.05] dark:hover:bg-white/[0.04]"
+                      className="border-b border-white/5  hover:bg-surface/40 last:border-0 dark:border-white/[0.05] dark:hover:bg-surface/[0.04]"
                     >
                       <td className="px-4 py-3">
                         <button
@@ -260,7 +260,7 @@ export function SharedWithMePage(): JSX.Element {
                           className="btn btn-ghost btn-sm text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-500/10"
                           onClick={() => setRevokeTarget(row)}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash className="h-3.5 w-3.5" />
                           Revoke
                         </button>
                       </td>
@@ -272,9 +272,9 @@ export function SharedWithMePage(): JSX.Element {
           </div>
         )
       ) : shared.failedNoteIds.length > 0 ? (
-        <div className="rounded-xl border border-amber-300 bg-amber-50/70 p-4 dark:border-amber-500/30 dark:bg-amber-500/5">
+        <div className="rounded-md border border-amber-300 bg-amber-50/70 p-4 dark:border-amber-500/30 dark:bg-amber-500/5">
           <p className="flex items-start gap-2 text-sm text-amber-900 dark:text-amber-100/90">
-            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+            <ShieldWarning className="mt-0.5 h-4 w-4 shrink-0" />
             {shared.failedNoteIds.length} shared {shared.failedNoteIds.length === 1 ? 'note could' : 'notes could'} not
             be decrypted. That usually means the wrapped key does not match this account's private key.
           </p>
@@ -298,7 +298,7 @@ export function SharedWithMePage(): JSX.Element {
         />
       ) : visibleNotes.length === 0 ? (
         <EmptyState
-          icon={Search}
+          icon={MagnifyingGlass}
           title="No shared notes match"
           description="Search and tag filters run locally on the notes you have already decrypted."
           action={
@@ -328,7 +328,7 @@ export function SharedWithMePage(): JSX.Element {
       )}
 
       <p className="flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500">
-        <Unlock className="h-3.5 w-3.5" />
+        <LockOpen className="h-3.5 w-3.5" />
         Shared notes are read-only for the recipient. Editing stays with the owner, who holds the master key that wraps
         the note key.
       </p>
@@ -336,7 +336,7 @@ export function SharedWithMePage(): JSX.Element {
       <Modal open={pickerOpen} onClose={() => setPickerOpen(false)} title="Share a note" description="Pick one of your notes to wrap its key for another user." size="md">
         <div className="space-y-3">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
               type="search"
               className="input pl-9"
@@ -355,7 +355,7 @@ export function SharedWithMePage(): JSX.Element {
                 <li key={note.id}>
                   <button
                     type="button"
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-white/70 dark:hover:bg-white/[0.06]"
+                    className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left  hover:bg-surface/70 dark:hover:bg-surface/[0.06]"
                     onClick={() => {
                       setPickerOpen(false);
                       setShareTarget(note);

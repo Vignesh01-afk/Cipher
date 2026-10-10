@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { X } from '@phosphor-icons/react';
 
 interface ModalProps {
   open: boolean;
@@ -12,7 +12,7 @@ interface ModalProps {
   children: ReactNode;
 }
 
-function useDialog(open: boolean, onClose: () => void, panelRef: React.RefObject<HTMLDivElement>) {
+function useDialog(open: boolean, onClose: () => void, panelRef: React.RefObject<HTMLDivElement | null>) {
   const previousFocus = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -49,7 +49,7 @@ function useDialog(open: boolean, onClose: () => void, panelRef: React.RefObject
   return { previousFocus };
 }
 
-export function Modal({ open, onClose, title, description, size = 'md', footer, children }: ModalProps): JSX.Element | null {
+export function Modal({ open, onClose, title, description, size = 'md', footer, children }: ModalProps): React.ReactElement | null {
   const panelRef = useRef<HTMLDivElement>(null);
   const { previousFocus } = useDialog(open, onClose, panelRef);
 
@@ -61,7 +61,7 @@ export function Modal({ open, onClose, title, description, size = 'md', footer, 
   if (!open) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-stone-950/50 p-4 backdrop-blur-sm animate-fade-in sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-stone-950/50 p-4   sm:items-center">
       <div
         ref={panelRef}
         tabIndex={-1}
@@ -80,7 +80,7 @@ export function Modal({ open, onClose, title, description, size = 'md', footer, 
               type="button"
               onClick={onClose}
               aria-label="Close dialog"
-              className="rounded-lg p-2 text-slate-400 transition hover:bg-white/60 hover:text-slate-600 dark:hover:bg-white/[0.08] dark:hover:text-slate-200"
+              className="rounded-md p-2 text-slate-400  hover:bg-surface/60 hover:text-slate-600 dark:hover:bg-surface/[0.08] dark:hover:text-slate-200"
             >
               <X className="h-4 w-4" />
             </button>

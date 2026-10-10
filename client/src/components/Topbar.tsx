@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Bell, Moon, Sun, ChevronDown, LogOut, User, Settings, Shield, Lock, Mail, Compass, ArrowLeft } from 'lucide-react';
+import { MagnifyingGlass, Bell, Moon, Sun, CaretDown, SignOut, User, Gear, Shield, Lock, Envelope, Compass, ArrowLeft } from '@phosphor-icons/react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { Avatar } from './Avatar';
@@ -11,7 +11,7 @@ interface TopbarProps {
   actions?: React.ReactNode;
 }
 
-export function Topbar({ onOpenSidebar, actions }: TopbarProps): JSX.Element {
+export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElement {
   const { theme, toggleTheme, setTheme } = useTheme();
   const { status, user, logout } = useAuth();
   const location = useLocation();
@@ -35,9 +35,9 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): JSX.Element {
 
   const profileItems: DropdownItem[] = [
     { label: 'Profile', icon: <User className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/privacy'); } },
-    { label: 'Settings', icon: <Settings className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/settings'); } },
+    { label: 'Settings', icon: <Gear className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/settings'); } },
     { label: 'Security', icon: <Shield className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/inspector'); } },
-    { label: 'Log out', icon: <LogOut className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); void logout(); } },
+    { label: 'Log out', icon: <SignOut className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); void logout(); } },
   ];
 
   const onChatThread = location.pathname.startsWith('/chat') && location.pathname !== '/chat';
@@ -63,7 +63,7 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): JSX.Element {
         ) : null}
 
         <form className="topbar-search" onSubmit={onSearch}>
-          <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <MagnifyingGlass className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="search"
             className="input pl-11"
@@ -84,7 +84,7 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): JSX.Element {
 
           {actions}
 
-          <span className={`hidden h-9 w-9 items-center justify-center rounded-full sm:inline-flex ${status === 'unlocked' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
+          <span className={`hidden h-9 w-9 items-center justify-center rounded-md sm:inline-flex ${status === 'unlocked' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'}`}>
             <Lock className="h-4 w-4" />
           </span>
 

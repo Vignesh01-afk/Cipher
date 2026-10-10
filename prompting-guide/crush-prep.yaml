@@ -1,0 +1,50 @@
+rules:
+  - uri: prompt=**/AGENTS.md
+    rules:
+      - "Follow the project memory for AI agents in AGENTS.md."
+      - "When asked to host, deploy to Vercel only (not GitHub Pages)."
+  - uri: prompt=**/README.md
+    rules:
+      - "Use README as the source of truth for architecture and auth/chat behavior."
+  - uri: file=**/client/src/index.css
+    rules:
+      - "Compress repeated sections after changes."
+  - uri: file=**/server/src/app.ts
+    rules:
+      - "Keep the shared createApp() used by both local dev and Vercel."
+      - "Do not touch /api/health or global rate limiter unless required."
+  - uri: file=**/server/src/routes/notes.ts
+    rules:
+      - "Notes routes handle encrypted blobs only; server cannot read title/body."
+  - uri: file=**/server/src/routes/chat.ts
+    rules:
+      - "Chat REST sends must fan out chat:message and chat:activity via socket."
+      - "Enforce membership + blocks server-side before relaying."
+  - uri: file=**/server/src/socket.ts
+    rules:
+      - "Socket auth uses session JWT at handshake."
+      - "Relay opaque ciphertext only."
+  - uri: file=**/server/src/lib/access.ts
+    rules:
+      - "owner access even if shares list empty; revoked user gets NOTE_ACCESS_DENIED, not 404."
+  - uri: file=**/server/src/lib/schemas.ts
+    rules:
+      - "Validation schemas are the contract for request bodies."
+  - uri: file=**/server/src/lib/audit.ts
+    rules:
+      - "Audit on create/update/share/revoke/access-denied per README threat model."
+  - file: **/e2e/global-setup.ts
+    rules:
+      - "E2E global setup must boot API + Vite and expose drivers."
+  - file: **/e2e/auth.spec.ts
+    rules:
+      - "Auth E2E verifies every auth route renders the AuthShell in both themes."
+  - file: **/e2e/chat.spec.ts
+    rules:
+      - "Chat E2E covers register, notes, realtime chat, share, OTP reset, mobile."
+  - file: **/e2e/ui.spec.ts
+    rules:
+      - "UI E2E covers the main app surfaces and interactions."
+  - file: **/e2e/helpers/accounts.ts
+    rules:
+      - "E2E account helpers should create unique test accounts safely."

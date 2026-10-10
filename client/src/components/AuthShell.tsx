@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { KeyRound, ShieldCheck, Wallet } from 'lucide-react';
+import { Key, ShieldCheck, Wallet } from '@phosphor-icons/react';
 import BrandMark from './BrandMark';
 
 /**
@@ -22,19 +22,19 @@ interface AuthShellProps {
 }
 
 const TRUST_CHIPS = [
-  { icon: KeyRound, label: 'End-to-End', sub: 'Encryption' },
+  { icon: Key, label: 'End-to-End', sub: 'Encryption' },
   { icon: ShieldCheck, label: 'Secure', sub: 'Sharing' },
   { icon: Wallet, label: 'Full', sub: 'Control' },
 ];
 
-export function AuthShell({ children, width = 'md' }: AuthShellProps): JSX.Element {
+export function AuthShell({ children, width = 'md' }: AuthShellProps): React.ReactElement {
   return (
     <div className="relative flex min-h-screen overflow-hidden bg-stone-100 aurora-bg dark:bg-[#0A0E23] dark:aurora-bg-dark">
       {/* Decorative waves + orbs; purely visual. */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-32 top-[-18%] h-[28rem] w-[28rem] rounded-full bg-[#4A6CF7]/20 blur-3xl dark:bg-[#4A6CF7]/25" />
-        <div className="absolute -right-24 top-[6%] h-[24rem] w-[24rem] rounded-full bg-[#D946EF]/20 blur-3xl dark:bg-[#D946EF]/20" />
-        <div className="absolute bottom-[-24%] left-1/3 h-[30rem] w-[30rem] rounded-full bg-[#8B5CF6]/20 blur-3xl dark:bg-[#8B5CF6]/25" />
+        <div className="absolute -left-32 top-[-18%] h-[28rem] w-[28rem] rounded-md bg-[#4A6CF7]/20 blur-3xl dark:bg-[#4A6CF7]/25" />
+        <div className="absolute -right-24 top-[6%] h-[24rem] w-[24rem] rounded-md bg-[#D946EF]/20 blur-3xl dark:bg-[#D946EF]/20" />
+        <div className="absolute bottom-[-24%] left-1/3 h-[30rem] w-[30rem] rounded-md bg-[#8B5CF6]/20 blur-3xl dark:bg-[#8B5CF6]/25" />
 
         {/* Wave bands along the bottom, echoing the mockup artwork. */}
         <svg
@@ -83,7 +83,7 @@ export function AuthShell({ children, width = 'md' }: AuthShellProps): JSX.Eleme
           <div className="mt-8 hidden gap-6 lg:flex">
             {TRUST_CHIPS.map((chip) => (
               <div key={chip.label} className="flex flex-col items-center gap-2 text-center">
-                <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/60 bg-white/70 text-[#4A6CF7] backdrop-blur dark:border-white/10 dark:bg-white/[0.06] dark:text-[#A3B4FF]">
+                <span className="flex h-11 w-11 items-center justify-center rounded-md border border-white/60 bg-surface/70 text-[#4A6CF7]  dark:border-white/10 dark:bg-surface/[0.06] dark:text-[#A3B4FF]">
                   <chip.icon className="h-5 w-5" />
                 </span>
                 <span className="text-[11px] font-semibold leading-tight text-stone-600 dark:text-stone-300">
@@ -97,9 +97,9 @@ export function AuthShell({ children, width = 'md' }: AuthShellProps): JSX.Eleme
 
           <p className="mt-10 hidden items-center gap-3 text-xs font-medium uppercase tracking-[0.2em] text-stone-500 dark:text-stone-400 lg:flex">
             <span>Secure</span>
-            <span className="h-1 w-1 rounded-full bg-current opacity-60" />
+            <span className="h-1 w-1 rounded-md bg-current opacity-60" />
             <span>Encrypted</span>
-            <span className="h-1 w-1 rounded-full bg-current opacity-60" />
+            <span className="h-1 w-1 rounded-md bg-current opacity-60" />
             <span>Yours</span>
           </p>
         </div>

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Camera, MonitorX, ShieldAlert } from 'lucide-react';
+import { Camera, Monitor, ShieldWarning } from '@phosphor-icons/react';
 import { usePrivacy, watermarkText } from '../context/PrivacyContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -17,7 +17,7 @@ import { useAuth } from '../context/AuthContext';
  * sharing of the tab. It cannot stop OS screenshots, phone photos or hardware
  * recorders - the UI copy says so in the privacy settings page.
  */
-export function PrivacyShield({ children }: { children: ReactNode }): JSX.Element {
+export function PrivacyShield({ children }: { children: ReactNode }): React.ReactElement {
   const privacy = usePrivacy();
   const { user } = useAuth();
 
@@ -31,8 +31,8 @@ export function PrivacyShield({ children }: { children: ReactNode }): JSX.Elemen
         aria-hidden={privacy.protected}
         className={
           blur
-            ? 'min-h-screen select-none blur-lg saturate-50 transition-[filter] duration-200'
-            : 'min-h-screen transition-[filter] duration-200'
+            ? 'min-h-screen select-none blur-lg saturate-50  '
+            : 'min-h-screen  '
         }
       >
         {children}
@@ -41,7 +41,7 @@ export function PrivacyShield({ children }: { children: ReactNode }): JSX.Elemen
       {/* Screenshot-attempt flash: covers the screen for ~1s. */}
       {privacy.screenshotAttempt ? (
         <div className="fixed inset-0 z-[75] flex flex-col items-center justify-center gap-4 bg-stone-950 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400">
+          <span className="flex h-14 w-14 items-center justify-center rounded-md bg-rose-500/10 text-rose-400">
             <Camera className="h-7 w-7" />
           </span>
           <p className="max-w-md px-6 text-base font-semibold text-stone-100">
@@ -56,8 +56,8 @@ export function PrivacyShield({ children }: { children: ReactNode }): JSX.Elemen
       {/* Opaque cover for hidden-tab / capture cases. */}
       {privacy.protected && privacy.reason !== 'blur' ? (
         <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center gap-4 bg-stone-950 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400">
-            {capture ? <MonitorX className="h-7 w-7" /> : <ShieldAlert className="h-7 w-7" />}
+          <span className="flex h-14 w-14 items-center justify-center rounded-md bg-rose-500/10 text-rose-400">
+            {capture ? <Monitor className="h-7 w-7" /> : <ShieldWarning className="h-7 w-7" />}
           </span>
           <p className="max-w-md px-6 text-base font-semibold text-stone-100">
             {capture

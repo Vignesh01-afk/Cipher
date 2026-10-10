@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertTriangle, Check, KeyRound, Lock, ShieldCheck, User } from 'lucide-react';
+import { Warning, Check, Key, Lock, ShieldCheck, User } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Spinner } from '../components/Spinner';
@@ -17,7 +17,7 @@ import {
  * verified email are stashed in sessionStorage by the callback page; keys are
  * generated locally under the chosen vault password, exactly like the classic
  * register flow - Google never sees any key and neither does the server. */
-export function GoogleSignupPage(): JSX.Element {
+export function GoogleSignupPage(): React.ReactElement {
   const { registerWithGoogle } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
@@ -45,7 +45,7 @@ export function GoogleSignupPage(): JSX.Element {
     return (
       <AuthShell>
         <div className="text-center">
-          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400">
             <ShieldCheck className="h-6 w-6" />
           </span>
           <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-50">Sign-up session expired</h1>
@@ -101,7 +101,7 @@ export function GoogleSignupPage(): JSX.Element {
     <AuthShell width="lg">
       <div className="space-y-5">
         <div className="flex flex-col items-center text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_12px_30px_-10px_rgba(122,88,247,0.9)]">
+          <span className="flex h-14 w-14 items-center justify-center rounded-md     text-white ">
             <ShieldCheck className="h-6 w-6" />
           </span>
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-stone-900 dark:text-white">Finish creating your vault</h1>
@@ -111,8 +111,8 @@ export function GoogleSignupPage(): JSX.Element {
         </div>
 
         {error ? (
-          <div className="card-interactive flex items-start gap-3 rounded-2xl border border-rose-200/80 bg-rose-50/40 p-4 dark:border-rose-500/20 dark:bg-rose-500/5">
-            <AlertTriangle className="h-5 w-5 shrink-0 text-rose-500" />
+          <div className="card-interactive flex items-start gap-3 rounded-md border border-rose-200/80 bg-rose-50/40 p-4 dark:border-rose-500/20 dark:bg-rose-500/5">
+            <Warning className="h-5 w-5 shrink-0 text-rose-500" />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-rose-800 dark:text-rose-200">Could not create your account</p>
               <p className="mt-0.5 text-sm leading-6 text-rose-700/90 dark:text-rose-200/80">{error}</p>
@@ -182,9 +182,9 @@ export function GoogleSignupPage(): JSX.Element {
             {password ? (
               <div className="mt-2">
                 <div className="flex items-center gap-2">
-                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-stone-200 dark:bg-white/10">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-md bg-stone-200 dark:bg-surface/10">
                     <div
-                      className={`h-full rounded-full transition-all ${TONE_BAR[strength.tone]}`}
+                      className={`h-full rounded-md  ${TONE_BAR[strength.tone]}`}
                       style={{ width: `${(strength.score / 5) * 100}%` }}
                     />
                   </div>
@@ -199,7 +199,7 @@ export function GoogleSignupPage(): JSX.Element {
                         key={suggestion}
                         className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400"
                       >
-                        <AlertTriangle className="h-3 w-3" />
+                        <Warning className="h-3 w-3" />
                         {suggestion}
                       </li>
                     ))}
@@ -235,16 +235,16 @@ export function GoogleSignupPage(): JSX.Element {
             ) : null}
           </div>
 
-          <div className="rounded-lg border border-amber-300 bg-amber-50/70 p-3 dark:border-amber-500/30 dark:bg-amber-500/5">
+          <div className="rounded-md border border-amber-300 bg-amber-50/70 p-3 dark:border-amber-500/30 dark:bg-amber-500/5">
             <p className="flex items-start gap-2 text-xs leading-5 text-amber-900 dark:text-amber-100/90">
-              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              <Warning className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               This password unlocks your keys on this device - Google does not know it. A recovery key is generated
               right after sign-up; it is the only way to reset a forgotten password.
             </p>
           </div>
 
           <button type="submit" className="btn btn-primary w-full" disabled={!canSubmit}>
-            {busy ? <Spinner /> : <KeyRound className="h-4 w-4" />}
+            {busy ? <Spinner /> : <Key className="h-4 w-4" />}
             {busy ? 'Generating keys and creating vault…' : 'Generate keys and create vault'}
           </button>
         </form>

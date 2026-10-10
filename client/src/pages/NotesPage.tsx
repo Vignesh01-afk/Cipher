@@ -1,20 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  FilePlus2,
-  FileText,
-  Filter,
-  Search,
-  ShieldAlert,
-  Tag,
-  X,
-  Eye,
-  Pencil,
-  Share2,
-  Trash2,
-  MoreVertical,
-  ShieldCheck,
-} from 'lucide-react';
+
 import { useOwnNotes } from '../hooks/useNotes';
 import { useToast } from '../context/ToastContext';
 import { api } from '../lib/api';
@@ -25,8 +11,10 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { LoadingBlock } from '../components/Spinner';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState, InfoState } from '../components/States';
+import { FilePlus, MagnifyingGlass, X, Funnel, Tag, FileText } from '@phosphor-icons/react';
+import type { ReactElement } from 'react';
 
-export function NotesPage(): JSX.Element {
+export function NotesPage(): ReactElement {
   const navigate = useNavigate();
   const toast = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -83,14 +71,14 @@ export function NotesPage(): JSX.Element {
             </p>
           </div>
           <Link to="/notes/new" className="btn btn-primary">
-            <FilePlus2 className="h-4 w-4" />
+            <FilePlus className="h-4 w-4" />
             Create Note
           </Link>
         </div>
 
         <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
               type="search"
               className="input pl-9"
@@ -117,7 +105,7 @@ export function NotesPage(): JSX.Element {
         {tags.length > 0 ? (
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <span className="sr-only">
-              <Filter className="h-3.5 w-3.5" />
+              <Funnel className="h-3.5 w-3.5" />
               Category filters
             </span>
             <button
@@ -178,14 +166,14 @@ export function NotesPage(): JSX.Element {
           description="Your vault is empty. Create a note and it will be encrypted on this device before the API ever sees it."
           action={
             <Link to="/notes/new" className="btn btn-primary">
-              <FilePlus2 className="h-4 w-4" />
+              <FilePlus className="h-4 w-4" />
               Create your first note
             </Link>
           }
         />
       ) : visibleNotes.length === 0 ? (
         <EmptyState
-          icon={Search}
+          icon={MagnifyingGlass}
           title="No notes match that search"
           description="Search runs locally across decrypted titles, bodies and tags. Try a different term or clear the filters."
           action={

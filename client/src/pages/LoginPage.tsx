@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, AlertCircle, User } from 'lucide-react';
+import { Envelope, Lock, Eye, EyeSlash, WarningCircle, User } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { AuthShell } from './AuthShell';
@@ -8,7 +8,7 @@ import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { GoogleIcon } from '../lib/passwordStrength';
 
-export function LoginPage(): JSX.Element {
+export function LoginPage(): React.ReactElement {
   const { login } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
@@ -59,7 +59,7 @@ export function LoginPage(): JSX.Element {
     <AuthShell>
       <div className="space-y-5">
         <div className="flex flex-col items-center text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_12px_30px_-10px_rgba(122,88,247,0.9)]">
+          <span className="flex h-14 w-14 items-center justify-center rounded-md     text-white ">
             <Lock className="h-6 w-6" />
           </span>
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-stone-900 dark:text-white">Welcome back</h1>
@@ -69,8 +69,8 @@ export function LoginPage(): JSX.Element {
         </div>
 
         {error ? (
-          <div className="card-interactive flex items-start gap-3 rounded-2xl border border-rose-200/80 bg-rose-50/40 p-4 dark:border-rose-500/20 dark:bg-rose-500/5">
-            <AlertCircle className="h-5 w-5 shrink-0 text-rose-500" />
+          <div className="card-interactive flex items-start gap-3 rounded-md border border-rose-200/80 bg-rose-50/40 p-4 dark:border-rose-500/20 dark:bg-rose-500/5">
+            <WarningCircle className="h-5 w-5 shrink-0 text-rose-500" />
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-rose-800 dark:text-rose-200">Incorrect password</p>
               <p className="mt-0.5 text-sm leading-6 text-rose-700/90 dark:text-rose-200/80">{error}</p>
@@ -106,11 +106,11 @@ export function LoginPage(): JSX.Element {
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400  hover:text-slate-600"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPassword ? <EyeSlash className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
           </div>
@@ -137,9 +137,9 @@ export function LoginPage(): JSX.Element {
         </form>
 
         <div className="my-5 flex items-center gap-3">
-          <span className="h-px flex-1 bg-white/10" />
+          <span className="h-px flex-1 bg-surface/10" />
           <span className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-400 dark:text-stone-500">or</span>
-          <span className="h-px flex-1 bg-white/10" />
+          <span className="h-px flex-1 bg-surface/10" />
         </div>
 
         <Button variant="secondary" className="w-full" onClick={() => onGoogleSignIn()} disabled={busy}>

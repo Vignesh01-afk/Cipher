@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { FilePlus2, Loader2, Lock, ShieldCheck, Trash2, UploadCloud } from 'lucide-react';
+
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -13,6 +13,8 @@ import type { SecureFileDto } from '../lib/types';
 import { formatBytes, formatRelativeTime } from '../lib/format';
 import { FileKindIcon } from './FilePreviewModal';
 import { FilePreviewModal } from './FilePreviewModal';
+import { File, ShieldCheck, CircleNotch, FilePlus, CloudArrowUp, Lock, Trash } from '@phosphor-icons/react';
+import type { ReactElement } from 'react';
 
 type UploadPhase = 'idle' | 'preparing' | 'encrypting' | 'uploading' | 'done';
 
@@ -33,7 +35,7 @@ export function NoteFilesPanel({
   noteKey?: CryptoKey;
   /** The note owner may delete any file on their note, not just their own uploads. */
   isNoteOwner?: boolean;
-}): JSX.Element {
+}): ReactElement {
   const { keys, user } = useAuth();
   const toast = useToast();
 
@@ -140,7 +142,7 @@ export function NoteFilesPanel({
           onClick={() => inputRef.current?.click()}
           disabled={busy || !keys}
         >
-          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FilePlus2 className="h-3.5 w-3.5" />}
+          {busy ? <CircleNotch className="h-3.5 w-3.5 animate-spin" /> : <FilePlus className="h-3.5 w-3.5" />}
           Attach encrypted file
         </button>
         <input
@@ -163,7 +165,7 @@ export function NoteFilesPanel({
       {phase !== 'idle' ? (
         <div className="mt-4 rounded-lg border border-orange-200 bg-orange-50/60 p-4 dark:border-orange-600/30 dark:bg-orange-600/5">
           <div className="flex items-center gap-3">
-            <UploadCloud className="h-4 w-4 shrink-0 text-orange-700 dark:text-orange-500" />
+            <CloudArrowUp className="h-4 w-4 shrink-0 text-orange-700 dark:text-orange-500" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{pendingName}</p>
               <p className="text-xs text-stone-500 dark:text-stone-400">
@@ -196,7 +198,7 @@ export function NoteFilesPanel({
         <p className="mt-3 text-xs text-rose-600 dark:text-rose-400">{loadError}</p>
       ) : loading ? (
         <p className="mt-4 flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400">
-          <Loader2 className="h-4 w-4 animate-spin" /> Loading files…
+          <CircleNotch className="h-4 w-4 animate-spin" /> Loading files…
         </p>
       ) : files.length === 0 ? (
         <p className="mt-4 text-sm text-stone-500 dark:text-stone-400">No files attached yet.</p>
@@ -235,7 +237,7 @@ export function NoteFilesPanel({
                   onClick={() => void handleDelete(file)}
                   aria-label={`Delete ${file.filename}`}
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <Trash className="h-3.5 w-3.5" />
                 </button>
               ) : null}
             </li>
