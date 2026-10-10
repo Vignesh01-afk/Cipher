@@ -36,3 +36,4 @@ storage/
 playwright-report/
 test-results/
 playwright/.cache/
+client.zip
