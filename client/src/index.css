@@ -263,7 +263,7 @@
   }
 
   .brand-logo-img {
-    @apply flex items-center justify-center overflow-hidden rounded-md border border-line bg-surface;
+    @apply flex items-center justify-center overflow-hidden rounded border border-line bg-surface;
   }
 
   .brand-logo-img > svg {
@@ -273,27 +273,27 @@
   /* --- Surfaces -------------------------------------------------------- */
 
   .card {
-    @apply rounded-md border border-line bg-surface;
+    @apply rounded border border-line bg-surface;
   }
 
   .card-glass {
-    @apply rounded-md border border-line bg-surface;
+    @apply rounded border border-line bg-surface;
   }
 
   .bubble {
-    @apply rounded-md border border-accent bg-accent text-paper;
+    @apply rounded border border-accent bg-accent text-paper;
   }
 
   .bubble-alt {
-    @apply rounded-md border border-line bg-surface text-ink;
+    @apply rounded border border-line bg-surface text-ink;
   }
 
   .card-interactive {
-    @apply cursor-pointer rounded-md border border-line bg-surface;
+    @apply cursor-pointer rounded border border-line bg-surface;
   }
 
   .glass-panel {
-    @apply rounded-md border border-line bg-surface;
+    @apply rounded border border-line bg-surface;
   }
 
   .divider {
@@ -301,7 +301,7 @@
   }
 
   .aurora-panel {
-    @apply overflow-hidden rounded-md bg-accent text-paper;
+    @apply overflow-hidden rounded bg-accent text-paper;
   }
 
   .glass-mobile-bar {
@@ -313,26 +313,47 @@
   .btn {
     @apply inline-flex cursor-pointer select-none items-center justify-center gap-2 rounded border border-transparent px-4 py-2 text-sm font-semibold;
     @apply disabled:cursor-not-allowed disabled:opacity-50;
+    @apply transition-[background-color,border-color,color] duration-120;
   }
 
   .btn-primary {
     @apply border-accent bg-accent text-paper;
   }
 
+  .btn-primary:hover {
+    @apply bg-accent-600 border-accent-600;
+  }
+
   .btn-secondary {
-    @apply border-line bg-surface text-ink hover:border-accent;
+    @apply border-line bg-surface text-ink;
+  }
+
+  .btn-secondary:hover {
+    @apply border-accent bg-surface;
   }
 
   .btn-ghost {
-    @apply border-transparent text-muted hover:bg-stone-200 hover:text-ink;
+    @apply border-transparent text-muted;
+  }
+
+  .btn-ghost:hover {
+    @apply bg-stone-200 text-ink;
   }
 
   .btn-danger {
     @apply border-danger bg-danger text-white;
   }
 
+  .btn-danger:hover {
+    @apply bg-danger-600 border-danger-600;
+  }
+
   .btn-glass {
-    @apply border-line bg-surface text-ink hover:border-accent;
+    @apply border-line bg-surface text-ink;
+  }
+
+  .btn-glass:hover {
+    @apply border-accent bg-surface;
   }
 
   .btn-sm {
@@ -349,31 +370,18 @@
     @apply mb-1.5 block text-xs font-semibold text-muted;
   }
 
-  .input {
-    @apply w-full rounded border border-line bg-surface px-3.5 py-2.5 text-sm text-ink;
-    @apply placeholder:text-stone-400;
-    @apply focus:border-accent focus:outline-none;
-    @apply disabled:cursor-not-allowed disabled:opacity-60;
-  }
-
-  .textarea {
-    @apply w-full rounded border border-line bg-surface px-3.5 py-2.5 text-sm leading-6 text-ink;
-    @apply placeholder:text-stone-400;
-    @apply focus:border-accent focus:outline-none;
-    @apply disabled:cursor-not-allowed disabled:opacity-60;
-  }
-
-  .select {
-    @apply w-full rounded border border-line bg-surface px-3.5 py-2.5 text-sm text-ink;
-    @apply focus:border-accent focus:outline-none;
-    @apply disabled:cursor-not-allowed disabled:opacity-60;
-  }
-
+  .input,
+  .textarea,
+  .select,
   .input-auth {
-    @apply w-full rounded border border-line bg-surface px-3.5 py-2.5 pl-11 text-sm text-ink;
+    @apply w-full rounded border border-line bg-surface px-3.5 py-2.5 text-sm text-ink transition-[background-color,border-color,color] duration-120;
     @apply placeholder:text-stone-400;
-    @apply focus:border-accent focus:outline-none;
+    @apply focus:outline-none focus:border-accent focus:ring-0;
     @apply disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  textarea.textarea {
+    @apply leading-6;
   }
 
   .field-error {
@@ -463,8 +471,11 @@
   /* --- Navigation ------------------------------------------------------ */
 
   .nav-link {
-    @apply relative flex items-center gap-3 rounded border border-transparent px-3.5 py-2.5 text-sm font-medium text-muted;
-    @apply hover:bg-stone-200 hover:text-ink dark:hover:bg-stone-800 dark:hover:text-stone-100;
+    @apply relative flex items-center gap-3 rounded border border-transparent px-3.5 py-2.5 text-sm font-medium text-muted transition-[background-color,border-color,color] duration-120;
+  }
+
+  .nav-link:hover {
+    @apply border-line bg-stone-100 text-ink dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100;
   }
 
   /*
@@ -522,15 +533,15 @@
   /* --- Avatars: the only fully rounded shape in the system ------------- */
 
   .avatar {
-    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent text-xs font-semibold text-paper;
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded bg-accent text-xs font-semibold text-paper;
   }
 
   .avatar-sm {
-    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-accent text-xs font-semibold text-paper;
+    @apply flex h-8 w-8 shrink-0 items-center justify-center rounded bg-accent text-xs font-semibold text-paper;
   }
 
   .avatar-lg {
-    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-accent text-base font-semibold text-paper;
+    @apply flex h-11 w-11 shrink-0 items-center justify-center rounded bg-accent text-base font-semibold text-paper;
   }
 
   /* --- Readouts -------------------------------------------------------- */
@@ -546,7 +557,7 @@
   }
 
   .modal {
-    @apply w-full max-h-[92vh] overflow-y-auto rounded-md border border-line bg-surface;
+    @apply w-full max-h-[92vh] overflow-y-auto rounded border border-line bg-surface;
   }
 
   .modal-header {
@@ -560,13 +571,13 @@
   }
 
   .toast {
-    @apply pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-md border border-line bg-surface px-4 py-3.5;
+    @apply pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded border border-line bg-surface px-4 py-3.5;
   }
 
   /* --- Stat card ------------------------------------------------------- */
 
   .stat-card {
-    @apply flex h-full flex-col rounded-md border border-line bg-surface p-4;
+    @apply flex h-full flex-col rounded border border-line bg-surface p-4;
   }
 
   .stat-card-icon {
@@ -600,7 +611,7 @@
   }
 
   .flow-item {
-    @apply flex gap-3 rounded-md border border-line bg-surface p-3;
+    @apply flex gap-3 rounded border border-line bg-surface p-3;
   }
 
   .number-count {
@@ -610,11 +621,11 @@
   /* --- Empty state ----------------------------------------------------- */
 
   .empty-state {
-    @apply flex flex-col items-center justify-center rounded-md border border-dashed border-line px-6 py-16 text-center;
+    @apply flex flex-col items-center justify-center rounded border border-dashed border-line px-6 py-16 text-center;
   }
 
   .empty-state-icon {
-    @apply mb-4 flex h-14 w-14 items-center justify-center rounded-md border border-line bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400;
+    @apply mb-4 flex h-14 w-14 items-center justify-center rounded border border-line bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400;
   }
 
   /* --- Skeleton loaders: flat blocks, no shimmer ----------------------- */
