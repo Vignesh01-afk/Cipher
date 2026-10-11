@@ -1,5 +1,4 @@
 import { type ReactNode } from 'react';
-import { User } from '@phosphor-icons/react';
 
 interface AvatarProps {
   name: string;
@@ -21,11 +20,10 @@ export function Avatar({ name, size = 'md', src, online, icon, className = '' }:
   const text = initials.length === 0 ? '?' : initials.length === 1 ? initials[0]!.slice(0, 2).toUpperCase() : `${initials[0]![0]}${initials[initials.length - 1]![0]}`.toUpperCase();
 
   const inner = src ? (
-    <img src={src} alt={name} className={`${sizeClass} rounded-full object-cover`} />
+    <img src={src} alt={name} className={`${sizeClass} rounded-md object-cover`} />
   ) : (
-    <div className={`${sizeClass} rounded-full     text-xs font-bold text-white flex items-center justify-center`}>
-      {icon ?? <User className="h-4 w-4" />}
-      {text}
+    <div className={`${sizeClass} flex items-center justify-center rounded-md bg-accent text-paper text-xs font-semibold`}>
+      {icon ?? text}
     </div>
   );
 
@@ -33,7 +31,7 @@ export function Avatar({ name, size = 'md', src, online, icon, className = '' }:
     <div className={`relative flex items-center justify-center ${className}`}>
       {inner}
       {online ? (
-        <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white dark:border-[#0B0F19] bg-emerald-500" />
+        <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-sm border border-line bg-accent" />
       ) : null}
     </div>
   );
