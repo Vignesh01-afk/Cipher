@@ -2,7 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 
 import BrandMark from './BrandMark';
 import { useAuth } from '../context/AuthContext';
-import { House, FileText, ChatsCircle, Users, Scroll, Gear, Lock, CaretRight, SignOut } from '@phosphor-icons/react';
+import { House, FileText, ChatsCircle, Users, Scroll, Gear, Lock, SignOut } from '@phosphor-icons/react';
 import type { ReactElement } from 'react';
 
 interface SidebarProps {
@@ -16,14 +16,7 @@ const NAV_ITEMS = [
   { to: '/chat', label: 'Chat', icon: ChatsCircle },
   { to: '/shared', label: 'Shared', icon: Users },
   { to: '/activity', label: 'Audit Log', icon: Scroll },
-  {
-    to: '/settings',
-    label: 'Settings',
-    icon: Gear,
-    children: [
-      { to: '/settings/privacy', label: 'Privacy Mode', icon: Lock },
-    ],
-  },
+  { to: '/settings', label: 'Settings', icon: Gear },
 ];
 
 export function Sidebar({ open, onClose }: SidebarProps): ReactElement {
@@ -77,12 +70,9 @@ export function Sidebar({ open, onClose }: SidebarProps): ReactElement {
         <nav className="sidebar-nav">
           {NAV_ITEMS.map((item) => (
             <div key={item.to}>
-              {item.children ? (
-                <div className="sidebar-section-label">Settings</div>
-              ) : null}
               <NavLink
                 to={item.to}
-                end={item.to === '/dashboard' || item.to === '/settings/privacy'}
+                end={item.to === '/dashboard' || item.to === '/settings'}
                 onClick={onClose}
                 className={({ isActive }) =>
                   `nav-link flex items-center gap-3 rounded-md px-3.5 py-2.5 text-sm font-medium transition-all ${
@@ -94,9 +84,6 @@ export function Sidebar({ open, onClose }: SidebarProps): ReactElement {
               >
                 <item.icon className="nav-icon" />
                 <span className="nav-label">{item.label}</span>
-                {item.children ? (
-                  <CaretRight className="ml-auto h-3.5 w-3.5 text-stone-400" />
-                ) : null}
               </NavLink>
             </div>
           ))}
