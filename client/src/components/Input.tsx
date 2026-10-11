@@ -26,17 +26,17 @@ export function Input({
       {label ? <label className="label" htmlFor={inputId}>{label}</label> : null}
       <div className="relative">
         {leftAddon ? (
-          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted">
             {leftAddon}
           </span>
         ) : null}
         <input
           id={inputId}
-          className={`input ${leftAddon ? 'pl-11' : ''} ${error ? 'border-rose-400 focus:border-rose-400 focus:ring-rose-400/15' : ''}`}
+          className={`input ${leftAddon ? 'pl-10' : ''} ${error ? 'border-danger focus:border-danger' : ''}`}
           {...rest}
         />
         {rightAddon ? (
-          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted">
             {rightAddon}
           </span>
         ) : null}

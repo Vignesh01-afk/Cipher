@@ -12,7 +12,7 @@ export function LandingPage(): React.ReactElement {
       <header className="card-glass border-b border-white/10 px-4 py-4 sm:px-6">
         <div className="flex items-center justify-between">
           <Link to="/dashboard" className="flex items-center gap-3 group">
-            <span className="flex h-10 w-10 items-center justify-center rounded-md     text-white ">
+            <span className="flex h-10 w-10 items-center justify-center rounded-md bg-accent text-paper ">
               <Lock className="h-5 w-5" />
             </span>
             <span className="text-xl font-bold tracking-tight text-stone-900 dark:text-white">
@@ -37,7 +37,7 @@ export function LandingPage(): React.ReactElement {
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-12 sm:py-20">
         <div className="mx-auto max-w-4xl text-center">
           <div className="mb-6 flex justify-center">
-            <span className="flex h-18 w-18 items-center justify-center rounded-md     text-white ">
+            <span className="flex h-18 w-18 items-center justify-center rounded-md bg-accent text-paper ">
               <Lock className="h-9 w-9" />
             </span>
           </div>
@@ -46,9 +46,9 @@ export function LandingPage(): React.ReactElement {
             <span className="brand-gradient-text">CipherNote</span>
           </h1>
 
-          <p className="mt-5 max-w-lg text-lg leading-8 text-stone-500 dark:text-stone-400">
+          <p className="mx-auto mt-5 max-w-xl text-center text-lg leading-8 text-stone-500 dark:text-stone-400">
             Your notes, your privacy. Encrypted end-to-end in your browser before anything is stored on the server.
-            Share, revoke and manage access with a premium security workflow.
+            Share, revoke and manage access with controls you manage yourself.
           </p>
 
           <div className="mt-8 flex flex-wrap justify-center gap-3">

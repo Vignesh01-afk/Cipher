@@ -81,7 +81,7 @@ export function NotesPage(): ReactElement {
             <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
               type="search"
-              className="input pl-9"
+              className="input pl-10"
               placeholder="Search title, content and tags - runs locally on decrypted notes"
               value={query}
               onChange={(event) => setQuery(event.target.value)}

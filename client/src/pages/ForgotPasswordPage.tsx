@@ -158,7 +158,7 @@ export function ForgotPasswordPage(): React.ReactElement {
     <AuthShell width="lg">
       <div className="space-y-5">
         <div className="flex flex-col items-center text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-md     text-white ">
+          <span className="flex h-14 w-14 items-center justify-center rounded-md bg-accent text-paper ">
             <ShieldCheck className="h-6 w-6" />
           </span>
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-stone-900 dark:text-white">

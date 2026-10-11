@@ -72,7 +72,7 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
             <MagnifyingGlass className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
               type="search"
-              className="input pl-11"
+              className="input pl-10"
               placeholder="Search notes, chats, or users..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -134,7 +134,7 @@ export function AppLayout({ children }: { children?: ReactNode }): React.ReactEl
       <div className="flex min-h-screen flex-col lg:pl-72">
         <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
 
-        <main className="flex flex-1 flex-col overflow-hidden">
+        <main className="flex flex-1 flex-col overflow-hidden pb-16 lg:pb-0">
           {isFullBleed ? (
             <Outlet />
           ) : (

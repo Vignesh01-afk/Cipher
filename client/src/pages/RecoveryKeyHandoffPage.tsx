@@ -60,7 +60,7 @@ export function RecoveryKeyHandoffPage(): React.ReactElement {
   return (
     <AuthShell width="lg">
       <div className="space-y-6 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-md     text-white ">
+        <span className="flex h-14 w-14 items-center justify-center rounded-md bg-accent text-paper ">
           <Key className="h-6 w-6" />
         </span>
         <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-white">Save your recovery key</h1>

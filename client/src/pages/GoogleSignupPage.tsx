@@ -101,7 +101,7 @@ export function GoogleSignupPage(): React.ReactElement {
     <AuthShell width="lg">
       <div className="space-y-5">
         <div className="flex flex-col items-center text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-md     text-white ">
+          <span className="flex h-14 w-14 items-center justify-center rounded-md bg-accent text-paper ">
             <ShieldCheck className="h-6 w-6" />
           </span>
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-stone-900 dark:text-white">Finish creating your vault</h1>
@@ -126,7 +126,7 @@ export function GoogleSignupPage(): React.ReactElement {
               Display name
             </label>
             <div className="relative">
-              <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 id="displayName"
                 type="text"
@@ -164,7 +164,7 @@ export function GoogleSignupPage(): React.ReactElement {
               Vault password
             </label>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 id="password"
                 type="password"

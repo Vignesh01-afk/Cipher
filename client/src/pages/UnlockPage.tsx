@@ -64,7 +64,7 @@ export function UnlockPage(): React.ReactElement {
         <div className="mt-1">
           <label className="label" htmlFor="password">Password</label>
           <div className="relative">
-            <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               id="password"
               type="password"

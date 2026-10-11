@@ -66,7 +66,7 @@ export function LoginPage(): React.ReactElement {
     <AuthShell>
       <div className="space-y-5">
         <div className="flex flex-col items-center text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-md     text-white ">
+          <span className="flex h-14 w-14 items-center justify-center rounded-md bg-accent text-paper ">
             <Lock className="h-6 w-6" />
           </span>
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-stone-900 dark:text-white">Welcome back</h1>
@@ -99,7 +99,7 @@ export function LoginPage(): React.ReactElement {
           <div className="mt-1">
             <label className="label" htmlFor="password">Password</label>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}

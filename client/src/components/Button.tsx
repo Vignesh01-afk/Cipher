@@ -18,18 +18,14 @@ export function Button({
   ...rest
 }: ButtonProps): React.ReactElement {
   const base =
-    'inline-flex cursor-pointer select-none items-center justify-center gap-2 rounded-md font-semibold    disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand/50';
+    'inline-flex items-center justify-center gap-2 rounded border font-semibold px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50';
   const variantClass = {
-    primary:
-      '    text-white  hover:brightness-[1.07] hover:',
-    secondary:
-      'border border-white/60 bg-surface/70 text-slate-700 hover:bg-surface/90 active:bg-surface dark:border-white/[0.10] dark:bg-surface/[0.06] dark:text-slate-200 dark:hover:bg-surface/[0.12]',
-    ghost:
-      'text-slate-600 hover:bg-surface/50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-surface/[0.08] dark:hover:text-slate-100',
-    danger:
-      'bg-rose-600 text-white  hover:bg-rose-500 active:bg-rose-700',
-    glass:
-      'border border-white/60 bg-surface/70 text-slate-700 hover:bg-surface/90 active:bg-surface dark:border-white/[0.10] dark:bg-surface/[0.06] dark:text-slate-200 dark:hover:bg-surface/[0.12]',
+    primary: 'border-accent bg-accent text-paper hover:bg-accent-600 dark:hover:bg-accent-400',
+    secondary: 'border-line bg-surface text-ink hover:border-accent',
+    ghost: 'border-transparent text-muted hover:text-ink',
+    danger: 'border-danger bg-danger text-white',
+    // Kept as a named alias of secondary for call-site compatibility.
+    glass: 'border-line bg-surface text-ink hover:border-accent',
   }[variant];
 
   const sizeClass = {

@@ -103,7 +103,7 @@ export function ChatShareNoteModal({
           <input
             autoFocus
             type="search"
-            className="input pl-9"
+            className="input pl-10"
             placeholder="Search your notes"
             aria-label="Search your notes"
             value={query}

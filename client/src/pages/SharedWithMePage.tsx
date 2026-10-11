@@ -153,7 +153,7 @@ export function SharedWithMePage(): React.ReactElement {
             <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
               type="search"
-              className="input pl-9"
+              className="input pl-10"
               placeholder={tab === 'by-me' ? 'Search by note or recipient' : 'Search shared notes locally, after decryption'}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
@@ -343,7 +343,7 @@ export function SharedWithMePage(): React.ReactElement {
             <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
               type="search"
-              className="input pl-9"
+              className="input pl-10"
               placeholder="Search your notes"
               value={query}
               onChange={(event) => setQuery(event.target.value)}

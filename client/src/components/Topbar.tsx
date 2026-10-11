@@ -55,7 +55,7 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
             <ArrowLeft className="h-4 w-4" />
           </button>
         ) : onOpenSidebar ? (
-          <button type="button" className="btn btn-ghost p-2" onClick={onOpenSidebar} aria-label="Open navigation">
+          <button type="button" className="btn btn-ghost p-2 lg:hidden" onClick={onOpenSidebar} aria-label="Open navigation">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M4 6h16M4 12h16M4 18h16" />
             </svg>
@@ -66,7 +66,7 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
           <MagnifyingGlass className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="search"
-            className="input pl-11"
+            className="input pl-10"
             placeholder="Search notes, chats, or users..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

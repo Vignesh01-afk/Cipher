@@ -229,6 +229,11 @@
     color: var(--color-paper);
   }
 
+  /* Checkboxes use the accent token instead of the browser default blue. */
+  input[type='checkbox'] {
+    accent-color: var(--color-accent);
+  }
+
   /* Long keys, hashes and identifiers must never break the layout. */
   code,
   kbd,
@@ -378,6 +383,11 @@
     @apply placeholder:text-stone-400;
     @apply focus:outline-none focus:border-accent focus:ring-0;
     @apply disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  /* Left icon at left-3 (12px) + 16px glyph: 40px keeps text clear of it. */
+  .input-auth {
+    @apply pl-10;
   }
 
   textarea.textarea {
@@ -673,6 +683,13 @@
 @keyframes spin-turn {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* --- Mobile bottom nav is hidden at the sidebar breakpoint -------------- */
+@media (min-width: 1024px) {
+  .bottom-nav {
+    display: none;
   }
 }
 
