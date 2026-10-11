@@ -35,8 +35,8 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
   };
 
   const profileItems: DropdownItem[] = [
-    { label: 'Profile', icon: <User className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/privacy'); } },
-    { label: 'Settings', icon: <Gear className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/settings'); } },
+    { label: 'Profile', icon: <User className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/settings/privacy'); } },
+    { label: 'Settings', icon: <Gear className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/settings/privacy'); } },
     { label: 'Security', icon: <Shield className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/inspector'); } },
     { label: 'Log out', icon: <SignOut className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); void logout(); } },
   ];
@@ -184,8 +184,8 @@ export function AppLayout({ children }: { children?: ReactNode }): React.ReactEl
           </button>
           <button
             type="button"
-            className={`bottom-nav-link ${location.pathname === '/privacy' || location.pathname === '/settings' ? 'bottom-nav-link-active' : ''}`}
-            onClick={() => navigate('/privacy')}
+            className={`bottom-nav-link ${location.pathname === '/settings/privacy' || location.pathname === '/settings' || location.pathname === '/privacy' ? 'bottom-nav-link-active' : ''}`}
+            onClick={() => navigate('/settings/privacy')}
             aria-label="Go to Settings"
           >
             <Star className="h-5 w-5" />

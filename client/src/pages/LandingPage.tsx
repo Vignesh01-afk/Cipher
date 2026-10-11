@@ -98,6 +98,10 @@ export function LandingPage(): React.ReactElement {
           <span>CipherNote · Encrypt. Share. Revoke.</span>
         </div>
         <p className="mt-2">Your privacy is your power.</p>
+        <p className="mt-2 flex items-center justify-center gap-4">
+          <Link to="/terms" className="link">Terms of Service</Link>
+          <Link to="/privacy-policy" className="link">Privacy Policy</Link>
+        </p>
       </footer>
     </div>
   );

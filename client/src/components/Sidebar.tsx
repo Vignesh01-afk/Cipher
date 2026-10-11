@@ -21,7 +21,7 @@ const NAV_ITEMS = [
     label: 'Settings',
     icon: Gear,
     children: [
-      { to: '/privacy', label: 'Privacy Mode', icon: Lock },
+      { to: '/settings/privacy', label: 'Privacy Mode', icon: Lock },
     ],
   },
 ];
@@ -83,7 +83,7 @@ export function Sidebar({ open, onClose }: SidebarProps): ReactElement {
               ) : null}
               <NavLink
                 to={item.to}
-                end={item.to === '/dashboard' || item.to === '/settings'}
+                end={item.to === '/dashboard' || item.to === '/settings/privacy'}
                 onClick={onClose}
                 className={({ isActive }) =>
                   `nav-link flex items-center gap-3 rounded-md px-3.5 py-2.5 text-sm font-medium transition-all ${

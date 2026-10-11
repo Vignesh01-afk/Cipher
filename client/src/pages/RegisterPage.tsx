@@ -216,7 +216,7 @@ export function RegisterPage(): React.ReactElement {
             />
             <span className="flex-1 text-left">
               I agree to the <Link to="/terms" className="link font-semibold">Terms of Service</Link> and{' '}
-              <Link to="/privacy" className="link font-semibold">Privacy Policy</Link>
+              <Link to="/privacy-policy" className="link font-semibold">Privacy Policy</Link>
             </span>
           </label>
 
