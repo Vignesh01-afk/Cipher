@@ -122,10 +122,9 @@ export function AppLayout({ children }: { children?: ReactNode }): React.ReactEl
     setSidebarOpen(false);
   }, [location.pathname]);
 
-  const isFullBleed =
-    location.pathname.startsWith('/chat') ||
-    location.pathname.startsWith('/notes') ||
-    location.pathname === '/shared';
+  // Full-bleed only while a chat conversation is open (/chat/<id>).
+  // Everything else renders inside the same padded wrapper as Home.
+  const isFullBleed = location.pathname.startsWith('/chat/');
 
   return (
     <div className="thumb-layout">
@@ -138,7 +137,7 @@ export function AppLayout({ children }: { children?: ReactNode }): React.ReactEl
           {isFullBleed ? (
             <Outlet />
           ) : (
-            <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:py-8">
+            <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
               <Outlet />
             </div>
           )}
