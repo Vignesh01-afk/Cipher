@@ -1,6 +1,8 @@
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Lock, ShieldCheck, Users, CaretDown } from '@phosphor-icons/react';
+import { ArrowRight, Lock, CaretDown } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
+import { decryptBytes, encryptBytes, generateAesKey } from '../lib/crypto';
 
 export function LandingPage(): React.ReactElement {
   const { status } = useAuth();
@@ -50,45 +52,16 @@ export function LandingPage(): React.ReactElement {
           </p>
 
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Link to="/login" className="btn btn-primary">
+            <Link to="/register" className="btn btn-primary">
               Start for free <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link to="/login" className="btn btn-secondary">
+            <a href="#live-demo" className="btn btn-secondary">
               <Lock className="h-4 w-4" />
               See how it works
-            </Link>
+            </a>
           </div>
 
-          <div className="mt-10 grid gap-6 sm:grid-cols-3">
-            <div className="card p-5">
-              <span className="flex h-10 w-10 items-center justify-center rounded-md bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
-                <ShieldCheck className="h-5 w-5" />
-              </span>
-              <h3 className="mt-3 text-sm font-bold text-stone-900 dark:text-white">End-to-end encrypted</h3>
-              <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-                Every note is sealed with AES-GCM before it leaves this browser.
-              </p>
-            </div>
-            <div className="card p-5">
-              <span className="flex h-10 w-10 items-center justify-center rounded-md bg-brand/10 text-brand-600 dark:text-brand-300">
-                <Users className="h-5 w-5" />
-              </span>
-              <h3 className="mt-3 text-sm font-bold text-stone-900 dark:text-white">Share & revoke</h3>
-              <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-                Share with anyone. Revoke access instantly, from anywhere.
-              </p>
-            </div>
-            <div className="card p-5">
-              <span className="flex h-10 w-10 items-center justify-center rounded-md bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400">
-                <Lock className="h-5 w-5" />
-              </span>
-              <h3 className="mt-3 text-sm font-bold text-stone-900 dark:text-white">Zero-knowledge core</h3>
-              <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-                The server stores ciphertext and wrapped keys it cannot decrypt. An optional escrow copy makes
-                email-code recovery possible; the threat model spells out the trade-off.
-              </p>
-            </div>
-          </div>
+          <EncryptDemo />
         </div>
       </main>
 
@@ -104,5 +77,97 @@ export function LandingPage(): React.ReactElement {
         </p>
       </footer>
     </div>
+  );
+}
+
+/**
+ * Live demo: encrypts with a throwaway AES-GCM-256 key generated in this
+ * browser, using the exact helpers the app itself uses (lib/crypto.ts).
+ */
+function EncryptDemo(): React.ReactElement {
+  const [plain, setPlain] = useState('This note never exists in plaintext on the server.');
+  const [status, setStatus] = useState<'idle' | 'encrypted' | 'error'>('idle');
+  const [iv, setIv] = useState('');
+  const [ciphertext, setCiphertext] = useState('');
+  const [roundTrip, setRoundTrip] = useState('');
+  const keyRef = useRef<CryptoKey | null>(null);
+
+  async function handleEncrypt(): Promise<void> {
+    try {
+      const { key } = await generateAesKey();
+      keyRef.current = key;
+      const sealed = await encryptBytes(key, new TextEncoder().encode(plain));
+      setIv(sealed.iv);
+      setCiphertext(sealed.ciphertext);
+      setRoundTrip('');
+      setStatus('encrypted');
+    } catch {
+      setStatus('error');
+    }
+  }
+
+  async function handleDecrypt(): Promise<void> {
+    if (!keyRef.current) return;
+    try {
+      const bytes = await decryptBytes(keyRef.current, ciphertext, iv);
+      setRoundTrip(new TextDecoder().decode(bytes));
+    } catch {
+      setRoundTrip('Decryption failed - the ciphertext was tampered with or the key is wrong.');
+    }
+  }
+
+  return (
+    <section id="live-demo" className="mt-10 card p-5 text-left sm:p-6">
+      <h2 className="text-lg font-bold text-ink">Try it now</h2>
+      <p className="mt-1 text-sm leading-6 text-muted">
+        Everything below runs in your browser with the same AES-GCM-256 helpers the app uses. The key is
+        generated on this click and never leaves this tab, so the ciphertext is as opaque to a server as a
+        real note.
+      </p>
+
+      <label className="label mt-4" htmlFor="demo-plain">
+        Your text
+      </label>
+      <textarea
+        id="demo-plain"
+        className="textarea"
+        rows={3}
+        value={plain}
+        onChange={(event) => setPlain(event.target.value)}
+      />
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button type="button" className="btn btn-primary" onClick={() => void handleEncrypt()}>
+          Encrypt
+        </button>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={() => void handleDecrypt()}
+          disabled={status !== 'encrypted'}
+        >
+          Decrypt
+        </button>
+      </div>
+
+      {status === 'encrypted' ? (
+        <div className="mt-4 space-y-3">
+          <div>
+            <p className="label">AES-GCM ciphertext (base64)</p>
+            <pre className="whitespace-pre-wrap break-all rounded border border-line bg-stone-100 p-3 font-mono text-xs text-ink dark:bg-stone-800">
+              {`iv: ${iv}\nciphertext: ${ciphertext}`}
+            </pre>
+          </div>
+          {roundTrip ? (
+            <div>
+              <p className="label">Decrypted in your browser</p>
+              <p className="rounded border border-line bg-surface p-3 text-sm text-ink">{roundTrip}</p>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {status === 'error' ? <p className="mt-2 field-error">Encryption failed in this browser.</p> : null}
+    </section>
   );
 }
