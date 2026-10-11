@@ -267,14 +267,14 @@ export function SecureFilesPage(): React.ReactElement {
             {files.map((file) => (
               <li
                 key={file.id}
-                className="flex flex-wrap items-center gap-3 rounded-md border border-white/70 p-4  hover:border-white/90 dark:border-white/[0.08] dark:hover:border-white/[0.12]"
+                className="flex flex-wrap items-center gap-3 rounded-md border border-line p-4 hover:bg-stone-100 dark:hover:bg-stone-800"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-stone-100 text-stone-500 dark:bg-surface/[0.06] dark:text-stone-400">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line bg-line text-muted">
                   <FileKindIcon mime={file.mimeType} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-stone-800 dark:text-stone-100">{file.filename}</p>
-                  <p className="text-xs text-stone-500 dark:text-stone-400">
+                  <p className="truncate text-sm font-medium text-ink dark:text-paper">{file.filename}</p>
+                  <p className="text-xs text-muted dark:text-muted">
                     {formatBytes(file.plaintextBytes)} · {formatRelativeTime(file.createdAt)} · {file.algorithm}
                   </p>
                 </div>

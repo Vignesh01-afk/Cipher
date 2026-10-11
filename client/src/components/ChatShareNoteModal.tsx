@@ -126,7 +126,7 @@ export function ChatShareNoteModal({
             {visible.map((note) => (
               <li
                 key={note.id}
-                className="flex items-center gap-3 rounded-md border border-orange-100 p-3 dark:border-white/[0.06]"
+                className="flex items-center gap-3 rounded-md border border-line p-3"
               >
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent-50 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300">
                   <FileText className="h-4 w-4" />

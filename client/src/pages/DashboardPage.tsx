@@ -99,16 +99,14 @@ export function DashboardPage(): ReactElement {
             Search locally
           </Button>
         </form>
-      </section>
-
-      <section className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+      </section>        <section className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4 text-left">
         <button
           type="button"
           className="stat-card"
           onClick={() => navigate('/notes')}
           aria-label="Go to Notes"
         >
-          <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="stat-card-label">Total Notes</p>
               <p className="stat-card-value">{totalNotes ?? '-'}</p>

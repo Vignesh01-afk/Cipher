@@ -73,24 +73,24 @@ export function Modal({ open, onClose, title, description, size = 'md', footer, 
         {title ? (
           <div className="modal-header">
             <div>
-              <h2 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white">{title}</h2>
-              {description ? <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{description}</p> : null}
+              <h2 className="text-lg font-bold tracking-tight text-ink dark:text-paper">{title}</h2>
+              {description ? <p className="mt-1 text-sm leading-6 text-muted dark:text-muted">{description}</p> : null}
             </div>
             <button
               type="button"
               onClick={onClose}
               aria-label="Close dialog"
-              className="rounded-md p-2 text-slate-400  hover:bg-surface/60 hover:text-slate-600 dark:hover:bg-surface/[0.08] dark:hover:text-slate-200"
+              className="rounded-md p-2 text-muted hover:bg-stone-100 hover:text-ink dark:hover:bg-stone-800 dark:hover:text-stone-100"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
         ) : null}
 
-        <div className="px-5 py-4">{children}</div>
+        <div className={`px-5 py-4 ${size === 'sm' ? 'pt-5' : ''}`}>{children}</div>
 
         {footer ? (
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 px-5 py-4 dark:border-white/[0.08]">
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-4">
             {footer}
           </div>
         ) : null}

@@ -99,7 +99,7 @@ export function LoginPage(): React.ReactElement {
           <div className="mt-1">
             <label className="label" htmlFor="password">Password</label>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
               <input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
@@ -113,7 +113,7 @@ export function LoginPage(): React.ReactElement {
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400  hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink dark:hover:text-stone-100"
                 onClick={() => setShowPassword((v) => !v)}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
@@ -123,7 +123,7 @@ export function LoginPage(): React.ReactElement {
           </div>
 
           <div className="flex items-center justify-between gap-3">
-            <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+            <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-muted dark:text-muted">
               <input
                 type="checkbox"
                 checked={remember}
@@ -146,9 +146,9 @@ export function LoginPage(): React.ReactElement {
         {googleUrl ? (
           <>
             <div className="my-5 flex items-center gap-3">
-              <span className="h-px flex-1 bg-surface/10" />
+              <span className="h-px flex-1 bg-stone-300" />
               <span className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-400 dark:text-stone-500">or</span>
-              <span className="h-px flex-1 bg-surface/10" />
+              <span className="h-px flex-1 bg-stone-300" />
             </div>
 
             <Button variant="secondary" className="w-full" onClick={() => onGoogleSignIn()} disabled={busy}>

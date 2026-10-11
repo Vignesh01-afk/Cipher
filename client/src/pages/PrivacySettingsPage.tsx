@@ -31,23 +31,26 @@ export function PrivacySettingsPage(): React.ReactElement {
     <div className="mx-auto max-w-3xl space-y-6">
       <section className="card p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-brand/10 text-brand-600 dark:bg-brand/15 dark:text-brand-300">
+          <div className="flex items-start gap-3 min-w-0">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-line bg-line text-muted">
               <EyeSlash className="h-5 w-5" />
             </span>
-            <div>
-              <h2 className="text-base font-semibold text-stone-900 dark:text-white">Privacy Mode</h2>
-              <p className="mt-0.5 text-sm text-stone-500 dark:text-stone-400">
+            <div className="min-w-0">              <h2 className="text-base font-semibold text-ink dark:text-paper">Privacy Mode</h2>
+              <p className="mt-0.5 text-sm text-muted dark:text-muted">
                 Practical, browser-level protection against observation. Master switch for all behaviours below.
-              </p>        </div>
-      </div>
-      <Toggle
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="border-t border-line pt-3 mt-4 space-y-1">
+          <Toggle
             checked={settings.privacyMode}
             onChange={(value) => updateSettings({ privacyMode: value })}
             label="Privacy Mode"
-            containerClassName="flex items-center justify-between gap-4"
+            containerClassName="flex items-center justify-between gap-4 border-t border-line pt-3 mt-3"
           />
         </div>
+
 
         <div className="mt-4 space-y-1">
           <Toggle
@@ -110,8 +113,7 @@ export function PrivacySettingsPage(): React.ReactElement {
                 ))}
               </select>
             </div>
-          ) : null}
-        </div>
+          ) : null}        </div>
       </section>
 
       <section className="card p-5">

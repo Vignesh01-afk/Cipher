@@ -741,12 +741,9 @@ export function ChatPage(): ReactElement {
 
   if (!keys) {
     return (
-      <div className="card p-8 text-center">
-        <Lock className="mx-auto h-8 w-8 text-stone-400" />
-        <h2 className="mt-3 text-lg font-semibold text-stone-900 dark:text-white">Vault locked</h2>
-        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-          Unlock your vault to open encrypted chat. Keys stay in memory only.
-        </p>
+      <div className="card p-8 text-center">                <Lock className="mx-auto h-8 w-8 text-muted" />                <h2 className="mt-3 text-lg font-semibold text-ink dark:text-paper">Vault locked</h2>                <p className="mt-1 text-sm text-muted dark:text-muted">
+                  Unlock your vault to open encrypted chat. Keys stay in memory only.
+                </p>
       </div>
     );
   }
@@ -757,8 +754,8 @@ export function ChatPage(): ReactElement {
         <section className="card p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-white">Chat</h1>
-                <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+                <h1 className="text-2xl font-bold tracking-tight text-ink dark:text-paper">Chat</h1>
+                <p className="mt-1 text-sm text-muted dark:text-muted">
                   Secure conversations with your trusted contacts.
                 </p>
               </div>
@@ -774,7 +771,7 @@ export function ChatPage(): ReactElement {
 
             <div className="mt-4">
               <div className="relative">
-                <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                 <input
                   type="search"
                   className="input pl-10"
@@ -863,7 +860,7 @@ export function ChatPage(): ReactElement {
               >
                 <div className="p-4 pb-2">
                   <div className="relative">
-                    <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+                    <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
                     <input
                       type="search"
                       className="input pl-10"
@@ -1082,7 +1079,7 @@ export function ChatPage(): ReactElement {
                       ) : null}
                     </div>
 
-                    <div className="card border-t border-white/10 p-4 dark:border-white/[0.08]">
+                    <div className="card border-t border-line p-4">
                       <div className="flex items-end gap-2">
                         <div className="flex flex-1 gap-2">
                           <button

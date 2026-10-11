@@ -126,7 +126,7 @@ export function GoogleSignupPage(): React.ReactElement {
               Display name
             </label>
             <div className="relative">
-              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <User className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
               <input
                 id="displayName"
                 type="text"
@@ -164,7 +164,7 @@ export function GoogleSignupPage(): React.ReactElement {
               Vault password
             </label>
             <div className="relative">
-              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
               <input
                 id="password"
                 type="password"
@@ -182,7 +182,7 @@ export function GoogleSignupPage(): React.ReactElement {
             {password ? (
               <div className="mt-2">
                 <div className="flex items-center gap-2">
-                  <div className="h-1.5 flex-1 overflow-hidden rounded-md bg-stone-200 dark:bg-surface/10">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-md bg-stone-200 dark:bg-stone-800">
                     <div
                       className={`h-full rounded-md  ${TONE_BAR[strength.tone]}`}
                       style={{ width: `${(strength.score / 5) * 100}%` }}

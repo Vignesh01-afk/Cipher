@@ -234,7 +234,7 @@ export function SharedWithMePage(): React.ReactElement {
                   {visibleOutgoing.map((row) => (
                     <tr
                       key={row.share.id}
-                      className="border-b border-white/5  hover:bg-surface/40 last:border-0 dark:border-white/[0.05] dark:hover:bg-surface/[0.04]"
+                      className="border-b border-line/50 hover:bg-stone-100 dark:hover:bg-stone-800"
                     >
                       <td className="px-4 py-3">
                         <button
@@ -362,21 +362,23 @@ export function SharedWithMePage(): React.ReactElement {
                 <li key={note.id}>
                   <button
                     type="button"
-                    className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left  hover:bg-surface/70 dark:hover:bg-surface/[0.06]"
+                    className="flex w-full items-center gap-3 rounded-md border border-line px-3 py-2.5 text-left hover:bg-stone-100 dark:hover:bg-stone-800"
                     onClick={() => {
                       setPickerOpen(false);
                       setShareTarget(note);
                     }}
                   >
-                    <FileText className="h-4 w-4 shrink-0 text-stone-400" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-stone-800 dark:text-stone-100">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line bg-line text-muted">
+                      <FileText className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-ink dark:text-paper">
                         {note.title || 'Untitled note'}
                       </span>
-                      <span className="block truncate text-xs text-stone-500 dark:text-stone-400">
+                      <span className="block truncate text-xs text-muted dark:text-muted">
                         {note.shares.filter((s) => s.isActive).length} active share(s)
                       </span>
-                    </span>
+                    </div>
                   </button>
                 </li>
               ))}

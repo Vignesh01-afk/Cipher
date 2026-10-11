@@ -33,14 +33,14 @@ function ToastItemComponent({ toast, onDismiss }: { toast: ToastItem; onDismiss:
       <div className="flex items-start gap-3">
         <ToastIcon variant={toast.variant} />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold leading-5 text-slate-900 dark:text-white">{toast.title}</p>
-          {toast.description ? <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">{toast.description}</p> : null}
+          <p className="text-sm font-semibold leading-5 text-ink dark:text-paper">{toast.title}</p>
+          {toast.description ? <p className="mt-0.5 text-xs leading-5 text-muted dark:text-muted">{toast.description}</p> : null}
         </div>
         <button
           type="button"
           onClick={onDismiss}
           aria-label="Dismiss notification"
-          className="rounded-md p-1 text-slate-400  hover:bg-surface/60 hover:text-slate-600 dark:hover:bg-surface/[0.08] dark:hover:text-slate-200"
+          className="rounded-md p-1 text-muted hover:bg-stone-100 hover:text-ink dark:hover:bg-stone-800 dark:hover:text-stone-100"
         >
           <X className="h-4 w-4" />
         </button>

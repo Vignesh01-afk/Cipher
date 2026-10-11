@@ -10,7 +10,7 @@ export function LandingPage(): React.ReactElement {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="card-glass border-b border-white/10 px-4 py-4 sm:px-6">
+      <header className="border-b border-line bg-surface px-4 py-4 sm:px-6">
         <div className="flex items-center justify-between">
           <Link to="/dashboard" className="flex items-center gap-3 group">
             <BrandMark size="sm" aria-hidden="true" />
@@ -62,9 +62,7 @@ export function LandingPage(): React.ReactElement {
 
           <EncryptDemo />
         </div>
-      </main>
-
-      <footer className="border-t border-white/10 px-4 py-6 text-center text-xs text-stone-500 dark:border-white/[0.08] dark:text-stone-400">
+      </main>        <footer className="border-t border-line px-4 py-6 text-center text-xs text-muted">
         <div className="flex items-center justify-center gap-2">
           <Lock className="h-3.5 w-3.5" />
           <span>CipherNote · Encrypt. Share. Revoke.</span>

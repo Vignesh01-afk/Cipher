@@ -50,7 +50,7 @@ export function Dropdown({ trigger, className = '', align = 'left', children, ro
     >
       <button
         type="button"
-        className="flex items-center gap-1.5 rounded-md border border-white/60 bg-surface/70 px-3 py-1.5 text-sm font-medium text-slate-700  hover:bg-surface/90 active:bg-surface dark:border-white/[0.10] dark:bg-surface/[0.06] dark:text-slate-200 dark:hover:bg-surface/[0.12]"
+        className="inline-flex"
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-haspopup="menu"
@@ -62,7 +62,7 @@ export function Dropdown({ trigger, className = '', align = 'left', children, ro
         <DropdownCloseContext.Provider value={() => setOpen(false)}>
           <div
             ref={panelRef}
-            className="absolute z-50 mt-2 w-56 overflow-hidden rounded-md border border-white/10 bg-surface/95 p-1     dark:border-white/[0.08] dark:bg-[#12173A]"
+            className="absolute z-50 mt-2 w-56 overflow-hidden rounded-md border border-line bg-surface p-1"
             style={{
               right: align === 'right' ? '0' : 'auto',
               left: align === 'left' ? '0' : 'auto',
@@ -87,8 +87,8 @@ export function DropdownMenu({ items, className }: { items: DropdownItem[]; clas
           role="menuitem"
           className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm  ${
             item.disabled
-              ? 'cursor-not-allowed text-slate-400 dark:text-slate-500'
-              : 'text-slate-700 hover:bg-surface/60 hover:text-slate-900 dark:text-slate-200 dark:hover:bg-surface/[0.06]'
+              ? 'cursor-not-allowed text-muted dark:text-muted'
+              : 'text-ink hover:bg-stone-100 hover:text-ink dark:text-ink dark:hover:bg-stone-800'
           } ${item.className ?? ''}`}
           onClick={() => {
             item.onSelect();
@@ -96,7 +96,7 @@ export function DropdownMenu({ items, className }: { items: DropdownItem[]; clas
           }}
           disabled={item.disabled}
         >
-          {item.icon ? <span className="flex h-4 w-4 shrink-0 items-center justify-center text-slate-400">{item.icon}</span> : null}
+          {item.icon ? <span className="flex h-4 w-4 shrink-0 items-center justify-center text-muted">{item.icon}</span> : null}
           {item.label}
         </button>
       ))}

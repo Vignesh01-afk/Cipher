@@ -26,7 +26,7 @@ export function SkeletonText({ lines = 3, className = '', children }: { lines?: 
 
 export function SkeletonBlock({ label = 'Loading…' }: { label?: string }): React.ReactElement {
   return (
-    <div className="flex items-center justify-center gap-3 py-12 text-sm text-slate-500 dark:text-slate-400">
+    <div className="flex items-center justify-center gap-3 py-12 text-sm text-muted dark:text-muted">
       <div className="h-5 w-5  rounded-md border-2 border-brand/30 border-t-brand" />
       <span>{label}</span>
     </div>

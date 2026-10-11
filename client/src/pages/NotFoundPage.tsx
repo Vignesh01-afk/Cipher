@@ -5,7 +5,7 @@ export function NotFoundPage(): React.ReactElement {
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
       <div className="card p-8 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-md bg-surface/70 text-stone-400 dark:bg-surface/[0.06] dark:text-stone-500">
+        <span className="flex h-14 w-14 items-center justify-center rounded-md border border-line bg-surface text-muted">
           <Lock className="h-7 w-7" />
         </span>
         <h1 className="mt-4 text-3xl font-bold tracking-tight text-stone-900 dark:text-white">Page not found</h1>
