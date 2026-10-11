@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Lock, CaretDown } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { decryptBytes, encryptBytes, generateAesKey } from '../lib/crypto';
+import BrandMark from '../components/BrandMark';
 
 export function LandingPage(): React.ReactElement {
   const { status } = useAuth();
@@ -12,9 +13,7 @@ export function LandingPage(): React.ReactElement {
       <header className="card-glass border-b border-white/10 px-4 py-4 sm:px-6">
         <div className="flex items-center justify-between">
           <Link to="/dashboard" className="flex items-center gap-3 group">
-            <span className="flex h-10 w-10 items-center justify-center rounded-md bg-accent text-paper ">
-              <Lock className="h-5 w-5" />
-            </span>
+            <BrandMark size="sm" aria-hidden="true" />
             <span className="text-xl font-bold tracking-tight text-stone-900 dark:text-white">
               <span className="brand-wordmark-cipher">Cipher</span>
               <span className="brand-wordmark-note">Note</span>

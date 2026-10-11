@@ -9,7 +9,7 @@ import BrandMark from './BrandMark';
  *    "Secure • Encrypted • Yours" and (in dark mode) the three trust chips.
  *  - Right: the form card.
  *  - Background: soft aurora waves, light periwinkle by day and deep
- *    indigo-navy with glowing waves by night.
+ *    a flat brand panel by night.
  *
  * On phones the brand panel collapses to a compact centred header above the
  * card so the form stays the focus.

@@ -128,7 +128,7 @@ export function ChatShareNoteModal({
                 key={note.id}
                 className="flex items-center gap-3 rounded-md border border-orange-100 p-3 dark:border-white/[0.06]"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-indigo-100 text-[#4A6CF7] dark:bg-[#6366F1]/15">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-accent-50 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300">
                   <FileText className="h-4 w-4" />
                 </span>
                 <div className="min-w-0 flex-1">

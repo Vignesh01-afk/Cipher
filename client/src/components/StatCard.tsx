@@ -1,16 +1,14 @@
 import type { IconComponent } from '../lib/icons';
 import type { ReactNode } from 'react';
 
-export type StatTone = 'cyan' | 'emerald' | 'amber' | 'violet' | 'magenta' | 'slate';
+export type StatTone = 'cyan' | 'emerald' | 'amber' | 'slate';
 
-/** Gradient icon tiles, per the dashboard mockup. */
+/** Flat icon tiles from the theme tokens. */
 const TONE_CLASSES: Record<StatTone, string> = {
-  cyan: '   text-white',
-  violet: '   text-white',
-  magenta: '   text-white',
-  emerald: '   text-white',
-  amber: '   text-white',
-  slate: '   text-white',
+  cyan: 'bg-accent-50 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300',
+  emerald: 'bg-accent-50 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300',
+  amber: 'bg-danger-50 text-danger-700 dark:bg-danger-900/40 dark:text-danger-300',
+  slate: 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300',
 };
 
 interface StatCardProps {
@@ -35,7 +33,7 @@ export function StatCard({ icon: Icon, label, value, suffix, hint, tone = 'cyan'
           {suffix ? <p className="mt-0.5 text-[11px] font-medium text-stone-400 dark:text-stone-500">{suffix}</p> : null}
         </div>
         <span
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-md  ${TONE_CLASSES[tone]}`}
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-line ${TONE_CLASSES[tone]}`}
         >
           <Icon className="h-5 w-5" />
         </span>

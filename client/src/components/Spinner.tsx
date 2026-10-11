@@ -16,7 +16,7 @@ export function LoadingBlock({ label = 'Loading…' }: { label?: string }): Reac
 export function FullPageLoader({ label = 'Preparing your encrypted workspace…' }: { label?: string }): React.ReactElement {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-stone-100 aurora-bg dark:bg-[#0A0E23] dark:aurora-bg-dark">
-      <div className="flex h-12 w-12 items-center justify-center rounded-md bg-[#4A6CF7]/12 text-[#3D55E0] dark:bg-[#4A6CF7]/15 dark:text-[#A3B4FF]">
+      <div className="flex h-12 w-12 items-center justify-center rounded-md bg-accent/10 text-accent dark:bg-accent/15">
         <Spinner className="h-6 w-6" />
       </div>
       <p className="text-sm text-stone-500 dark:text-stone-400">{label}</p>

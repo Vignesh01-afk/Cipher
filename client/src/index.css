@@ -93,7 +93,7 @@
    * Legacy palette aliases.
    *
    * The screens were written against `orange` (brand), `brand`, `emerald`,
-   * `violet`, `cyan`, `teal`, `rose`, `amber` and `pink`. Keeping those names
+   * `cyan`, `teal`, `rose`, `amber` and `pink`. Keeping those names
    * as aliases of the two real ramps means no call site picks up a hue that is
    * not on the palette, and it lets the codemod strip the banned visual
    * primitives without touching every colour literal by hand.
@@ -158,18 +158,6 @@
   --color-cyan-800: var(--color-accent-800);
   --color-cyan-900: var(--color-accent-900);
   --color-cyan-950: var(--color-accent-950);
-
-  --color-violet-50: var(--color-accent-50);
-  --color-violet-100: var(--color-accent-100);
-  --color-violet-200: var(--color-accent-200);
-  --color-violet-300: var(--color-accent-300);
-  --color-violet-400: var(--color-accent-400);
-  --color-violet-500: var(--color-accent-500);
-  --color-violet-600: var(--color-accent-600);
-  --color-violet-700: var(--color-accent-700);
-  --color-violet-800: var(--color-accent-800);
-  --color-violet-900: var(--color-accent-900);
-  --color-violet-950: var(--color-accent-950);
 
   --color-rose-50: var(--color-danger-50);
   --color-rose-100: var(--color-danger-100);
@@ -430,10 +418,6 @@
 
   .badge-rose {
     @apply border-danger-300 bg-danger-50 text-danger-700 dark:border-danger-700 dark:bg-danger-900/40 dark:text-danger-300;
-  }
-
-  .badge-violet {
-    @apply border-accent-300 bg-accent-50 text-accent-700 dark:border-accent-700 dark:bg-accent-900/40 dark:text-accent-300;
   }
 
   .badge-cyan {

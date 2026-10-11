@@ -47,9 +47,8 @@ export function Sidebar({ open, onClose }: SidebarProps): ReactElement {
         }`}
       >
         <div className="sidebar-brand">
-          <NavLink to="/dashboard" className="group flex items-center gap-3" onClick={onClose}>              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent text-paper">
-              <BrandMark size="md" aria-hidden="true" />
-            </div>
+          <NavLink to="/dashboard" className="group flex items-center gap-3" onClick={onClose}>
+            <BrandMark size="md" aria-hidden="true" />
             <span className="text-xl font-bold tracking-tight text-stone-900 dark:text-white">
               <span className="brand-wordmark-cipher">Cipher</span>
               <span className="brand-wordmark-note">Note</span>
