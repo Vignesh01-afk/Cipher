@@ -185,9 +185,6 @@ export function DashboardPage(): ReactElement {
               Notes are sealed with AES-GCM-256 in this browser and only readable by those you choose.
             </p>
           </div>
-          <Link to="/inspector" className="link">
-            View details <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
         </div>
       </section>
 
@@ -256,7 +253,6 @@ export function DashboardPage(): ReactElement {
           <section className="card p-5">
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-stone-900 dark:text-white">Latest activity</h2>
-              <Link to="/activity" className="link text-xs">Full log</Link>
             </div>
             {logsLoading ? (
               <SkeletonBlock />
@@ -281,9 +277,6 @@ export function DashboardPage(): ReactElement {
                 })}
               </ul>
             )}
-            <Link to="/activity" className="btn btn-secondary btn-sm mt-4 w-full">
-              Open activity log <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
           </section>
         </section>
       </section>

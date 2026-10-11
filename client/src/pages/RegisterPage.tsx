@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Warning, Check, Eye, EyeSlash, Lock, Envelope, User } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
@@ -27,6 +27,21 @@ export function RegisterPage(): React.ReactElement {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [googleUrl, setGoogleUrl] = useState<string | null>(null);
+
+  // Only show the Google button when the API hands back a real OAuth URL.
+  useEffect(() => {
+    let cancelled = false;
+    void import('../lib/api')
+      .then(({ api }) => api.getGoogleAuthUrl())
+      .then(({ url }) => {
+        if (!cancelled && typeof url === 'string' && /^https?:\/\//.test(url)) setGoogleUrl(url);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const strength = useMemo(() => assessPassword(password), [password]);
   const passwordsMatch = password.length > 0 && password === confirmPassword;
@@ -62,19 +77,11 @@ export function RegisterPage(): React.ReactElement {
     }
   }
 
-  async function onGoogleSignUp(): Promise<void> {
-    setError(null);
-    try {
-      const { api } = await import('../lib/api');
-      const { url } = await api.getGoogleAuthUrl();
-      window.location.href = url;
-    } catch (googleError) {
-      setError(
-        googleError instanceof Error
-          ? googleError.message
-          : 'Could not start Google sign-up. It may not be configured on this server.',
-      );
-    }
+  function onGoogleSignUp(): void {
+    // Never navigate to a missing URL: the button only exists when the API
+    // confirmed Google is configured on this server.
+    if (!googleUrl) return;
+    window.location.href = googleUrl;
   }
 
   return (
@@ -231,16 +238,20 @@ export function RegisterPage(): React.ReactElement {
           </Button>
         </form>
 
-        <div className="my-5 flex items-center gap-3">
-          <span className="h-px flex-1 bg-surface/10" />
-          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-400 dark:text-stone-500">or</span>
-          <span className="h-px flex-1 bg-surface/10" />
-        </div>
+        {googleUrl ? (
+          <>
+            <div className="my-5 flex items-center gap-3">
+              <span className="h-px flex-1 bg-surface/10" />
+              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-400 dark:text-stone-500">or</span>
+              <span className="h-px flex-1 bg-surface/10" />
+            </div>
 
-        <Button variant="secondary" className="w-full" onClick={() => onGoogleSignUp()} disabled={busy}>
-          <GoogleIcon />
-          {busy ? 'Redirecting…' : 'Sign up with Google'}
-        </Button>
+            <Button variant="secondary" className="w-full" onClick={() => onGoogleSignUp()} disabled={busy}>
+              <GoogleIcon />
+              {busy ? 'Redirecting…' : 'Sign up with Google'}
+            </Button>
+          </>
+        ) : null}
 
         <p className="mt-5 text-center text-sm text-stone-500 dark:text-stone-400">
           Already have an account?{' '}

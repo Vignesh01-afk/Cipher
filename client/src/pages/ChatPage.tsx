@@ -852,16 +852,8 @@ export function ChatPage(): ReactElement {
               <ChatTeardropText className="mx-auto h-8 w-8 text-stone-400" />
               <h2 className="mt-3 text-lg font-semibold text-stone-900 dark:text-white">No conversations yet</h2>
               <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-                Start a secure chat with any of your CipherNote contacts.
+                Start a secure chat with any of your CipherNote contacts. Use the New Chat button above.
               </p>
-              <button
-                type="button"
-                className="mt-4 btn btn-primary"
-                onClick={() => setSearchOpen(true)}
-              >
-                <ChatTeardropText className="h-4 w-4" />
-                New chat
-              </button>
             </div>
           ) : (
             <div className="flex flex-1 overflow-hidden">
