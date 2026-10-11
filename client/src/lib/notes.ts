@@ -203,3 +203,42 @@ export function sortNotesByUpdated(notes: DecryptedNote[]): DecryptedNote[] {
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
   );
 }
+
+/** Category label derived from tags, used by the mockup UI only. */
+export function categoryFromTags(tags: string[]): string | null {
+  const category = tags.find((tag) =>
+    ['personal', 'work', 'study', 'others'].includes(tag.toLowerCase()),
+  );
+  return category ?? null;
+}
+
+/**
+ * Insert a markdown snippet at the current textarea cursor/selection and keep
+ * the cursor positioned after the inserted text. Used by the create-note
+ * toolbar (no new editor library).
+ */
+export function insertMarkdown(textarea: HTMLTextAreaElement, before: string, after = '', placeholder = ''): void {
+  const start = textarea.selectionStart ?? 0;
+  const end = textarea.selectionEnd ?? 0;
+  const selected = textarea.value.slice(start, end);
+
+  const insert = selected
+    ? `${before}${selected}${after}`
+    : `${before}${placeholder}${after}`;
+
+  textarea.focus();
+  textarea.setRangeText(insert, start, end, 'end');
+}
+
+/** Common format constant strings used by the create-note toolbar. */
+export const MD_FORMAT_KEYS = [
+  { label: 'Bold', before: '**', after: '**', placeholder: 'bold text' },
+  { label: 'Italic', before: '*', after: '*', placeholder: 'italic text' },
+  { label: 'Underline', before: '<u>', after: '</u>', placeholder: 'underlined text' },
+  { label: 'Strikethrough', before: '~~', after: '~~', placeholder: 'strikethrough text' },
+  { label: 'Bullet list', before: '- ', after: '', placeholder: 'list item' },
+  { label: 'Numbered list', before: '1. ', after: '', placeholder: 'list item' },
+  { label: 'Checklist', before: '- [ ] ', after: '', placeholder: 'task' },
+  { label: 'Link', before: '[', after: '](https://)', placeholder: 'link text' },
+  { label: 'Image', before: '![](', after: ')', placeholder: 'image url' },
+] as const;
