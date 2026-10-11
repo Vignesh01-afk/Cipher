@@ -32,7 +32,7 @@ export function Input({
         ) : null}
         <input
           id={inputId}
-          className={`input ${leftAddon ? 'pl-10' : ''} ${error ? 'border-danger focus:border-danger' : ''}`}
+          className={`input ${leftAddon ? 'pl-10' : ''} ${error ? 'border-danger focus:border-danger focus:shadow-[0_0_0_1px_rgba(99,102,241,0.35),0_0_24px_rgba(99,102,241,0.18)]' : ''}`}
           {...rest}
         />
         {rightAddon ? (

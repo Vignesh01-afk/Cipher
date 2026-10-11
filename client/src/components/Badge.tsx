@@ -9,13 +9,13 @@ interface BadgeProps {
 
 export function Badge({ children, variant = 'slate', size = 'sm', className = '' }: BadgeProps): React.ReactElement {
   const variantClass = {
-    brand: 'bg-accent bg-opacity-15 text-accent-700 dark:text-accent-300',
-    emerald: 'bg-accent bg-opacity-10 text-accent-700 dark:text-accent-300',
-    amber: 'bg-danger bg-opacity-10 text-danger-700 dark:text-danger-300',
-    rose: 'bg-danger bg-opacity-10 text-danger-700 dark:text-danger-300',
-    cyan: 'bg-accent bg-opacity-15 text-accent-700 dark:text-accent-300',
-    slate: 'bg-surface/70 text-muted',
-    success: 'bg-accent bg-opacity-10 text-accent-700 dark:text-accent-300',
+    brand: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-300',
+    emerald: 'bg-indigo-500/12 text-indigo-600 dark:text-indigo-300',
+    amber: 'bg-rose-500/12 text-rose-600 dark:text-rose-300',
+    rose: 'bg-rose-500/12 text-rose-600 dark:text-rose-300',
+    cyan: 'bg-indigo-500/15 text-cyan-500 dark:text-cyan-300',
+    slate: 'border border-line bg-panel text-muted',
+    success: 'bg-indigo-500/12 text-indigo-600 dark:text-indigo-300',
   }[variant];
 
   const sizeClass = size === 'sm' ? 'px-2.5 py-0.5 text-xs' : 'px-2.5 py-1 text-xs';

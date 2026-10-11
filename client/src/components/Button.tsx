@@ -20,12 +20,12 @@ export function Button({
   const base =
     'inline-flex items-center justify-center gap-2 rounded border font-semibold px-4 py-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50';
   const variantClass = {
-    primary: 'border-accent bg-accent text-paper hover:bg-accent-600 dark:hover:bg-accent-400',
-    secondary: 'border-line bg-surface text-ink hover:border-accent',
-    ghost: 'border-transparent text-muted hover:text-ink',
-    danger: 'border-danger bg-danger text-white',
+    primary: 'bg-gradient-to-r from-[#2f6bff] to-[#8b5cf6] text-white shadow-[0_0_0_1px_rgba(99,102,241,0.35),0_0_18px_rgba(99,102,241,0.25)] hover:shadow-[0_0_0_1px_rgba(99,102,241,0.35),0_0_28px_rgba(99,102,241,0.42)]',
+    secondary: 'bg-panel text-ink border-line hover:border-indigo-500 shadow-[0_0_0_1px_rgba(99,102,241,0.12)]',
+    ghost: 'bg-transparent text-muted hover:text-ink hover:bg-panel/70',
+    danger: 'bg-danger text-white',
     // Kept as a named alias of secondary for call-site compatibility.
-    glass: 'border-line bg-surface text-ink hover:border-accent',
+    glass: 'bg-panel/80 backdrop-blur border-line text-ink hover:border-indigo-500',
   }[variant];
 
   const sizeClass = {
