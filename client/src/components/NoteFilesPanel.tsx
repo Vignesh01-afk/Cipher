@@ -13,7 +13,7 @@ import type { SecureFileDto } from '../lib/types';
 import { formatBytes, formatRelativeTime } from '../lib/format';
 import { FileKindIcon } from './FilePreviewModal';
 import { FilePreviewModal } from './FilePreviewModal';
-import { File, ShieldCheck, CircleNotch, FilePlus, CloudArrowUp, Lock, Trash } from '@phosphor-icons/react';
+import { File, ShieldCheck, FilePlus, CloudArrowUp, Lock, Trash } from '@phosphor-icons/react';
 import type { ReactElement } from 'react';
 
 type UploadPhase = 'idle' | 'preparing' | 'encrypting' | 'uploading' | 'done';
@@ -142,7 +142,7 @@ export function NoteFilesPanel({
           onClick={() => inputRef.current?.click()}
           disabled={busy || !keys}
         >
-          {busy ? <CircleNotch className="h-3.5 w-3.5 animate-spin" /> : <FilePlus className="h-3.5 w-3.5" />}
+          {busy ? <ShieldCheck className="h-3.5 w-3.5" /> : <FilePlus className="h-3.5 w-3.5" />}
           Attach encrypted file
         </button>
         <input
@@ -176,11 +176,10 @@ export function NoteFilesPanel({
               </p>
             </div>
             {phase === 'done' ? <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-500" /> : null}
-          </div>
-          {phase === 'uploading' ? (
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800">
+          </div>            {phase === 'uploading' ? (
+            <div className="mt-3 h-1.5 overflow-hidden rounded border border-line bg-stone-200 dark:bg-stone-800">
               <div
-                className="h-full rounded-full bg-orange-600 transition-[width] duration-150"
+                className="h-full border border-accent bg-accent"
                 style={{ width: `${Math.round(progress * 100)}%` }}
               />
             </div>
@@ -197,9 +196,7 @@ export function NoteFilesPanel({
       {loadError ? (
         <p className="mt-3 text-xs text-rose-600 dark:text-rose-400">{loadError}</p>
       ) : loading ? (
-        <p className="mt-4 flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400">
-          <CircleNotch className="h-4 w-4 animate-spin" /> Loading files…
-        </p>
+        <p className="mt-4 text-sm text-stone-500 dark:text-stone-400">Loading files...</p>
       ) : files.length === 0 ? (
         <p className="mt-4 text-sm text-stone-500 dark:text-stone-400">No files attached yet.</p>
       ) : (

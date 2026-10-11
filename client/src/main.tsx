@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-// Self-hosted IBM Plex (no Google Fonts, no Inter). Imported before the app
+// Self-hosted IBM Plex from @fontsource (no web fonts). Imported before the app
 // stylesheet so @font-face is registered before the first paint.
 import '@fontsource/ibm-plex-sans/400.css';
 import '@fontsource/ibm-plex-sans/500.css';

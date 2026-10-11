@@ -111,10 +111,10 @@ export function NotesPage(): ReactElement {
             <button
               type="button"
               onClick={() => setActiveTag(null)}
-              className={`rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
+              className={`rounded border px-4 py-1.5 text-xs font-semibold transition-colors ${
                 activeTag === null
-                  ? 'bg-gradient-to-r from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_8px_20px_-10px_rgba(122,88,247,0.9)]'
-                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-white/[0.06] dark:text-stone-300 dark:hover:bg-white/[0.1]'
+                  ? 'border-accent bg-accent text-paper'
+                  : 'border-line bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700'
               }`}
             >
               All
@@ -124,10 +124,10 @@ export function NotesPage(): ReactElement {
                 key={tag}
                 type="button"
                 onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold transition-all ${
+                className={`inline-flex items-center gap-1.5 rounded border px-4 py-1.5 text-xs font-semibold transition-colors ${
                   activeTag === tag
-                    ? 'bg-gradient-to-r from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_8px_20px_-10px_rgba(122,88,247,0.9)]'
-                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-white/[0.06] dark:text-stone-300 dark:hover:bg-white/[0.1]'
+                    ? 'border-accent bg-accent text-paper'
+                    : 'border-line bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700'
                 }`}
               >
                 <Tag className="h-3 w-3" />

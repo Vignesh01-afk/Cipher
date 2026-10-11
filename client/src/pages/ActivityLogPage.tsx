@@ -124,7 +124,7 @@ export function ActivityLogPage(): ReactElement {
               return (
                 <article
                   key={log.createdAt}
-                  className="flex flex-col gap-3 rounded-2xl border border-white/70 bg-white/70 p-4 transition hover:bg-white/85 dark:border-white/[0.08] dark:bg-white/[0.04]"
+                  className="flex flex-col gap-3 rounded-md border border-line bg-surface p-4"
                 >
                   <div className="flex items-start gap-3">
                     <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${TONE_CLASS[meta.tone]}`}>

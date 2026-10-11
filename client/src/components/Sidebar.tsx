@@ -36,19 +36,18 @@ export function Sidebar({ open, onClose }: SidebarProps): ReactElement {
         <button
           type="button"
           aria-label="Close navigation"
-          className="fixed inset-0 z-30 bg-stone-950/40 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-30 bg-scrim lg:hidden"
           onClick={onClose}
         />
       ) : null}
 
       <aside
-        className={`sidebar fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/10 bg-white/60 backdrop-blur-xl transition-transform duration-300 dark:bg-[#0B0F19]/80 lg:translate-x-0 ${
+        className={`sidebar fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-line bg-surface transition-transform duration-300 dark:bg-surface lg:translate-x-0 ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="sidebar-brand">
-          <NavLink to="/dashboard" className="group flex items-center gap-3" onClick={onClose}>
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 via-violet-500 to-pink-500 text-white shadow-[0_8px_24px_-10px_rgba(122,88,247,0.9)]">
+          <NavLink to="/dashboard" className="group flex items-center gap-3" onClick={onClose}>              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent text-paper">
               <BrandMark size="md" aria-hidden="true" />
             </div>
             <span className="text-xl font-bold tracking-tight text-stone-900 dark:text-white">
@@ -87,10 +86,10 @@ export function Sidebar({ open, onClose }: SidebarProps): ReactElement {
                 end={item.to === '/dashboard' || item.to === '/settings'}
                 onClick={onClose}
                 className={({ isActive }) =>
-                  `nav-link flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all ${
+                  `nav-link flex items-center gap-3 rounded-md px-3.5 py-2.5 text-sm font-medium transition-all ${
                     isActive
                       ? 'nav-link-active'
-                      : 'text-stone-600 hover:bg-white/60 hover:text-stone-900 dark:text-stone-400 dark:hover:bg-white/8'
+                      : 'text-muted hover:bg-stone-100 hover:text-ink dark:hover:bg-stone-800 dark:hover:text-stone-100'
                   }`
                 }
               >

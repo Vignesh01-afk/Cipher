@@ -65,8 +65,7 @@ export function DashboardPage(): ReactElement {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-white">
-              {greeting()}, {firstName ? <>{firstName}</> : <>there</>}!{' '}
-              <span aria-hidden="true">👋</span>
+              {greeting()}, {firstName ? <>{firstName}</> : <>there</>}!
             </h1>
             <p className="mt-1 text-sm leading-6 text-stone-500 dark:text-stone-400">
               Your notes are safe, private and always with you.
@@ -112,7 +111,7 @@ export function DashboardPage(): ReactElement {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="stat-card-label">Total Notes</p>
-              <p className="stat-card-value">{totalNotes ?? '—'}</p>
+              <p className="stat-card-value">{totalNotes ?? '-'}</p>
               <span className="stat-card-url">View all</span>
             </div>
             <span className="stat-card-icon">
@@ -130,7 +129,7 @@ export function DashboardPage(): ReactElement {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="stat-card-label">Shared Notes</p>
-              <p className="stat-card-value">{sharedNotes ?? '—'}</p>
+              <p className="stat-card-value">{sharedNotes ?? '-'}</p>
               <span className="stat-card-url">View all</span>
             </div>
             <span className="stat-card-icon">
@@ -148,7 +147,7 @@ export function DashboardPage(): ReactElement {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="stat-card-label">Secure Chats</p>
-              <p className="stat-card-value">{secureChats ?? '—'}</p>
+              <p className="stat-card-value">{secureChats ?? '-'}</p>
               <span className="stat-card-url">Start a conversation</span>
             </div>
             <span className="stat-card-icon">
@@ -166,7 +165,7 @@ export function DashboardPage(): ReactElement {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="stat-card-label">Audit Events</p>
-              <p className="stat-card-value">{logsLoading ? '—' : logs.length}</p>
+              <p className="stat-card-value">{logsLoading ? '-' : logs.length}</p>
               <span className="stat-card-url">View full log</span>
             </div>
             <span className="stat-card-icon">
@@ -235,7 +234,8 @@ export function DashboardPage(): ReactElement {
                 { term: 'Owner key wrap', value: 'AES-GCM-256 under a PBKDF2-derived master key' },
                 { term: 'Recipient key wrap', value: 'RSA-OAEP-2048 with SHA-256' },
                 { term: 'Password to key', value: 'PBKDF2-SHA256, 210,000 iterations' },
-                { term: 'Server-side plaintext', value: 'None — the API stores ciphertext only' },
+                {              term: 'Server-side plaintext',
+              value: 'None - the API stores ciphertext only' },
               ].map((row) => (
                 <div key={row.term} className="flex flex-col gap-0.5">
                   <dt className="font-semibold text-stone-700 dark:text-stone-200">{row.term}</dt>
@@ -243,11 +243,11 @@ export function DashboardPage(): ReactElement {
                 </div>
               ))}
             </dl>
-            <div className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+            <div className="mt-4 flex items-center gap-2 rounded-md border border-accent-300 bg-accent-50 px-3 py-2 text-xs text-accent-700 dark:border-accent-700 dark:bg-accent-900/40 dark:text-accent-300">
               <Lock className="h-3.5 w-3.5 shrink-0" />
               Vault unlocked in this tab
             </div>
-            <div className="mt-2 flex items-center gap-2 rounded-xl bg-white/60 px-3 py-2 text-xs text-stone-500 dark:bg-white/[0.04] dark:text-stone-400">
+            <div className="mt-2 flex items-center gap-2 rounded-md border border-line bg-surface px-3 py-2 text-xs text-muted dark:bg-surface">
               <WifiSlash className="h-3.5 w-3.5 shrink-0" />
               The API cannot decrypt any note, even with full database access
             </div>
@@ -269,7 +269,7 @@ export function DashboardPage(): ReactElement {
                   const Icon = matching?.icon ?? MagnifyingGlass;
                   return (
                     <li key={log.createdAt} className="flex items-start gap-3">
-                      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/70 text-stone-500 dark:bg-white/[0.06] dark:text-stone-400">
+                      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded border border-line bg-surface text-muted dark:bg-surface">
                         <Icon className="h-3.5 w-3.5" />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -294,7 +294,7 @@ export function DashboardPage(): ReactElement {
 function SkeletonBlock({ label = 'Loading…' }: { label?: string }): ReactElement {
   return (
     <div className="flex items-center justify-center gap-3 py-12 text-sm text-stone-500 dark:text-stone-400">
-      <div className="h-5 w-5 animate-pulse rounded-full border-2 border-brand/30 border-t-brand" />
+      <div className="h-4 w-16 rounded border border-line bg-line" />
       <span>{label}</span>
     </div>
   );

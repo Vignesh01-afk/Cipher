@@ -39,12 +39,7 @@ export function RecoveryKeyHandoffPage(): React.ReactElement {
 
   if (!recoveryKey) {
     return (
-      <div className="relative flex min-h-screen overflow-hidden bg-stone-50 dark:bg-[#0B0F19]">
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -left-40 -top-40 h-[32rem] w-[32rem] rounded-md bg-brand/10 blur-3xl dark:bg-brand/15" />
-          <div className="absolute -right-32 top-10 h-[26rem] w-[26rem] rounded-md bg-violet-400/10 blur-3xl dark:bg-violet-400/10" />
-          <div className="absolute -bottom-32 left-1/3 h-[32rem] w-[32rem] rounded-md bg-pink-400/8 blur-3xl dark:bg-pink-400/8" />
-        </div>
+      <div className="relative flex min-h-screen bg-surface">
         <div className="relative z-10 mx-auto w-full max-w-lg px-5 py-16 text-center">
           <div className="flex h-14 w-14 items-center justify-center rounded-md bg-amber-500/10 text-amber-500">
             <ShieldWarning className="h-7 w-7" />

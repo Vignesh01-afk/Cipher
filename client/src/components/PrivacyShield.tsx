@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
  * Layers:
  *  - Full-screen opaque cover when the tab is hidden or capture is active
  *    (invisible to the user in the hidden case, but covers screen sharing).
- *  - Heavy blur when only the window lost focus.
+ *  - A plain, non-blurred hidden layer when only the window lost focus.
  *  - A clear warning banner when capture is detected.
  *  - Optional subtle watermark with session identity and timestamp.
  *
@@ -25,23 +25,16 @@ export function PrivacyShield({ children }: { children: ReactNode }): React.Reac
   const blur = privacy.protected && privacy.reason === 'blur';
 
   return (
-    <div className="relative min-h-screen">
-      {/* Content layer - blurred but still mounted, so state is not lost. */}
-      <div
-        aria-hidden={privacy.protected}
-        className={
-          blur
-            ? 'min-h-screen select-none blur-lg saturate-50  '
-            : 'min-h-screen  '
-        }
-      >
+    <div className="relative min-h-screen bg-paper">
+      {/* Content layer - mounted even while protected, so state is not lost. */}
+      <div aria-hidden={privacy.protected} className={blur ? 'min-h-screen select-none invisible' : 'min-h-screen'}>
         {children}
       </div>
 
       {/* Screenshot-attempt flash: covers the screen for ~1s. */}
       {privacy.screenshotAttempt ? (
-        <div className="fixed inset-0 z-[75] flex flex-col items-center justify-center gap-4 bg-stone-950 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-md bg-rose-500/10 text-rose-400">
+        <div className="fixed inset-0 z-[75] flex flex-col items-center justify-center gap-4 bg-scrim text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-md bg-danger/10 text-danger">
             <Camera className="h-7 w-7" />
           </span>
           <p className="max-w-md px-6 text-base font-semibold text-stone-100">
