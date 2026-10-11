@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { House, FileText, ChatsCircle, Users, Scroll, Gear, Lock, SignOut } from '@phosphor-icons/react';
 import type { ReactElement } from 'react';
 
+const LOGO_SRC = new URL('../../../public/logo.png', import.meta.url).href;
+
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
@@ -41,11 +43,14 @@ export function Sidebar({ open, onClose }: SidebarProps): ReactElement {
       >
         <div className="sidebar-brand">
           <NavLink to="/dashboard" className="group flex items-center gap-3" onClick={onClose}>
-            <BrandMark size="md" aria-hidden="true" />
-            <span className="text-xl font-bold tracking-tight text-stone-900 dark:text-white">
-              <span className="brand-wordmark-cipher">Cipher</span>
-              <span className="brand-wordmark-note">Note</span>
-            </span>
+            <BrandMark size="md" aria-hidden="true" logoSrc={LOGO_SRC} />
+            <div className="flex flex-col leading-tight text-stone-900 dark:text-paper">
+              <span className="text-lg font-bold tracking-tight">
+                <span className="brand-wordmark-cipher">Cipher</span>
+                <span className="brand-wordmark-note">Note</span>
+              </span>
+              <span className="text-[11px] font-medium text-muted dark:text-muted">Encrypt. Share. Revoke.</span>
+            </div>
           </NavLink>
           <button
             type="button"
@@ -78,7 +83,7 @@ export function Sidebar({ open, onClose }: SidebarProps): ReactElement {
                   `nav-link flex items-center gap-3 rounded-md px-3.5 py-2.5 text-sm font-medium transition-all ${
                     isActive
                       ? 'nav-link-active'
-                      : 'text-muted hover:bg-stone-100 hover:text-ink dark:hover:bg-stone-800 dark:hover:text-stone-100'
+                      : 'text-muted hover:bg-panel/70 hover:text-ink dark:hover:bg-panel/40 dark:hover:text-stone-100'
                   }`
                 }
               >
@@ -89,12 +94,11 @@ export function Sidebar({ open, onClose }: SidebarProps): ReactElement {
           ))}
         </nav>
 
-        <div className="sidebar-footer">
-          <div className="security-badge">
-            <Lock className="h-4 w-4 shrink-0 text-emerald-500" />
+        <div className="sidebar-footer">            <div className="security-badge">
+            <Lock className="h-4 w-4 shrink-0 text-indigo-400" />
             <div>
-              <p className="text-xs font-bold text-stone-900 dark:text-white">End-to-End Encrypted</p>
-              <p className="text-[11px] text-stone-400">Your privacy. Our priority.</p>
+              <p className="text-xs font-semibold text-ink dark:text-paper">End-to-End Encrypted</p>
+              <p className="text-[11px] text-muted dark:text-muted">Your privacy. Our priority.</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">

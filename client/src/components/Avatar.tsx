@@ -28,10 +28,10 @@ export function Avatar({ name, size = 'md', src, online, icon, className = '' }:
   );
 
   return (
-    <div className={`${className}`}>
+    <div className={`relative inline-flex items-center justify-center ${className}`.trim()}>
       {inner}
       {online ? (
-        <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-sm border border-line bg-accent" />
+        <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-panel bg-emerald-500 shadow-[0_0_0_1px_rgba(99,102,241,0.35),0_0_8px_rgba(99,102,241,0.25)]" />
       ) : null}
     </div>
   );

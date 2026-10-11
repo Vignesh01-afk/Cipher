@@ -20,7 +20,17 @@ type BrandMarkProps = {
   'aria-hidden'?: boolean | 'true' | 'false';
 };
 
-export default function BrandMark({ size = 'sm', className = '', ...rest }: BrandMarkProps) {
+export default function BrandMark({ size = 'sm', className = '', logoSrc, ...rest }: BrandMarkProps & { logoSrc?: string | null }) {
+  // Prefer the uploaded logo tile when present (mockup spec, client/public/logo.png).
+  // Fall back to the inline SVG brand mark so the app still works without the file.
+  if (logoSrc) {
+    return (
+      <span className={`brand-logo-tile ${className}`.trim()} {...rest}>
+        <img src={logoSrc} alt="CipherNote logo" draggable={false} />
+      </span>
+    );
+  }
+
   return (
     <span className={`brand-logo-img ${SIZES[size]} ${className}`.trim()} {...rest}>
       <svg viewBox="0 0 48 48" role="img" aria-label="CipherNote logo" focusable="false">

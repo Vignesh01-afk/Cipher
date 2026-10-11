@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { MagnifyingGlass, Moon, Sun, SignOut, User, Gear, Shield, Lock, ArrowLeft } from '@phosphor-icons/react';
+import { MagnifyingGlass, Moon, Sun, SignOut, User, Gear, Shield, Lock, ArrowLeft, List, FileText, LockOpen, UserCircle } from '@phosphor-icons/react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../lib/api';
 import { Avatar } from './Avatar';
 import { Dropdown, DropdownMenu, type DropdownItem } from './Dropdown';
 
 interface TopbarProps {
   onOpenSidebar?: () => void;
-  actions?: React.ReactNode;
+  actions?: ReactNode;
 }
 
 export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElement {
@@ -20,8 +21,11 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notifications, setNotifications] = useState<{ id: string; action: string; createdAt: string; noteId?: string | null }[]>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const displayName = user?.displayName ?? 'User';
+  const unreadCount = notifications.length;
   const nameParts = displayName.trim().split(/\s+/).filter(Boolean);
   const initials =
     nameParts.length === 0
@@ -40,6 +44,20 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
     if (searchQuery.trim()) navigate(`/notes?q=${encodeURIComponent(searchQuery.trim())}`);
     setSearchOpen(false);
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .listAuditLogs({ limit: 50 })
+      .then((items) => {
+        if (cancelled) return;
+        setNotifications(items.slice(0, 8));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const profileItems: DropdownItem[] = [
     { label: 'Profile', icon: <User className="h-4 w-4" />, onSelect: () => { setProfileOpen(false); navigate('/settings/privacy'); } },
@@ -85,16 +103,35 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
           <input
             type="search"
             className="input pl-10"
-            placeholder="Search notes, chats, or users..."
+            placeholder="Search notes, users or CipherNote ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={() => setSearchOpen(true)}
-            aria-label="Search notes, chats, or users"
+            aria-label="Search notes, users or CipherNote ID"
           />
         </form>
 
         <div className="flex shrink-0 items-center gap-2">
           {actions}
+
+          <button
+            type="button"
+            className="btn btn-ghost h-9 w-9 shrink-0 p-0 relative"
+            aria-label="Notifications"
+            onClick={(e) => {
+              e.stopPropagation();
+              setNotificationsOpen((open) => !open);
+            }}
+          >
+            <span className="relative flex h-4 w-4 items-center justify-center">
+              <List className="h-5 w-5" />
+              {unreadCount > 0 ? (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-indigo-500 text-[9px] font-bold text-white shadow-[0_0_0_1px_rgba(99,102,241,0.35),0_0_8px_rgba(99,102,241,0.3)]">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              ) : null}
+            </span>
+          </button>
 
           <button
             type="button"
@@ -105,16 +142,12 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
 
-          <span className={`hidden h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line sm:inline-flex ${status === 'unlocked' ? 'bg-accent-50 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300' : 'bg-danger-50 text-danger-700 dark:bg-danger-900/40 dark:text-danger-300'}`}>
-            <Lock className="h-4 w-4" />
-          </span>
-
           <Dropdown
             align="right"
             trigger={
               <button
                 type="button"
-                className="flex items-center gap-2 rounded-md border border-line bg-surface px-2 py-1"
+                className="flex items-center gap-2 rounded-xl border border-line bg-panel px-2.5 py-1.5 shadow-[0_0_0_1px_rgba(99,102,241,0.08)]"
               >
                 <Avatar name={displayName} size="sm" />
                 <span className="hidden text-left sm:block">
@@ -123,13 +156,55 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
                     <span className="block font-mono text-xs leading-tight text-muted">{user.cipherId}</span>
                   ) : null}
                 </span>
+                <svg className="h-4 w-4 shrink-0 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
               </button>
             }
           >
-            <DropdownMenu items={profileItems} />
+            <div className="max-h-80 overflow-y-auto p-1">
+              {notifications.length === 0 ? (
+                <div className="px-3 py-4 text-center text-xs text-muted">No recent activity</div>
+              ) : (
+              notifications.slice(0, 6).map((item) => {
+                const label = getAuditLabel(item.action);
+                const icon = getAuditIcon(item.action);
+                const targetNoteId = item.noteId ?? null;
+                return (
+                  <div
+                    key={item.id}
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-ink hover:bg-stone-100 dark:hover:bg-stone-800 cursor-pointer"
+                    onClick={() => {
+                      if (targetNoteId) {
+                        navigate(`/notes/${targetNoteId}`);
+                      } else {
+                        navigate('/activity');
+                      }
+                      setNotificationsOpen(false);
+                    }}
+                  >
+                    {icon}
+                    <span>{label}</span>
+                  </div>
+                );
+              })
+              )}
+            </div>
           </Dropdown>
+
         </div>
       </div>
     </header>
   );
+}
+
+function getAuditLabel(action: string): string {
+  return action.replace(/_/g, ' ').replace(/\b[A-Z]/g, (ch) => ch.toLowerCase());
+}
+
+function getAuditIcon(action: string): ReactNode {
+  if (action.includes('NOTE')) return <FileText className="h-4 w-4" />;
+  if (action.includes('CHAT')) return <LockOpen className="h-4 w-4" />;
+  if (action.includes('SHARE')) return <UserCircle className="h-4 w-4" />;
+  return <List className="h-4 w-4" />;
 }
