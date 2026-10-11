@@ -68,7 +68,7 @@ export function DashboardPage(): ReactElement {
               {greeting()}, {firstName ? <>{firstName}</> : <>there</>}!
             </h1>
             <p className="mt-1 text-sm leading-6 text-stone-500 dark:text-stone-400">
-              Your notes are safe, private and always with you.
+              Notes are encrypted in this browser before they are stored.
             </p>
           </div>
           <Button variant="primary" onClick={() => navigate('/notes/new')}>
@@ -179,7 +179,7 @@ export function DashboardPage(): ReactElement {
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold tracking-tight text-stone-900 dark:text-white">
-              Encrypted. Always.
+              Encrypted on this device
             </h2>
             <p className="mt-1 text-sm leading-6 text-stone-500 dark:text-stone-400">
               Notes are sealed with AES-GCM-256 in this browser and only readable by those you choose.
@@ -192,7 +192,7 @@ export function DashboardPage(): ReactElement {
         <section className="xl:col-span-2 space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold tracking-tight text-stone-900 dark:text-white">Recent Notes</h2>
-            <Link to="/notes" className="link">
+            <Link to="/notes" className="link inline-flex items-center gap-1 whitespace-nowrap">
               View all <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
