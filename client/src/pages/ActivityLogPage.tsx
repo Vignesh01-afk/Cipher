@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../lib/api';
 import { useToast } from '../context/ToastContext';
-import { Spinner } from '../components/Spinner';
+import { Skeleton } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState, InfoState } from '../components/States';
 import { formatRelativeTime } from '../lib/format';
@@ -98,10 +98,16 @@ export function ActivityLogPage(): ReactElement {
           }}
         />
       ) : loading ? (
-        <div className="card">
-          <div className="flex justify-center py-12">
-            <Spinner />
-          </div>
+        <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="card space-y-3 p-4">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-9 w-9 shrink-0" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+              <Skeleton className="h-3 w-2/3" />
+            </div>
+          ))}
         </div>
       ) : logs.length === 0 ? (
         <EmptyState

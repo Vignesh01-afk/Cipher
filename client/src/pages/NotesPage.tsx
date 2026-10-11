@@ -8,7 +8,7 @@ import { collectTags, filterNotes, type DecryptedNote } from '../lib/notes';
 import { NoteCard } from '../components/NoteCard';
 import { ShareNoteModal } from '../components/ShareNoteModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
-import { LoadingBlock } from '../components/Spinner';
+import { Skeleton } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState, InfoState } from '../components/States';
 import { FilePlus, MagnifyingGlass, X, Funnel, Tag, FileText } from '@phosphor-icons/react';
@@ -156,8 +156,11 @@ export function NotesPage(): ReactElement {
           onRetry={() => void own.reload()}
         />
       ) : own.loading ? (
-        <div className="card">
-          <LoadingBlock label="Fetching ciphertext and decrypting in your browser…" />
+        <div className="card space-y-3">
+          <Skeleton className="h-4 w-1/3" />
+          <Skeleton className="h-3 w-2/3" />
+          <Skeleton className="h-3 w-1/2" />
+          <Skeleton className="h-3 w-3/5" />
         </div>
       ) : own.notes.length === 0 ? (
         <EmptyState

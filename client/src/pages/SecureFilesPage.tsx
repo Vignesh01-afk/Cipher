@@ -13,7 +13,7 @@ import {
 import type { SecureFileDto } from '../lib/types';
 import { formatBytes, formatRelativeTime } from '../lib/format';
 import { Button } from '../components/Button';
-import { Spinner } from '../components/Spinner';
+import { Skeleton } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/States';
 import { FilePreviewModal, FileKindIcon } from '../components/FilePreviewModal';
@@ -228,10 +228,16 @@ export function SecureFilesPage(): React.ReactElement {
       ) : null}
 
       {loading ? (
-        <div className="card">
-          <div className="flex justify-center py-12">
-            <Spinner />
-          </div>
+        <div className="card divide-y divide-line">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="flex items-center gap-3 py-3">
+              <Skeleton className="h-9 w-9 shrink-0" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-3 w-1/3" />
+                <Skeleton className="h-3 w-1/4" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : loadError ? (
         <div className="card">

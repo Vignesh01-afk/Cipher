@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Spinner } from '../components/Spinner';
+import { Skeleton } from '../components/Skeleton';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Modal } from '../components/Modal';
 import { ChatShareNoteModal } from '../components/ChatShareNoteModal';
@@ -839,7 +840,14 @@ export function ChatPage(): ReactElement {
         </section>
       ) : null}
 
-      {conversations.length === 0 ? (
+      {loadingList ? (
+        <div className="card space-y-3 p-4">
+          <Skeleton className="h-4 w-1/3" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
+        </div>
+      ) : conversations.length === 0 ? (
             <div className="card p-8 text-center">
               <ChatTeardropText className="mx-auto h-8 w-8 text-stone-400" />
               <h2 className="mt-3 text-lg font-semibold text-stone-900 dark:text-white">No conversations yet</h2>

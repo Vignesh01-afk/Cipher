@@ -6,7 +6,7 @@ import { useToast } from '../context/ToastContext';
 import { api } from '../lib/api';
 import { collectTags, filterNotes, type DecryptedNote } from '../lib/notes';
 import { NoteCard } from '../components/NoteCard';
-import { LoadingBlock } from '../components/Spinner';
+import { Skeleton } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState } from '../components/States';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -195,8 +195,10 @@ export function SharedWithMePage(): React.ReactElement {
         own.error ? (
           <ErrorState title="Could not load your notes" message={own.error} onRetry={() => void own.reload()} />
         ) : own.loading ? (
-          <div className="card">
-            <LoadingBlock label="Reading your notes and their share lists…" />
+          <div className="card space-y-3">
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-3 w-2/3" />
+            <Skeleton className="h-3 w-1/2" />
           </div>
         ) : visibleOutgoing.length === 0 ? (
           <EmptyState
@@ -282,8 +284,10 @@ export function SharedWithMePage(): React.ReactElement {
       ) : shared.error ? (
         <ErrorState title="Could not load shared notes" message={shared.error} onRetry={() => void shared.reload()} />
       ) : shared.loading ? (
-        <div className="card">
-          <LoadingBlock label="Unwrapping note keys with your private key…" />
+        <div className="card space-y-3">
+          <Skeleton className="h-4 w-1/3" />
+          <Skeleton className="h-3 w-2/3" />
+          <Skeleton className="h-3 w-1/2" />
         </div>
       ) : shared.notes.length === 0 ? (
         <EmptyState
@@ -346,7 +350,10 @@ export function SharedWithMePage(): React.ReactElement {
             />
           </div>
           {own.loading ? (
-            <LoadingBlock label="Reading your notes…" />
+            <div className="space-y-2 py-2">
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-2/3" />
+            </div>
           ) : pickerNotes.length === 0 ? (
             <p className="py-6 text-center text-sm text-stone-500 dark:text-stone-400">No notes match your search.</p>
           ) : (
