@@ -39,13 +39,13 @@ export function PrivacySettingsPage(): React.ReactElement {
               <h2 className="text-base font-semibold text-stone-900 dark:text-white">Privacy Mode</h2>
               <p className="mt-0.5 text-sm text-stone-500 dark:text-stone-400">
                 Practical, browser-level protection against observation. Master switch for all behaviours below.
-              </p>
-            </div>
-          </div>
-          <Toggle
+              </p>        </div>
+      </div>
+      <Toggle
             checked={settings.privacyMode}
             onChange={(value) => updateSettings({ privacyMode: value })}
             label="Privacy Mode"
+            containerClassName="flex items-center justify-between gap-4"
           />
         </div>
 

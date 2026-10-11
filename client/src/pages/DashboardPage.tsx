@@ -108,7 +108,7 @@ export function DashboardPage(): ReactElement {
           onClick={() => navigate('/notes')}
           aria-label="Go to Notes"
         >
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="stat-card-label">Total Notes</p>
               <p className="stat-card-value">{totalNotes ?? '-'}</p>
@@ -126,7 +126,7 @@ export function DashboardPage(): ReactElement {
           onClick={() => navigate('/shared')}
           aria-label="Go to Shared notes"
         >
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="stat-card-label">Shared Notes</p>
               <p className="stat-card-value">{sharedNotes ?? '-'}</p>
@@ -144,7 +144,7 @@ export function DashboardPage(): ReactElement {
           onClick={() => navigate('/chat')}
           aria-label="Go to Secure Chats"
         >
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="stat-card-label">Secure Chats</p>
               <p className="stat-card-value">{secureChats ?? '-'}</p>
@@ -162,7 +162,7 @@ export function DashboardPage(): ReactElement {
           onClick={() => navigate('/activity')}
           aria-label="Go to Activity log"
         >
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="stat-card-label">Audit Events</p>
               <p className="stat-card-value">{logsLoading ? '-' : logs.length}</p>

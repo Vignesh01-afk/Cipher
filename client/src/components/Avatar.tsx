@@ -28,7 +28,7 @@ export function Avatar({ name, size = 'md', src, online, icon, className = '' }:
   );
 
   return (
-    <div className={`relative flex items-center justify-center ${className}`}>
+    <div className={`${className}`}>
       {inner}
       {online ? (
         <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-sm border border-line bg-accent" />
