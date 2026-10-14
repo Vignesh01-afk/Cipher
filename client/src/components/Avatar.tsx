@@ -19,10 +19,12 @@ export function Avatar({ name, size = 'md', src, online, icon, className = '' }:
   const initials = name.trim().split(/\s+/).filter(Boolean);
   const text = initials.length === 0 ? '?' : initials.length === 1 ? initials[0]!.slice(0, 2).toUpperCase() : `${initials[0]![0]}${initials[initials.length - 1]![0]}`.toUpperCase();
 
+  // Gradient tile with white initials: readable in BOTH themes because the
+  // fill is the same indigo->purple gradient regardless of the paper token.
   const inner = src ? (
     <img src={src} alt={name} className={`${sizeClass} rounded-md object-cover`} />
   ) : (
-    <div className={`${sizeClass} flex items-center justify-center rounded-md bg-accent text-paper text-xs font-semibold`}>
+    <div className={`${sizeClass} flex items-center justify-center rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-xs font-semibold`}>
       {icon ?? text}
     </div>
   );

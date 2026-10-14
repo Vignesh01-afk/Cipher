@@ -12,13 +12,20 @@ const DropdownCloseContext = createContext<() => void>(() => undefined);
 
 interface DropdownProps {
   trigger: ReactNode;
+  /**
+   * Optional classes for the wrapper <button> around the trigger node.
+   * The wrapper is unstyled by default (inline-flex only) so callers put
+   * their own tile/border styles on it exactly once - never on an inner
+   * element as well, which would render a double border.
+   */
+  triggerClassName?: string;
   className?: string;
   align?: 'left' | 'right';
   children: ReactNode;
   rootRef?: (node: HTMLElement | null) => void;
 }
 
-export function Dropdown({ trigger, className = '', align = 'left', children, rootRef }: DropdownProps): React.ReactElement {
+export function Dropdown({ trigger, triggerClassName = '', className = '', align = 'left', children, rootRef }: DropdownProps): React.ReactElement {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -50,7 +57,7 @@ export function Dropdown({ trigger, className = '', align = 'left', children, ro
     >
       <button
         type="button"
-        className="inline-flex"
+        className={`inline-flex ${triggerClassName}`.trim()}
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-haspopup="menu"

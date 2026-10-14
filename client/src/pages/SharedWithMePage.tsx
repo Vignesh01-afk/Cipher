@@ -236,7 +236,7 @@ export function SharedWithMePage(): React.ReactElement {
           <div className="card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[640px] text-left text-sm">
-                <thead className="border-b border-white/10 text-xs uppercase tracking-wide text-stone-400 dark:border-white/[0.08]">
+                <thead className="border-b border-line text-xs uppercase tracking-wide text-stone-400">
                   <tr>
                     <th className="px-4 py-3 font-semibold">Note</th>
                     <th className="px-4 py-3 font-semibold">Shared with</th>

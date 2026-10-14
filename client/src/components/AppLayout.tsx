@@ -120,11 +120,12 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
 
           <Dropdown
             align="right"
+            // The tile border/fill lives on Dropdown's single wrapper button
+            // (not on an inner element), so there is exactly one border and
+            // the control still has a visible fill for the ui-audit check.
+            triggerClassName="items-center gap-2 rounded-md border border-line bg-surface px-2 py-1"
             trigger={
-              // Not a <button>: Dropdown already wraps its trigger in a real
-              // button, and nesting buttons is invalid HTML that also creates
-              // two same-named controls for assistive tech / test locators.
-              <span className="flex items-center gap-2 rounded-md border border-line bg-surface px-2 py-1">
+              <>
                 <Avatar name={displayName} size="sm" />
                 <span className="hidden text-left sm:block">
                   <span className="block text-sm font-medium leading-tight text-ink">{displayName}</span>
@@ -132,7 +133,7 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
                     <span className="block font-mono text-xs leading-tight text-muted">{user.cipherId}</span>
                   ) : null}
                 </span>
-              </span>
+              </>
             }
           >
             <DropdownMenu items={profileItems} />

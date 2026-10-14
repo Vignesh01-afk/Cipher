@@ -131,6 +131,10 @@ function auditInPage(sampleNames) {
   // text colour contrasts >= 3 with the background.
   const buttons = Array.from(document.querySelectorAll('button, a.btn')).filter(visible);
   const btnProblems = [];
+  const nameOf = (el) =>
+    (el.textContent || '').trim().slice(0, 20) ||
+    el.getAttribute('aria-label') ||
+    `.${String(el.className).split(' ')[0]}(unnamed)`;
   for (const el of buttons) {
     const s = getComputedStyle(el);
     const bg = parseColor(s.backgroundColor);
@@ -139,7 +143,7 @@ function auditInPage(sampleNames) {
       (side) => parseFloat(s[`border${side}Width`]) > 0,
     );
     if (!hasFill && !hasBorder) {
-      btnProblems.push(`no fill/border: "${(el.textContent || '').trim().slice(0, 24)}"`);
+      btnProblems.push(`no fill/border: "${nameOf(el)}"`);
       continue;
     }
     const eff = bgOf(el);

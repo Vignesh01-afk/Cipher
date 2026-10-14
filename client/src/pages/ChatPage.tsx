@@ -1399,7 +1399,7 @@ function Avatar({ name, size = 'md', className = '' }: { name: string; size?: 's
 
   return (
     <div className={`relative flex items-center justify-center ${className}`.trim()}>
-      <div className={`${sizeClass} rounded-md bg-accent text-paper flex items-center justify-center`}>
+      <div className={`${sizeClass} rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center`}>
         {text}
       </div>
     </div>
