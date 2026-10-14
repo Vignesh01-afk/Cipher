@@ -36,9 +36,7 @@ export function LandingPage(): React.ReactElement {
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-12 sm:py-20">
         <div className="mx-auto max-w-4xl text-center">
           <div className="mb-6 flex justify-center">
-            <span className="flex h-18 w-18 items-center justify-center rounded-md bg-accent text-paper ">
-              <Lock className="h-9 w-9" />
-            </span>
+            <BrandMark size="lg" />
           </div>
 
           <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 dark:text-white sm:text-5xl lg:text-6xl">

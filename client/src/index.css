@@ -154,8 +154,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 40px;
-  width: 40px;
+  /* Size comes from the h-* / w-* utility classes BrandMark passes in. */
   border-radius: 12px;
   overflow: hidden;
   background: #05070d;

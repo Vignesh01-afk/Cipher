@@ -4,6 +4,7 @@ import { Envelope, Lock, Eye, EyeSlash, WarningCircle, User } from '@phosphor-ic
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { AuthShell } from './AuthShell';
+import BrandMark from '../components/BrandMark';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { GoogleIcon } from '../lib/passwordStrength';
@@ -66,9 +67,7 @@ export function LoginPage(): React.ReactElement {
     <AuthShell>
       <div className="space-y-5">
         <div className="flex flex-col items-center text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-md bg-accent text-paper ">
-            <Lock className="h-6 w-6" />
-          </span>
+          <BrandMark size="lg" />
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-stone-900 dark:text-white">Welcome back</h1>
           <p className="mt-1 text-sm leading-6 text-stone-500 dark:text-stone-400">
             Sign in to access your encrypted notes.

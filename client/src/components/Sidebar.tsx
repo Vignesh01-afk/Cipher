@@ -5,8 +5,6 @@ import { useAuth } from '../context/AuthContext';
 import { House, FileText, ChatsCircle, Users, Scroll, Gear, Lock, SignOut } from '@phosphor-icons/react';
 import type { ReactElement } from 'react';
 
-const LOGO_SRC = new URL('../../../public/logo.png', import.meta.url).href;
-
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
@@ -43,7 +41,7 @@ export function Sidebar({ open, onClose }: SidebarProps): ReactElement {
       >
         <div className="sidebar-brand">
           <NavLink to="/dashboard" className="group flex items-center gap-3" onClick={onClose}>
-            <BrandMark size="md" aria-hidden="true" logoSrc={LOGO_SRC} />
+            <BrandMark size="md" aria-hidden="true" />
             <div className="flex flex-col leading-tight text-stone-900 dark:text-paper">
               <span className="text-lg font-bold tracking-tight">
                 <span className="brand-wordmark-cipher">Cipher</span>

@@ -4,6 +4,7 @@ import { WarningCircle, Lock, Key, SignOut, ShieldCheck } from '@phosphor-icons/
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { AuthShell } from './AuthShell';
+import BrandMark from '../components/BrandMark';
 import { Button } from '../components/Button';
 
 export function UnlockPage(): React.ReactElement {
@@ -34,9 +35,7 @@ export function UnlockPage(): React.ReactElement {
   return (
     <AuthShell>
       <div className="flex flex-col items-center text-center py-6">
-        <span className="flex h-14 w-14 items-center justify-center rounded-md bg-amber-500/15 text-amber-500 dark:text-amber-400">
-          <Lock className="h-6 w-6" />
-        </span>
+        <BrandMark size="lg" />
         <h1 className="mt-4 text-2xl font-bold tracking-tight text-stone-900 dark:text-white">Your vault is locked</h1>
         <p className="mt-2 text-sm leading-6 text-stone-500 dark:text-stone-400">
           {user ? (

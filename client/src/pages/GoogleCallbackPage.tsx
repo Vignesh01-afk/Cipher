@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck } from '@phosphor-icons/react';
 import { Spinner } from '../components/Spinner';
+import BrandMark from '../components/BrandMark';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { Button } from '../components/Button';
@@ -67,9 +68,7 @@ export function GoogleCallbackPage(): React.ReactElement {
         <div className="flex flex-1 flex-col">
           {authCard(
             <div className="flex items-center justify-center gap-3">
-              <span className="flex h-12 w-12 items-center justify-center rounded-md bg-accent text-paper">
-                <ShieldCheck className="h-6 w-6" />
-              </span>
+              <BrandMark size="md" />
               <span className="text-2xl font-bold tracking-tight text-ink">
                 <span className="brand-wordmark-cipher">Cipher</span>
                 <span className="brand-wordmark-note">Note</span>

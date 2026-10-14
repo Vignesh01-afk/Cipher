@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext';
 import { Spinner } from '../components/Spinner';
 import { ErrorState } from '../components/States';
 import { AuthShell } from './AuthShell';
+import BrandMark from '../components/BrandMark';
 import {
   MIN_PASSWORD_LENGTH,
   TONE_BAR,
@@ -101,9 +102,7 @@ export function GoogleSignupPage(): React.ReactElement {
     <AuthShell width="lg">
       <div className="space-y-5">
         <div className="flex flex-col items-center text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-md bg-accent text-paper ">
-            <ShieldCheck className="h-6 w-6" />
-          </span>
+          <BrandMark size="lg" />
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-stone-900 dark:text-white">Finish creating your vault</h1>
           <p className="mt-1 text-sm leading-6 text-stone-500 dark:text-stone-400">
             Google verified <span className="font-medium text-stone-700 dark:text-stone-200">{googleEmail}</span>

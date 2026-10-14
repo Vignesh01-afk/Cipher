@@ -1,22 +1,16 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import BrandMark from '../components/BrandMark';
-import { ShieldCheck, Key, Wallet } from '@phosphor-icons/react';
 
 interface AuthShellProps {
   children: ReactNode;
   width?: 'md' | 'lg';
 }
 
-const TRUST_CHIPS = [
-  { icon: Key, label: 'End-to-End', sub: 'Encryption' },
-  { icon: ShieldCheck, label: 'Secure', sub: 'Sharing' },
-  { icon: Wallet, label: 'Full', sub: 'Control' },
-];
-
+// Each auth page renders its own <BrandMark /> at the top of the card, so
+// the shell itself stays brand-free to avoid a double logo.
 export function AuthShell({ children, width = 'md' }: AuthShellProps): React.ReactElement {
   return (
-    <div className="flex min-h-screen flex-col bg-paper">
+    <div className="flex min-h-screen flex-col bg-page">
       <div className="flex flex-1 items-center justify-center px-4 py-10">
         <div
           className={`mx-auto w-full ${width === 'lg' ? 'max-w-lg' : 'max-w-md'} rounded-md border border-line bg-surface p-6`}
