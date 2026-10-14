@@ -37,3 +37,7 @@ playwright-report/
 test-results/
 playwright/.cache/
 client.zip
+
+# UI audit harness artifacts (generated, never committed)
+client/ui-audit-shots/
+.task-says/
