@@ -13,6 +13,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { NoteEditorPage } from './pages/NoteEditorPage';
 import { NoteViewPage } from './pages/NoteViewPage';
 import { NotesPage } from './pages/NotesPage';
+import { SettingsPage } from './pages/SettingsPage';
 import { PrivacySettingsPage } from './pages/PrivacySettingsPage';
 import { RecoveryKeyHandoffPage } from './pages/RecoveryKeyHandoffPage';
 import { RegisterPage } from './pages/RegisterPage';
@@ -82,10 +83,11 @@ export default function App(): React.ReactElement {
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/chat/:conversationId" element={<ChatPage />} />
         <Route path="/files" element={<SecureFilesPage />} />
-        <Route path="/settings/privacy" element={<PrivacySettingsPage />} />
-        {/* Legacy alias paths: /privacy and /settings now redirect. */}
-        <Route path="/privacy" element={<Navigate to="/settings/privacy" replace />} />
-        <Route path="/settings" element={<Navigate to="/settings/privacy" replace />} />
+        <Route path="/settings/privacy" element={<Navigate to="/settings?tab=privacy" replace />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/settings/:tab" element={<SettingsPage />} />
+        {/* Legacy alias paths: /privacy now redirects to the privacy tab. */}
+        <Route path="/privacy" element={<Navigate to="/settings?tab=privacy" replace />} />
         <Route path="/activity" element={<ActivityLogPage />} />
         <Route path="/inspector" element={<SecurityInspectorPage />} />
         <Route path="/inspector/:noteId" element={<SecurityInspectorPage />} />

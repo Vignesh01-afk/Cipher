@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { ApiError, api } from '../lib/api';
-import { decryptOwnNote, decryptSharedNote, type DecryptedNote } from '../lib/notes';
+import { categoryFromTags, countWords, decryptOwnNote, decryptSharedNote, type DecryptedNote } from '../lib/notes';
 import { formatBytes, formatDateTime, formatRelativeTime } from '../lib/format';
 import { ShareNoteModal } from '../components/ShareNoteModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -124,6 +124,7 @@ export function NoteViewPage(): ReactElement {
 
   const isOwner = note.role === 'owner';
   const activeShares = note.shares.filter((share) => share.isActive);
+  const category = categoryFromTags(note.tags);
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -179,6 +180,12 @@ export function NoteViewPage(): ReactElement {
                 : `${activeShares.length} active ${activeShares.length === 1 ? 'share' : 'shares'}`}
             </span>
           ) : null}
+          {category ? (
+            <span className={`chip chip-${category}`}>
+              <Tag className="h-3 w-3" />
+              {category}
+            </span>
+          ) : null}
         </div>
 
         <h1 className="mt-4 text-2xl font-semibold tracking-tight text-stone-900 dark:text-white">
@@ -195,7 +202,7 @@ export function NoteViewPage(): ReactElement {
             Created {formatDateTime(note.createdAt)}
           </span>
           <span title={new Date(note.updatedAt).toString()}>Updated {formatRelativeTime(note.updatedAt)}</span>
-          <span>{formatBytes(note.payloadBytes)} plaintext payload</span>
+          <span>{countWords(note.content)} words · {formatBytes(note.payloadBytes)} plaintext payload</span>
         </div>
 
         {note.tags.length > 0 ? (

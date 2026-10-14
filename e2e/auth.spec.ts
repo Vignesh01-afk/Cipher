@@ -93,7 +93,24 @@ test.describe('Authentication', () => {
   });
 
   test('logout ends the session and protected routes are blocked again', async ({ page }) => {
-    await loginViaUi(page, book.alice);
+    // Own throwaway account, NOT the shared alice: logout bumps tokenVersion
+    // server-side, which invalidates every previously issued session for that
+    // user. Logging out alice here would kill her saved storage state and
+    // cascade-fail every later spec that starts from it.
+    const temp = {
+      email: `e2e.logout.${Date.now().toString(36)}@ciphernote.test`,
+      password: 'A-strong-e2e-password-1',
+      displayName: `Logout E2E ${Date.now().toString(36)}`,
+    };
+    await registerViaUi(page, temp);
+    await Promise.race([
+      page.waitForURL('**/recovery-key', { timeout: 60_000 }),
+      page.waitForURL('**/dashboard', { timeout: 60_000 }),
+    ]);
+    if (page.url().includes('/recovery-key')) {
+      await page.getByRole('button', { name: /I saved it/i }).click();
+      await page.waitForURL('**/dashboard');
+    }
     await expect(page).toHaveURL(/\/dashboard$/);
 
     await page.getByRole('button', { name: 'Sign out', exact: true }).click();

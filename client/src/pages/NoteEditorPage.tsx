@@ -1,6 +1,21 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { Fragment, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Lock, ArrowClockwise, FloppyDisk, ShieldCheck, Trash } from '@phosphor-icons/react';
+import {
+  ArrowLeft,
+  Lock,
+  ArrowClockwise,
+  FloppyDisk,
+  ShieldCheck,
+  TextB,
+  TextItalic,
+  TextUnderline,
+  TextStrikethrough,
+  ListBullets,
+  ListNumbers,
+  ListChecks,
+  LinkSimple,
+  Image,
+} from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { ApiError, api } from '../lib/api';
@@ -12,8 +27,9 @@ import {
   unwrapNoteKeyFromStorage,
   wrapNoteKeyForStorage,
 } from '../lib/crypto';
-import { decryptOwnNote } from '../lib/notes';
+import { countWords, decryptOwnNote, insertMarkdown, MD_FORMAT_KEYS } from '../lib/notes';
 import { formatBytes } from '../lib/format';
+import type { IconComponent } from '../lib/icons';
 import { TagInput } from '../components/TagInput';
 import { LoadingBlock, Spinner } from '../components/Spinner';
 import { ErrorState } from '../components/States';
@@ -21,6 +37,22 @@ import { ErrorState } from '../components/States';
 interface NoteEditorPageProps {
   mode: 'create' | 'edit';
 }
+
+/** Icon per markdown toolbar action, keyed by MD_FORMAT_KEYS label. */
+const MD_ICONS: Record<string, IconComponent> = {
+  Bold: TextB,
+  Italic: TextItalic,
+  Underline: TextUnderline,
+  Strikethrough: TextStrikethrough,
+  'Bullet list': ListBullets,
+  'Numbered list': ListNumbers,
+  Checklist: ListChecks,
+  Link: LinkSimple,
+  Image,
+};
+
+/** Insert a divider between inline styles, lists, and link/image actions. */
+const MD_DIVIDER_BEFORE = new Set(['Bullet list', 'Link']);
 
 export function NoteEditorPage({ mode }: NoteEditorPageProps): React.ReactElement {
   const { noteId } = useParams<{ noteId: string }>();
@@ -31,6 +63,7 @@ export function NoteEditorPage({ mode }: NoteEditorPageProps): React.ReactElemen
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState<string[]>([]);
+  const contentRef = useRef<HTMLTextAreaElement>(null);
 
   const [loading, setLoading] = useState(mode === 'edit');
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -72,6 +105,13 @@ export function NoteEditorPage({ mode }: NoteEditorPageProps): React.ReactElemen
       cancelled = true;
     };
   }, [mode, noteId, keys]);
+
+  function applyFormat(format: (typeof MD_FORMAT_KEYS)[number]): void {
+    const el = contentRef.current;
+    if (!el) return;
+    insertMarkdown(el, format.before, format.after, format.placeholder);
+    setContent(el.value);
+  }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
@@ -204,16 +244,43 @@ export function NoteEditorPage({ mode }: NoteEditorPageProps): React.ReactElemen
             <label htmlFor="content" className="label">
               Content
             </label>
+            <div
+              className="flex flex-wrap items-center gap-0.5 rounded-md border border-stone-200 bg-stone-50/60 p-1 dark:border-stone-800 dark:bg-stone-900/50"
+              role="toolbar"
+              aria-label="Formatting"
+            >
+              {MD_FORMAT_KEYS.map((format) => {
+                const Icon = MD_ICONS[format.label];
+                return (
+                  <Fragment key={format.label}>
+                    {MD_DIVIDER_BEFORE.has(format.label) ? (
+                      <span className="mx-1 h-4 w-px bg-stone-200 dark:bg-stone-700" aria-hidden="true" />
+                    ) : null}
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm h-7 w-7 justify-center p-0"
+                      title={format.label}
+                      aria-label={format.label}
+                      disabled={saving}
+                      onClick={() => applyFormat(format)}
+                    >
+                      {Icon ? <Icon className="h-3.5 w-3.5" /> : format.label}
+                    </button>
+                  </Fragment>
+                );
+              })}
+            </div>
             <textarea
               id="content"
-              className="textarea min-h-[320px] font-mono text-[13px]"
+              ref={contentRef}
+              className="textarea mt-2 min-h-[320px] font-mono text-[13px]"
               placeholder="Write anything. It is encrypted before it leaves this device."
               value={content}
               onChange={(event) => setContent(event.target.value)}
               disabled={saving}
             />
             <p className="mt-1.5 text-xs text-stone-400 dark:text-stone-500">
-              {content.length} characters · {content.trim() ? content.trim().split(/\s+/).length : 0} words
+              {content.length} characters · {countWords(content)} words
               {lastPayloadBytes > 0 ? ` · last stored payload ${formatBytes(lastPayloadBytes)}` : ''}
             </p>
           </div>

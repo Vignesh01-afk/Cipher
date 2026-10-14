@@ -37,13 +37,18 @@ test.describe('Settings and appearance', () => {
     await page.evaluate((theme) => localStorage.setItem('ciphernote.theme', theme), before);
   });
 
-  test('/settings is an alias for /privacy', async ({ page }) => {
+  test('/privacy redirects into the settings privacy tab', async ({ page }) => {
     await unlockVault(page, book.alice.password);
+
+    // /settings is the real, tabbed page now; /privacy is the legacy alias
+    // that redirects into its privacy tab.
     await clientNavigate(page, '/settings');
-    await page.waitForURL(/\/privacy/);
-    await expect(
-      page.getByRole('heading', { name: 'Privacy Mode', exact: true }),
-    ).toBeVisible();
+    await page.waitForURL(/\/settings/);
+    await expect(page.getByRole('heading', { name: 'Profile fields' })).toBeVisible();
+
+    await clientNavigate(page, '/privacy');
+    await page.waitForURL(/\/settings\?tab=privacy/);
+    await expect(page.getByRole('switch', { name: 'Privacy Mode' })).toBeVisible();
   });
 
   test('privacy toggles reflect real state and persist', async ({ page }) => {

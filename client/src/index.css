@@ -42,6 +42,16 @@
   --color-accent-indigo: #6366f1;
   --color-accent-purple: #a855f7;
 
+  /*
+   * Flat aliases used by the utility classes bg-accent / text-accent /
+   * text-brand / text-paper across the app. Without these keys Tailwind
+   * generates nothing for those class names and the elements render
+   * unstyled (this is what left avatars, tabs and chips transparent).
+   */
+  --color-accent: #6366f1;
+  --color-brand: #6366f1;
+  --color-paper: #f7f8ff;
+
   --color-danger: #e11d48;
   --color-scrim: rgba(11, 15, 26, 0.55);
 
@@ -1013,7 +1023,11 @@
 .flex-nowrap { flex-wrap: nowrap; }
 .shrink-0 { flex-shrink: 0; }
 .grow { flex-grow: 1; }
-.hidden { display: none; }
+/* NOTE: the legacy polyfill used to define `.hidden { display: none }` here.
+   These rules are unlayered, so they beat every Tailwind utility regardless of
+   source order, which permanently hid responsive patterns such as
+   `hidden sm:flex` (the desktop topbar search) at ALL widths. Tailwind emits
+   its own layered `.hidden`, so the polyfill copy is gone. */
 .relative { position: relative; }
 .absolute { position: absolute; }
 .fixed { position: fixed; }

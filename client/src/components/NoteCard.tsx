@@ -1,7 +1,7 @@
 import { Eye, Lock, PencilSimple, ShareNetwork, ShieldCheck, Tag, Trash, LockOpen, Users } from '@phosphor-icons/react';
 import type { IconComponent } from '../lib/icons';
 import type { DecryptedNote } from '../lib/notes';
-import { notePreview } from '../lib/notes';
+import { categoryFromTags, notePreview } from '../lib/notes';
 import { formatRelativeTime, truncate } from '../lib/format';
 
 interface NoteCardProps {
@@ -18,6 +18,7 @@ interface NoteCardProps {
 export function NoteCard({ note, onOpen, onEdit, onShare, onDelete, onInspect, extraAction }: NoteCardProps): React.ReactElement {
   const isOwner = note.role === 'owner';
   const activeShares = note.shares.filter((share) => share.isActive);
+  const category = categoryFromTags(note.tags);
 
   return (
     <article
@@ -36,6 +37,11 @@ export function NoteCard({ note, onOpen, onEdit, onShare, onDelete, onInspect, e
           <h3 className="truncate text-base font-semibold text-stone-900 dark:text-stone-50" title={note.title}>
             {note.title || 'Untitled note'}
           </h3>
+          {category ? (
+            <span className={`chip chip-${category} shrink-0 px-2 py-0.5 text-[11px]`}>
+              {category}
+            </span>
+          ) : null}
         </div>
         <span className={`badge shrink-0 ${isOwner ? 'badge-cyan' : 'badge-amber'}`}>
           {isOwner ? 'You' : 'Shared with me'}

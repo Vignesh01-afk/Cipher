@@ -8,6 +8,7 @@ import { Skeleton } from '../components/Skeleton';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Modal } from '../components/Modal';
 import { ChatShareNoteModal } from '../components/ChatShareNoteModal';
+import { ChatInfoPanel } from './chat-info-panel';
 import { api } from '../lib/api';
 import { initials, formatDateTime, formatRelativeTime } from '../lib/format';
 import {
@@ -21,7 +22,21 @@ import {
 } from '../lib/chatCrypto';
 import { ensureJoined, emitIfConnected, getChatSocket } from '../lib/chatSocket';
 import { chatPublicKeyCache } from '../lib/chatKeys';
-import { Lock, ChatTeardropText, MagnifyingGlass, Clock, ShareNetwork, Info, ShieldCheck, FileText, Checks, Paperclip, Smiley, PaperPlaneTilt, X } from '@phosphor-icons/react';
+import {
+  Lock,
+  ChatTeardropText,
+  MagnifyingGlass,
+  Clock,
+  ShareNetwork,
+  Info,
+  ShieldCheck,
+  FileText,
+  Checks,
+  Paperclip,
+  Smiley,
+  PaperPlaneTilt,
+  X,
+} from '@phosphor-icons/react';
 import type { ReactElement } from 'react';
 import type {
   ChatMessageDto,
@@ -100,6 +115,8 @@ export function ChatPage(): ReactElement {
   const [infoOpen, setInfoOpen] = useState(false);
   const [infoPanelOpen, setInfoPanelOpen] = useState(true);
   const [pendingDeepLinkUserId, setPendingDeepLinkUserId] = useState<string | null>(null);
+  const [infoPanelMobileOpen, setInfoPanelMobileOpen] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const searchParams = useSearchParams()[0];
 
   const typingTimer = useRef<number | null>(null);
@@ -126,10 +143,12 @@ export function ChatPage(): ReactElement {
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const activeConversation = conversations.find((c) => c.id === activeId) ?? null;
+  const contextNoteId = activeDetail?.contextNoteId ?? activeConversation?.contextNoteId ?? null;
+  const resolvedMembers = activeDetail?.members ?? activeConversation?.participants ?? [];
   const peer = useMemo(() => {
-    const list = activeDetail?.members ?? activeConversation?.participants ?? [];
+    const list = resolvedMembers;
     return list.map((m) => ('user' in m ? m.user : m)).find((p) => p.id !== myUserId) ?? null;
-  }, [activeDetail, activeConversation, myUserId]);
+  }, [resolvedMembers, myUserId]);
 
   const refreshList = useCallback(async (): Promise<ConversationDto[]> => {
     const result = await api.listConversations();
@@ -737,13 +756,27 @@ export function ChatPage(): ReactElement {
     return messages.filter((m) => m.payload.text?.toLowerCase().includes(q));
   }, [messages, inConvSearch, convSearchQuery]);
 
-  const contextNoteId = activeDetail?.contextNoteId ?? activeConversation?.contextNoteId ?? null;
+  const sharedNoteIds = useMemo(() => {
+    const ids = new Map<string, string>();
+    for (const m of messages) {
+      if (m.payload.type === 'note-share' && m.payload.note?.id) {
+        ids.set(m.payload.note.id, m.payload.note.title ?? 'Note');
+      }
+    }
+    return ids;
+  }, [messages]);
+
+  const hasChatAttachApi = false;
+  const emojiSet = ['😀', '😂', '❤️', '👍', '🔒', '🔑', '📝', '🤝'];
 
   if (!keys) {
     return (
-      <div className="card p-8 text-center">                <Lock className="mx-auto h-8 w-8 text-muted" />                <h2 className="mt-3 text-lg font-semibold text-ink dark:text-paper">Vault locked</h2>                <p className="mt-1 text-sm text-muted dark:text-muted">
-                  Unlock your vault to open encrypted chat. Keys stay in memory only.
-                </p>
+      <div className="card p-8 text-center">
+        <Lock className="mx-auto h-8 w-8 text-muted" />
+        <h2 className="mt-3 text-lg font-semibold text-ink dark:text-paper">Vault locked</h2>
+        <p className="mt-1 text-sm text-muted dark:text-muted">
+          Unlock your vault to open encrypted chat. Keys stay in memory only.
+        </p>
       </div>
     );
   }
@@ -871,6 +904,42 @@ export function ChatPage(): ReactElement {
                       aria-label="Search conversations"
                     />
                   </div>
+                  <div className="mt-2 flex items-center justify-between text-xs">
+                    <span className="text-stone-500 dark:text-stone-400">{conversations.length} conversation{conversations.length === 1 ? '' : 's'}</span>
+                    <button
+                      type="button"
+                      className="text-stone-500 dark:text-stone-400 hover:text-ink"
+                      onClick={() => setMenuOpen((open) => !open)}
+                    >
+                      ⋮
+                    </button>
+                  </div>
+
+                  {menuOpen && (
+                    <div className="border-t border-line px-4 py-3 space-y-2">
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between rounded-md p-2 text-left text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800"
+                        onClick={() => { setMenuOpen(false); setInConvSearch(true); setConvSearchQuery(''); }}
+                      >
+                        <span className="flex items-center gap-2">
+                          <MagnifyingGlass className="h-3.5 w-3.5" />
+                          Search in conversation
+                        </span>
+                        <span className="text-stone-400">⌘F</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between rounded-md p-2 text-left text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800"
+                        onClick={() => { setMenuOpen(false); setInspectorOpen(true); }}
+                      >
+                        <span className="flex items-center gap-2">
+                          <ShieldCheck className="h-3.5 w-3.5" />
+                          Conversation security
+                        </span>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="px-4">
@@ -907,7 +976,8 @@ export function ChatPage(): ReactElement {
                               </p>
                             ) : null}
                           </div>
-                        </div>                          <div className="flex items-center gap-2 text-[11px] text-muted">
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px] text-muted">
                           <Clock className="h-3 w-3" />
                           <span>{formatRelativeTime(conv.updatedAt)}</span>
                         </div>
@@ -960,6 +1030,14 @@ export function ChatPage(): ReactElement {
                           aria-label="Conversation security"
                         >
                           <ShieldCheck className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-ghost p-2"
+                          onClick={() => setInfoPanelMobileOpen(true)}
+                          aria-label="Conversation details"
+                        >
+                          <ChatTeardropText className="h-4 w-4" />
                         </button>
                       </div>
                     </div>
@@ -1077,25 +1155,63 @@ export function ChatPage(): ReactElement {
                           </div>
                         </div>
                       ) : null}
+
+                      {!inConvSearch && convSearchQuery.trim() === '' && (
+                        <button
+                          type="button"
+                          className="mt-4 w-full btn btn-ghost btn-sm text-stone-500 dark:text-stone-400"
+                          onClick={() => {
+                            setInConvSearch(true);
+                            setConvSearchQuery('');
+                          }}
+                        >
+                          <MagnifyingGlass className="h-3.5 w-3.5 mr-2" />
+                          Search in conversation
+                        </button>
+                      )}
                     </div>
 
                     <div className="card border-t border-line p-4">
-                      <div className="flex items-end gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-end gap-2">
                         <div className="flex flex-1 gap-2">
                           <button
                             type="button"
                             className="btn btn-secondary p-2"
                             aria-label="Attach file"
+                            disabled={!hasChatAttachApi}
+                            title={hasChatAttachApi ? undefined : 'Not available yet'}
                           >
                             <Paperclip className="h-4 w-4" />
                           </button>
-                          <button
-                            type="button"
-                            className="btn btn-secondary p-2"
-                            aria-label="Emoji"
-                          >
-                            <Smiley className="h-4 w-4" />
-                          </button>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              className="btn btn-secondary p-2"
+                              aria-label="Emoji"
+                              onClick={() => setEmojiPickerOpen((open) => !open)}
+                            >
+                              <Smiley className="h-4 w-4" />
+                            </button>
+                            {emojiPickerOpen && (
+                              <div className="absolute bottom-full left-0 mb-2 card p-2 flex flex-wrap gap-1 rounded-md border border-line shadow-md">
+                                {emojiSet.map((emoji) => (
+                                  <button
+                                    key={emoji}
+                                    type="button"
+                                    className="btn btn-ghost p-1 text-lg"
+                                    onClick={() => {
+                                      setDraft((prev) => `${prev}${emoji}`);
+                                      setEmojiPickerOpen(false);
+                                      composerRef.current?.focus();
+                                    }}
+                                    aria-label={`Insert ${emoji}`}
+                                  >
+                                    {emoji}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                           <textarea
                             ref={composerRef}
                             className="input flex-1 min-h-[44px] max-h-[120px] resize-y px-3 py-2 text-sm"
@@ -1143,19 +1259,49 @@ export function ChatPage(): ReactElement {
             </div>
           )}
 
-      {/* Destructive-action confirmation */}
-      {activeId ? (
+      {infoPanelMobileOpen ? (
+        <ChatInfoPanel
+          peer={peer}
+          detail={activeDetail}
+          members={resolvedMembers}
+          contextNoteId={contextNoteId}
+          activeId={activeId}
+          online={peerOnline}
+          mobileOpen={infoPanelMobileOpen}
+          onCloseMobile={() => setInfoPanelMobileOpen(false)}
+          onOpenSecurityInspector={() => { setInfoPanelMobileOpen(false); setInspectorOpen(true); }}
+          onOpenConversationInfo={() => { setInfoPanelMobileOpen(false); setInfoOpen(true); }}
+          onStartSearchInConversation={() => { setInfoPanelMobileOpen(false); setInConvSearch(true); setConvSearchQuery(''); }}
+          sharedNoteIds={sharedNoteIds}
+          hasBlockApi={!!peer}
+          hasDeleteApi={true}
+        />
+      ) : null}
+
+      {confirmAction === 'clear' ? (
         <ConfirmDialog
-          open={confirmAction === 'clear' || confirmAction === 'block' || confirmAction === 'delete'}
-          title={confirmAction === 'clear' ? 'Clear chat?' : confirmAction === 'block' ? 'Block user?' : 'Delete conversation?'}
+          open={true}
+          title="Clear chat?"
+          message="This chat will be hidden from your list until the next message. It will still exist on the server."
+          confirmLabel="Clear"
+          destructive={false}
+          busy={false}
+          onCancel={() => setConfirmAction(null)}
+          onConfirm={() => void runConfirmAction()}
+        />
+      ) : null}
+
+      {confirmAction === 'block' || confirmAction === 'delete' ? (
+        <ConfirmDialog
+          open={true}
+          title={confirmAction === 'block' ? 'Block user?' : 'Delete conversation?'}
           message={
             <>
-              {confirmAction === 'clear' && 'This chat will be hidden from your list until the next message. It will still exist on the server.'}
               {confirmAction === 'block' && 'This user will be blocked and cannot message you from any conversation.'}
               {confirmAction === 'delete' && 'You will leave this conversation and the message history will be removed for you.'}
             </>
           }
-          confirmLabel={confirmAction === 'block' ? 'Block user' : confirmAction === 'delete' ? 'Delete' : 'Clear'}
+          confirmLabel={confirmAction === 'block' ? 'Block user' : 'Delete'}
           destructive={confirmAction === 'block' || confirmAction === 'delete'}
           busy={false}
           onCancel={() => setConfirmAction(null)}
@@ -1163,7 +1309,6 @@ export function ChatPage(): ReactElement {
         />
       ) : null}
 
-      {/* Share note card in chat */}
       <ChatShareNoteModal
         open={shareNoteOpen}
         onClose={() => setShareNoteOpen(false)}
@@ -1184,15 +1329,14 @@ export function ChatPage(): ReactElement {
             <Lock className="h-4 w-4 shrink-0 text-emerald-500" />
             <p>End-to-end encrypted. Only you and the participants can read these messages.</p>
           </div>
-          {activeDetail?.members.map((m) => (
-            <div key={m.user.id} className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Avatar name={m.user.displayName} size="sm" />
-                <span>{m.user.displayName}</span>
-              </div>
-              <span className="text-xs text-stone-400">{m.user.cipherId}</span>
-            </div>
-          ))}
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-stone-700 dark:text-stone-200">Members:</span>
+            <span className="text-stone-500 dark:text-stone-400">{resolvedMembers.length}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-stone-700 dark:text-stone-200">Shared notes in this chat:</span>
+            <span className="text-stone-500 dark:text-stone-400">{sharedNoteIds.size}</span>
+          </div>
           {contextNoteId ? (
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 shrink-0 text-orange-700 dark:text-orange-500" />
@@ -1243,7 +1387,7 @@ export function ChatPage(): ReactElement {
   );
 }
 
-function Avatar({ name, size = 'md', className = '' }: { name: string; size?: 'sm' | 'md' | 'lg'; className?: string }) {
+function Avatar({ name, size = 'md', className = '' }: { name: string; size?: 'sm' | 'md' | 'lg'; className?: string }): ReactElement {
   const sizeClass = {
     sm: 'h-8 w-8',
     md: 'h-9 w-9',
@@ -1254,11 +1398,10 @@ function Avatar({ name, size = 'md', className = '' }: { name: string; size?: 's
   const text = initials.length === 0 ? '?' : initials.length === 1 ? initials[0]!.slice(0, 2).toUpperCase() : `${initials[0]![0]}${initials[initials.length - 1]![0]}`.toUpperCase();
 
   return (
-    <div className={`relative flex items-center justify-center ${className}`}>
+    <div className={`relative flex items-center justify-center ${className}`.trim()}>
       <div className={`${sizeClass} rounded-md bg-accent text-paper flex items-center justify-center`}>
         {text}
       </div>
-      <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-sm border border-line bg-accent" />
     </div>
   );
 }

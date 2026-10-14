@@ -45,6 +45,7 @@ export function SharedWithMePage(): React.ReactElement {
   const [activeTag, setActiveTag] = useState<string | null>(null);
 
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState('');
   const [shareTarget, setShareTarget] = useState<DecryptedNote | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<OutgoingShare | null>(null);
   const [revoking, setRevoking] = useState(false);
@@ -75,10 +76,10 @@ export function SharedWithMePage(): React.ReactElement {
   }, [outgoing, query]);
 
   const pickerNotes = useMemo(() => {
-    const needle = query.trim().toLowerCase();
+    const needle = pickerQuery.trim().toLowerCase();
     if (!needle) return own.notes;
     return own.notes.filter((note) => note.title.toLowerCase().includes(needle));
-  }, [own.notes, query]);
+  }, [own.notes, pickerQuery]);
 
   async function confirmRevoke(): Promise<void> {
     if (!revokeTarget) return;
@@ -105,47 +106,58 @@ export function SharedWithMePage(): React.ReactElement {
               Every note key is wrapped with RSA-OAEP and only opened in your browser.
             </p>
           </div>
-          <button type="button" className="btn btn-primary" onClick={() => setPickerOpen(true)}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => {
+              setPickerQuery('');
+              setPickerOpen(true);
+            }}
+          >
             <ShareNetwork className="h-4 w-4" />
             Share Note
           </button>
         </div>
 
-        <div className="mt-4 inline-flex rounded-md bg-stone-100 p-1 dark:bg-surface/[0.06]">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className={`rounded-md px-4 py-2 text-sm font-semibold  ${
-                tab === 'by-me'
-                  ? '    text-white '
-                  : 'text-stone-600 dark:text-stone-300'
-              }`}
-              onClick={() => {
-                setTab('by-me');
-                setQuery('');
-              }}
-            >
-              Shared by me
-            </button>
-            <span className="ml-1.5 text-xs opacity-80">{outgoing.length}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className={`rounded-md px-4 py-2 text-sm font-semibold  ${
-                tab === 'with-me'
-                  ? '    text-white '
-                  : 'text-stone-600 dark:text-stone-300'
-              }`}
-              onClick={() => {
-                setTab('with-me');
-                setQuery('');
-              }}
-            >
-              Shared with me
-            </button>
+        <div
+          className="mt-4 inline-flex max-w-full flex-wrap rounded-md bg-stone-100 p-1 dark:bg-surface/[0.06]"
+          role="group"
+          aria-label="Share views"
+        >
+          <button
+            type="button"
+            aria-pressed={tab === 'with-me'}
+            className={`rounded-md px-3 py-2 text-sm font-semibold sm:px-4 ${
+              tab === 'with-me'
+                ? 'bg-accent text-paper'
+                : 'text-stone-600 dark:text-stone-300'
+            }`}
+            onClick={() => {
+              setTab('with-me');
+              setQuery('');
+              setActiveTag(null);
+            }}
+          >
+            Shared with me
             <span className="ml-1.5 text-xs opacity-80">{shared.notes.length}</span>
-          </div>
+          </button>
+          <button
+            type="button"
+            aria-pressed={tab === 'by-me'}
+            className={`rounded-md px-3 py-2 text-sm font-semibold sm:px-4 ${
+              tab === 'by-me'
+                ? 'bg-accent text-paper'
+                : 'text-stone-600 dark:text-stone-300'
+            }`}
+            onClick={() => {
+              setTab('by-me');
+              setQuery('');
+              setActiveTag(null);
+            }}
+          >
+            Shared by me
+            <span className="ml-1.5 text-xs opacity-80">{outgoing.length}</span>
+          </button>
         </div>
 
         <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
@@ -175,14 +187,17 @@ export function SharedWithMePage(): React.ReactElement {
         </div>
 
         {tab === 'with-me' && tags.length > 0 ? (
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">Tags</span>
+          <div className="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label="Tag filters">
+            <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+              Tags
+            </span>
             {tags.map((tag) => (
               <button
                 key={tag}
                 type="button"
-                onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-                className={`badge ${activeTag === tag ? 'badge-cyan' : 'badge-slate'}`}
+                onClick={() => setActiveTag((current) => (current === tag ? null : tag))}
+                aria-pressed={activeTag === tag}
+                className={`chip ${activeTag === tag ? 'chip-active' : ''}`}
               >
                 {tag}
               </button>
@@ -345,8 +360,8 @@ export function SharedWithMePage(): React.ReactElement {
               type="search"
               className="input pl-10"
               placeholder="Search your notes"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              value={pickerQuery}
+              onChange={(event) => setPickerQuery(event.target.value)}
             />
           </div>
           {own.loading ? (

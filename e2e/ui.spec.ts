@@ -5,14 +5,16 @@ import { clientNavigate } from './helpers/api';
 const book = loadAccounts();
 
 test.describe('Public pages', () => {
-  test('the landing page renders and its CTA leads to sign-in', async ({ page }) => {
+  test('the landing page renders and its CTA leads to sign-up', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('CipherNote');
     await expect(page.getByText('Secure Sharing')).toBeVisible().catch(() => undefined);
 
+    // The redesign routes the primary CTA to registration; sign-in stays
+    // reachable from the register screen and /login directly.
     await page.getByRole('link', { name: /Start for free/ }).click();
-    await page.waitForURL('**/login');
-    await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
+    await page.waitForURL('**/register');
+    await expect(page.getByRole('heading', { name: 'Create your account' })).toBeVisible();
   });
 
   test('an unknown path renders the 404 page', async ({ page }) => {
@@ -79,7 +81,9 @@ test.describe('Authenticated shell', () => {
       { timeout: 30_000 },
     );
 
-    await page.getByRole('button', { name: 'E2E' }).click();
+    // exact: the profile chip in the topbar also contains "E2E" inside the
+    // display name ("Alice E2E <runId>"), so a substring match is ambiguous.
+    await page.getByRole('button', { name: 'E2E', exact: true }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('heading', { name: 'Encryption details' })).toBeVisible();

@@ -4,15 +4,18 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useOwnNotes } from '../hooks/useNotes';
 import { useToast } from '../context/ToastContext';
 import { api } from '../lib/api';
-import { collectTags, filterNotes, type DecryptedNote } from '../lib/notes';
+import { categoryFromTags, collectTags, filterNotes, type DecryptedNote } from '../lib/notes';
 import { NoteCard } from '../components/NoteCard';
 import { ShareNoteModal } from '../components/ShareNoteModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Skeleton } from '../components/Skeleton';
 import { EmptyState } from '../components/EmptyState';
 import { ErrorState, InfoState } from '../components/States';
-import { FilePlus, MagnifyingGlass, X, Funnel, Tag, FileText } from '@phosphor-icons/react';
+import { FilePlus, MagnifyingGlass, X, Funnel, Tag, FileText, Folder } from '@phosphor-icons/react';
 import type { ReactElement } from 'react';
+
+/** Category chips offered on the grid, matching categoryFromTags(). */
+const CATEGORIES = ['personal', 'work', 'study', 'others'] as const;
 
 export function NotesPage(): ReactElement {
   const navigate = useNavigate();
@@ -22,9 +25,9 @@ export function NotesPage(): ReactElement {
 
   const [query, setQuery] = useState(searchParams.get('q') ?? '');
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [shareTarget, setShareTarget] = useState<DecryptedNote | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DecryptedNote | null>(null);
-  const [inspectTarget, setInspectTarget] = useState<DecryptedNote | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -37,10 +40,19 @@ export function NotesPage(): ReactElement {
   }, [query, searchParams, setSearchParams]);
 
   const tags = useMemo(() => collectTags(own.notes), [own.notes]);
-  const visibleNotes = useMemo(
-    () => filterNotes(own.notes, { query, tag: activeTag }),
-    [own.notes, query, activeTag],
-  );
+  const presentCategories = useMemo(() => {
+    const present = new Set<string>();
+    for (const note of own.notes) {
+      const category = categoryFromTags(note.tags);
+      if (category) present.add(category);
+    }
+    return CATEGORIES.filter((category) => present.has(category));
+  }, [own.notes]);
+  const visibleNotes = useMemo(() => {
+    const byQueryAndTag = filterNotes(own.notes, { query, tag: activeTag });
+    if (!activeCategory) return byQueryAndTag;
+    return byQueryAndTag.filter((note) => categoryFromTags(note.tags) === activeCategory);
+  }, [own.notes, query, activeTag, activeCategory]);
 
   async function handleDelete(): Promise<void> {
     if (!deleteTarget) return;
@@ -57,7 +69,13 @@ export function NotesPage(): ReactElement {
     }
   }
 
-  const searchIsActive = query.trim().length > 0 || activeTag !== null;
+  const searchIsActive = query.trim().length > 0 || activeTag !== null || activeCategory !== null;
+
+  function resetFilters(): void {
+    setQuery('');
+    setActiveTag(null);
+    setActiveCategory(null);
+  }
 
   return (
     <div className="space-y-6">
@@ -88,47 +106,52 @@ export function NotesPage(): ReactElement {
             />
           </div>
           {searchIsActive ? (
-            <button
-              type="button"
-              className="btn btn-secondary shrink-0"
-              onClick={() => {
-                setQuery('');
-                setActiveTag(null);
-              }}
-            >
+            <button type="button" className="btn btn-secondary shrink-0" onClick={resetFilters}>
               <X className="h-4 w-4" />
               Clear filters
             </button>
           ) : null}
         </div>
 
-        {tags.length > 0 ? (
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+        {presentCategories.length > 0 ? (
+          <div className="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label="Category filters">
             <span className="sr-only">
               <Funnel className="h-3.5 w-3.5" />
               Category filters
             </span>
             <button
               type="button"
-              onClick={() => setActiveTag(null)}
-              className={`rounded border px-4 py-1.5 text-xs font-semibold transition-colors ${
-                activeTag === null
-                  ? 'border-accent bg-accent text-paper'
-                  : 'border-line bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700'
-              }`}
+              onClick={() => setActiveCategory(null)}
+              aria-pressed={activeCategory === null}
+              className={`chip ${activeCategory === null ? 'chip-all chip-active' : ''}`}
             >
               All
             </button>
+            {presentCategories.map((category) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => setActiveCategory((current) => (current === category ? null : category))}
+                aria-pressed={activeCategory === category}
+                className={`chip chip-${category} ${activeCategory === category ? 'chip-active' : ''}`}
+              >
+                <Folder className="h-3 w-3" />
+                {category}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        {tags.length > 0 ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Tag filters">
+            <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-stone-400">Tags</span>
             {tags.map((tag) => (
               <button
                 key={tag}
                 type="button"
-                onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-                className={`inline-flex items-center gap-1.5 rounded border px-4 py-1.5 text-xs font-semibold transition-colors ${
-                  activeTag === tag
-                    ? 'border-accent bg-accent text-paper'
-                    : 'border-line bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700'
-                }`}
+                onClick={() => setActiveTag((current) => (current === tag ? null : tag))}
+                aria-pressed={activeTag === tag}
+                className={`chip ${activeTag === tag ? 'chip-active' : ''}`}
               >
                 <Tag className="h-3 w-3" />
                 {tag}
@@ -180,14 +203,7 @@ export function NotesPage(): ReactElement {
           title="No notes match that search"
           description="Search runs locally across decrypted titles, bodies and tags. Try a different term or clear the filters."
           action={
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => {
-                setQuery('');
-                setActiveTag(null);
-              }}
-            >
+            <button type="button" className="btn btn-secondary" onClick={resetFilters}>
               Clear filters
             </button>
           }
@@ -202,7 +218,7 @@ export function NotesPage(): ReactElement {
               onEdit={() => navigate(`/notes/${note.id}/edit`)}
               onShare={() => setShareTarget(note)}
               onDelete={() => setDeleteTarget(note)}
-              onInspect={() => setInspectTarget(note)}
+              onInspect={() => navigate(`/inspector/${note.id}`)}
             />
           ))}
         </div>
@@ -237,14 +253,6 @@ export function NotesPage(): ReactElement {
             </p>
           </div>
         }
-      />
-
-      <ConfirmDialog
-        open={Boolean(inspectTarget)}
-        title="Close note?"
-        message="This note will stay on your device until you close it."
-        onCancel={() => setInspectTarget(null)}
-        onConfirm={() => setInspectTarget(null)}
       />
     </div>
   );
