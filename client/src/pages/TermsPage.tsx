@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 export function TermsPage(): React.ReactElement {
   return (
-    <div className="min-h-screen bg-paper">
+    <div className="min-h-screen bg-page">
       <header className="border-b border-line bg-surface">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-5 py-4">
           <Link to="/" className="text-lg font-bold">

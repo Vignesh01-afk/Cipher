@@ -3,10 +3,10 @@ import { AppLayout } from './components/AppLayout';
 import { RedirectIfAuthenticated, RequireLockedSession, RequireUnlocked } from './components/RouteGuards';
 import { ActivityLogPage } from './pages/ActivityLogPage';
 import { ChatPage } from './pages/ChatPage';
-import { DashboardPage } from './pages/DashboardPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { GoogleCallbackPage } from './pages/GoogleCallbackPage';
 import { GoogleSignupPage } from './pages/GoogleSignupPage';
+import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -74,7 +74,7 @@ export default function App(): React.ReactElement {
           </RequireUnlocked>
         }
       >
-        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/dashboard" element={<HomePage />} />
         <Route path="/notes" element={<NotesPage />} />
         <Route path="/notes/new" element={<NoteEditorPage mode="create" />} />
         <Route path="/notes/:noteId" element={<NoteViewPage />} />

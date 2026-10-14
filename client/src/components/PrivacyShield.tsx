@@ -25,7 +25,7 @@ export function PrivacyShield({ children }: { children: ReactNode }): React.Reac
   const blur = privacy.protected && privacy.reason === 'blur';
 
   return (
-    <div className="relative min-h-screen bg-paper">
+    <div className="relative min-h-screen bg-page">
       {/* Content layer - mounted even while protected, so state is not lost. */}
       <div aria-hidden={privacy.protected} className={blur ? 'min-h-screen select-none invisible' : 'min-h-screen'}>
         {children}

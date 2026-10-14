@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useOwnNotes, useSharedNotes } from '../hooks/useNotes';
@@ -7,7 +7,7 @@ import { useToast } from '../context/ToastContext';
 import { api } from '../lib/api';
 import { notePreview, sortNotesByUpdated, categoryFromTags } from '../lib/notes';
 import { formatRelativeTime } from '../lib/format';
-import { Lock, FileText, Users, ChatsCircle, Clock, ArrowRight, ShieldCheck, Folder, ShareNetwork } from '@phosphor-icons/react';
+import { Lock, FileText, Users, Clock, ArrowRight, CaretRight, ShieldCheck, ShareNetwork } from '@phosphor-icons/react';
 import type { ReactElement } from 'react';
 import type { DecryptedNote } from '../lib/notes';
 
@@ -30,9 +30,21 @@ export function HomePage(): ReactElement {
 
   const totalNotes = own.loading ? null : own.notes.length;
   const sharedNotes = shared.loading ? null : shared.notes.length;
-  const activeShares = own.loading
-    ? null
-    : own.notes.reduce((acc, note) => acc + note.shares.filter((s) => s.isActive).length, 0);
+
+  // Real conversation count for the Secure Chats stat card.
+  const [secureChats, setSecureChats] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .listConversations()
+      .then((result) => {
+        if (!cancelled) setSecureChats(result.conversations.length);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const greeting = () => {
     const hour = new Date().getHours();
@@ -43,19 +55,27 @@ export function HomePage(): ReactElement {
 
   const firstName = user?.displayName?.trim().split(/\s+/)[0] ?? '';
 
-  const logs = useMemo(() => {
-    const result: { id: string; action: string; createdAt: string; recipient?: string }[] = [];
+  // useState + useEffect (not useMemo): the array is filled by an async
+  // call, so it must trigger a re-render when it arrives.
+  const [logs, setLogs] = useState<{ id: string; action: string; createdAt: string }[]>([]);
+  useEffect(() => {
     let cancelled = false;
     api
       .listAuditLogs({ limit: 6 })
       .then((items) => {
         if (cancelled) return;
-        for (const item of items.slice(0, 6)) {
-          result.push({ id: item.id, action: item.action, createdAt: item.createdAt });
-        }
+        setLogs(
+          items.slice(0, 6).map((item) => ({
+            id: item.id,
+            action: item.action,
+            createdAt: item.createdAt,
+          })),
+        );
       })
       .catch(() => {});
-    return result;
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
@@ -117,7 +137,7 @@ export function HomePage(): ReactElement {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="stat-card-label">Secure Chats</p>
-                <p className="stat-card-value mt-1">{activeShares ?? '-'}</p>
+                <p className="stat-card-value mt-1">{secureChats ?? '-'}</p>
               </div>
               <span className="stat-card-icon">
                 <ShareNetwork className="h-5 w-5" />
@@ -195,7 +215,7 @@ export function HomePage(): ReactElement {
                     }}
                     aria-label={`Open ${note.title || 'Untitled note'}`}
                   >
-                    <ArrowRight className="h-4 w-4" />
+                    <CaretRight className="h-4 w-5" />
                   </button>
                 </li>
               ))}
@@ -210,8 +230,8 @@ export function HomePage(): ReactElement {
             </div>
             <h3 className="mt-4 text-lg font-bold text-ink dark:text-paper">Encrypted. Always.</h3>
             <p className="mt-2 text-sm leading-6 text-muted dark:text-muted">
-              Your notes are protected with end-to-end encryption and only accessible by you and people you
-              trust.
+              Notes are sealed with AES-GCM-256 in this browser and only readable by those you choose -
+              protected end-to-end, for you and people you trust.
             </p>
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs text-muted dark:text-muted">
               <ShieldCheck className="h-4 w-4 text-cyan-400" />
