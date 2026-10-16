@@ -79,7 +79,7 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
         {!onNoteEditor ? (
           <button
             type="button"
-            className="btn btn-ghost h-9 w-9 shrink-0 p-0 hidden sm:inline-flex"
+            className="btn btn-ghost h-9 w-9 shrink-0 p-0 sm:hidden"
             onClick={() => navigate('/notes')}
             aria-label="Search notes"
           >
@@ -88,7 +88,7 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
         ) : null}
 
         {!onNoteEditor ? (
-          <form className="topbar-search relative sm:inline-flex lg:hidden" onSubmit={onSearch}>
+          <form className="topbar-search relative hidden sm:flex" onSubmit={onSearch}>
             <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <input
               type="search"
@@ -164,7 +164,7 @@ export function AppLayout({ children }: { children?: ReactNode }): React.ReactEl
       <div className="flex min-h-screen flex-col lg:pl-72">
         <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
 
-        <main className="flex flex-1 flex-col overflow-hidden pb-16 lg:pb-0">
+        <main className="flex flex-1 flex-col overflow-hidden pb-20 lg:pb-0">
           {isFullBleed ? (
             <Outlet />
           ) : (
