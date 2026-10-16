@@ -95,12 +95,12 @@ export function NotesPage(): ReactElement {
         </div>
 
         <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="relative flex-1">
+          <div className="relative w-full">
             <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
             <input
               type="search"
               className="input pl-10"
-              placeholder="Search title, content and tags - runs locally on decrypted notes"
+              placeholder="Search title, content and tags"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
