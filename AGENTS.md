@@ -11,9 +11,9 @@
 - `node scripts/dev-bg.mjs` starts the API (:4000) and the Vite client (:5173) detached from
   the shell, logging to `<tmpdir>/cipher-dev.log` (override with `CIPHER_DEV_LOG`).
 - `node scripts/browser-test.mjs` drives the real UI with Playwright (register, notes, realtime
-  chat, share, OTP reset, mobile) and writes screenshots to `.test-artifacts/`. It reads the
-  dev-mode OTP from `<tmpdir>/cipher-dev.log`, so start the servers with the default log path
-  or the OTP check fails.
+  chat, share, recovery-key reset, mobile) and writes screenshots to `.test-artifacts/`. The
+  reset step reuses the `RCVR-` key captured at registration, so it needs no dev-log or SMTP
+  dependency - only that the servers were started normally.
 - The register form gates submission on the Terms/Privacy consent checkbox; UI tests must tick it.
 
 ## Auth screen layout (2026-09)

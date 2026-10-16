@@ -68,7 +68,7 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
             <ArrowLeft className="h-4 w-4" />
           </button>
         ) : onOpenSidebar ? (
-          <button type="button" className="btn btn-ghost h-9 w-9 shrink-0 p-0 lg:hidden" onClick={onOpenSidebar} aria-label="Open navigation">
+          <button type="button" className="btn btn-ghost h-9 w-9 shrink-0 p-0 hidden lg:inline-flex" onClick={onOpenSidebar} aria-label="Open navigation">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M4 6h16M4 12h16M4 18h16" />
             </svg>
@@ -79,7 +79,7 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
         {!onNoteEditor ? (
           <button
             type="button"
-            className="btn btn-ghost h-9 w-9 shrink-0 p-0 sm:hidden"
+            className="btn btn-ghost h-9 w-9 shrink-0 p-0 hidden sm:inline-flex"
             onClick={() => navigate('/notes')}
             aria-label="Search notes"
           >
@@ -88,7 +88,7 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
         ) : null}
 
         {!onNoteEditor ? (
-          <form className="topbar-search relative hidden sm:flex" onSubmit={onSearch}>
+          <form className="topbar-search relative sm:inline-flex lg:hidden" onSubmit={onSearch}>
             <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <input
               type="search"
@@ -114,7 +114,7 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
 
-          <span className={`hidden h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line sm:inline-flex ${status === 'unlocked' ? 'bg-accent-50 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300' : 'bg-danger-50 text-danger-700 dark:bg-danger-900/40 dark:text-danger-300'}`}>
+          <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line lg:hidden ${status === 'unlocked' ? 'bg-accent-50 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300' : 'bg-danger-50 text-danger-700 dark:bg-danger-900/40 dark:text-danger-300'}`}>
             <Lock className="h-4 w-4" />
           </span>
 
@@ -127,7 +127,7 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
             trigger={
               <>
                 <Avatar name={displayName} size="sm" />
-                <span className="hidden text-left sm:block">
+                <span className="hidden sm:inline">
                   <span className="block text-sm font-medium leading-tight text-ink">{displayName}</span>
                   {user?.cipherId ? (
                     <span className="block font-mono text-xs leading-tight text-muted">{user.cipherId}</span>

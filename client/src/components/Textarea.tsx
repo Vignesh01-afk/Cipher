@@ -13,7 +13,7 @@ export function Textarea({ label, error, className = '', id, ...rest }: Textarea
       {label ? <label className="label" htmlFor={textareaId}>{label}</label> : null}
       <textarea
         id={textareaId}
-        className={`textarea ${error ? 'border-rose-400 focus:border-rose-400 focus:ring-rose-400/15' : ''}`}
+        className={`textarea border ${error ? 'border-rose-400 focus:border-rose-400 focus:ring-rose-400/15' : ''}`}
         {...rest}
       />
       {error ? <p className="field-error">{error}</p> : null}

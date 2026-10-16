@@ -465,18 +465,22 @@ function PrivacySettingsWrapper(): ReactElement {
               </p>
             </div>
           </div>
+          <div className="ml-14 min-w-0">
+            <label className="flex items-center justify-between gap-4">
+              <span className="text-sm font-medium text-ink dark:text-paper">Privacy Mode</span>
+              <Toggle
+                checked={settings.privacyMode}
+                onChange={(value) => updateSettings({ privacyMode: value })}
+                label=""
+              />
+            </label>
+          </div>
         </div>
         <div className="border-t border-line pt-3 mt-4 space-y-1">
-          <Toggle
-            checked={settings.privacyMode}
-            onChange={(value) => updateSettings({ privacyMode: value })}
-            label="Privacy Mode"
-            containerClassName="flex items-center justify-between gap-4 border-t border-line pt-3 mt-3"
-          />
         </div>
 
         <div className="mt-4 space-y-1">
-          <Toggle checked={settings.blurOnBlur} onChange={(value) => updateSettings({ blurOnBlur: value })} label="Hide content when the window loses focus" disabled={!settings.privacyMode} />
+          <Toggle checked={settings.blurOnBlur} onChange={(value) => updateSettings({ blurOnBlur: value })} label="Hide content when the window loses focus" description="Live toggles stay editable from the account and security tabs." disabled={!settings.privacyMode} />
           <Toggle checked={settings.hideOnHidden} onChange={(value) => updateSettings({ hideOnHidden: value })} label="Hide content when the tab becomes inactive" disabled={!settings.privacyMode} />
           <Toggle checked={settings.captureProtection} onChange={(value) => updateSettings({ captureProtection: value })} label="Screen capture protection" description="Hide sensitive content while this tab is being shared via getDisplayMedia." disabled={!settings.privacyMode} />
           <Toggle checked={settings.screenshotProtection} onChange={(value) => updateSettings({ screenshotProtection: value })} label="Screenshot protection" description="Block print/save shortcuts, overwrite the clipboard on PrintScreen and flash-hide content when a capture key is pressed. Cannot stop OS-level tools." disabled={!settings.privacyMode} />

@@ -24,6 +24,7 @@ import { ensureJoined, emitIfConnected, getChatSocket } from '../lib/chatSocket'
 import { chatPublicKeyCache } from '../lib/chatKeys';
 import {
   Lock,
+  ArrowLeft,
   ChatTeardropText,
   MagnifyingGlass,
   Clock,
@@ -992,6 +993,19 @@ export function ChatPage(): ReactElement {
                   <>
                     <div className="card flex flex-wrap items-center justify-between gap-3 border-b border-line p-4">
                       <div className="flex items-center gap-3">
+                        {/* Mobile: back to the conversation list (the list pane is
+                            replaced once a conversation is open on small screens). */}
+                        <button
+                          type="button"
+                          className="btn btn-ghost -ml-2 p-2 lg:hidden"
+                          onClick={() => {
+                            setActiveId(null);
+                            setMessages([]);
+                          }}
+                          aria-label="Back to conversations"
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                        </button>
                         <Avatar
                           name={peer?.displayName ?? 'Conversation'}
                           size="md"
@@ -1057,7 +1071,7 @@ export function ChatPage(): ReactElement {
                           </p>
                         </div>
                       ) : (
-                        <div className="space-y-6">
+                        <div className="space-y-6" role="log" aria-label="Messages">
                           {messages.map((msg) => {
                             const isMe = msg.senderId === myUserId;
                             const payload = isMe
@@ -1094,10 +1108,29 @@ export function ChatPage(): ReactElement {
                                   <p className="leading-relaxed">{payload.text}</p>
                                   <div className="mt-1 flex items-center justify-end gap-2">
                                     <span>{timeLabel(msg.createdAt)}</span>
-                                    {!isMe ? (
-                                      <span className="flex items-center gap-1 text-[11px] text-stone-400">
+                                    {/* Receipts apply to OUR messages: they flip to
+                                        Delivered/Read as the socket reports receipts. */}
+                                    {isMe ? (
+                                      <span
+                                        className="flex items-center gap-1 text-[11px] text-stone-400"
+                                        aria-label={
+                                          msg.status === 'failed'
+                                            ? 'Failed'
+                                            : msg.readAt
+                                              ? 'Read'
+                                              : msg.deliveredAt
+                                                ? 'Delivered'
+                                                : STATUS_LABEL[msg.status]
+                                        }
+                                      >
                                         <Checks className="h-3 w-3" />
-                                        {msg.status === 'sent' ? 'Delivered' : msg.status === 'failed' ? 'Failed' : 'Sending…'}
+                                        {msg.status === 'failed'
+                                          ? 'Failed'
+                                          : msg.readAt
+                                            ? 'Read'
+                                            : msg.deliveredAt
+                                              ? 'Delivered'
+                                              : STATUS_LABEL[msg.status]}
                                       </span>
                                     ) : null}
                                   </div>
@@ -1106,7 +1139,7 @@ export function ChatPage(): ReactElement {
                             );
                           })}
                           {peerTyping ? (
-                            <div className="chat-message justify-start">
+                            <div className="chat-message justify-start" aria-label="Partner is typing">
                               <div className="max-w-[68%] rounded-md border border-line bg-surface px-4 py-3 text-sm text-muted">
                                 <span className="flex items-center gap-2 text-[11px] font-semibold text-muted">
                                   {peer?.displayName ?? 'Contact'}

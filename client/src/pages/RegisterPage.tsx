@@ -120,6 +120,7 @@ export function RegisterPage(): React.ReactElement {
 
         <form onSubmit={onSubmit} className="space-y-4" noValidate>
           <Input
+            id="displayName"
             label="Full name"
             type="text"
             autoComplete="name"
@@ -131,6 +132,7 @@ export function RegisterPage(): React.ReactElement {
             leftAddon={<User className="h-4 w-4" />}
           />
           <Input
+            id="email"
             label="Email address"
             type="email"
             autoComplete="email"

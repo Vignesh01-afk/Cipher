@@ -9,7 +9,7 @@
 // chat (two REAL users, realtime via Socket.IO), read receipts, typing,
 // share-note modal, OTP password reset through the real UI, mobile layout.
 // Collects console errors / page errors / bad responses.
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { chromium } from 'playwright';
 
 const BASE = 'http://localhost:5173';
@@ -88,7 +88,11 @@ try {
   wire(p1, b1);
 
   await p1.goto(`${BASE}/`, { waitUntil: 'networkidle' });
-  check('landing renders hero', (await p1.textContent('h1')).includes('encrypted'));
+  // The hero copy lives in the tagline under the brand wordmark.
+  await p1.waitForSelector('text=Encrypted end-to-end', { timeout: 15000 });
+  check('landing renders hero',
+    (await p1.textContent('h1')).includes('CipherNote') &&
+      ((await p1.textContent('body')) ?? '').includes('Encrypted end-to-end'));
   await ts(p1, 'landing');
 
   for (const [path, needle, label] of [
@@ -104,12 +108,18 @@ try {
     check(`${label} renders`, ok, path);
   }
 
+  // The route guard's client-side redirect lands AFTER networkidle resolves
+  // (React finishes mounting past the 500ms quiet window), so wait for the
+  // navigation itself instead of reading the URL the instant goto returns.
   await p1.goto(`${BASE}/dashboard`, { waitUntil: 'networkidle' });
+  await p1.waitForURL('**/login', { timeout: 15000 }).catch(() => {});
   check('unauth /dashboard redirects to login', p1.url().includes('/login'), p1.url());
   await p1.goto(`${BASE}/chat`, { waitUntil: 'networkidle' });
+  await p1.waitForURL('**/login', { timeout: 15000 }).catch(() => {});
   check('unauth /chat redirects to login', p1.url().includes('/login'), p1.url());
   await p1.goto(`${BASE}/definitely-not-a-route`, { waitUntil: 'networkidle' });
-  check('404 page renders', ((await p1.textContent('body')) ?? '').includes('This page does not exist'), '/definitely-not-a-route');
+  await p1.waitForSelector('text=Page not found', { timeout: 15000 });
+  check('404 page renders', ((await p1.textContent('body')) ?? '').includes('Page not found'), '/definitely-not-a-route');
 
   await p1.goto(`${BASE}/auth/google/callback`, { waitUntil: 'networkidle' });
   check('google callback (no code) renders error state, no crash', b1.pageErrors.length === 0);
@@ -135,11 +145,17 @@ try {
   await a.click('button[type="submit"]');
 
   await a.waitForURL('**/recovery-key', { timeout: 30000 });
-  const recKey = ((await a.textContent('body')) ?? '').match(/RCVR-[A-Za-z0-9-]+/)?.[0] ?? null;
-  check('register -> recovery key handoff shown', Boolean(recKey), recKey ? recKey.slice(0, 12) + '…' : 'no RCVR- key found');
+  // Read the key from its own <p.font-mono> element: matching against
+  // `body.textContent` appends the neighbouring "Copy"/"Store…" button labels
+  // to the key, and a [A-Za-z0-9-] class drops the `_` in base64url keys -
+  // either way the derived verifier no longer matches the account.
+  const recKeyRaw = (await a.locator('p.font-mono').first().textContent().catch(() => null))?.trim() ?? null;
+  const recKey = recKeyRaw && /^RCVR-[A-Za-z0-9_-]{43}$/.test(recKeyRaw) ? recKeyRaw : null;
+  check('register -> recovery key handoff shown', Boolean(recKey),
+    recKey ? recKey.slice(0, 12) + '…' : `no valid RCVR- key found (raw: ${String(recKeyRaw).slice(0, 40)})`);
   await ts(a, 'recovery-key');
 
-  await a.click('text=I saved it - continue');
+  await a.click('text=I saved it, continue');
   // Registration may already leave the session unlocked -> straight to /dashboard.
   await a.waitForURL((u) => /\/(unlock|dashboard)$/.test(new URL(u).pathname), { timeout: 20000 });
   if (a.url().includes('/unlock')) {
@@ -164,7 +180,17 @@ try {
   await a.fill('#content', 'Secret content from the browser test.');
   await a.click('button[type="submit"]');
   await a.waitForURL(/\/notes\/[a-z0-9]{10,}$/i, { timeout: 30000 }); // real id, not /notes/new
-  await a.waitForSelector('text=Secret content from the browser test.', { timeout: 20000 }); // decrypt + render
+  // The view decrypts in this browser (~2s). A `text=` match can hit the stale
+  // editor DOM during the route swap, so wait atomically until BOTH the title
+  // and the decrypted body are present in the live document before reading it.
+  await a.waitForFunction(
+    () => {
+      const text = document.body.textContent ?? '';
+      return text.includes('Browser Test Note') && text.includes('Secret content from the browser test.');
+    },
+    undefined,
+    { timeout: 30000 },
+  );
   const noteBody = (await a.textContent('body')) ?? '';
   check('note saved and decrypts in view', noteBody.includes('Browser Test Note'),
     noteBody.includes('Not saved') ? 'save error shown' : a.url());
@@ -183,7 +209,7 @@ try {
   await bpg.getByRole('checkbox').check();
   await bpg.click('button[type="submit"]');
   await bpg.waitForURL('**/recovery-key', { timeout: 30000 });
-  await bpg.click('text=I saved it - continue');
+  await bpg.click('text=I saved it, continue');
   await bpg.waitForURL((u) => /\/(unlock|dashboard)$/.test(new URL(u).pathname), { timeout: 20000 });
   if (bpg.url().includes('/unlock')) {
     await bpg.fill('#password', BOB.password);
@@ -198,16 +224,18 @@ try {
 
   // Bob parks on /chat BEFORE alice sends, so realtime arrival is genuine.
   await spaNav(bpg, '/chat');
-  await bpg.waitForTimeout(1500); // socket connect + conversations fetch
+  // The conversations fetch can take several seconds against a cold server;
+  // wait for the empty state rather than a fixed delay.
+  await bpg.getByText('No conversations yet').waitFor({ timeout: 20000 }).catch(() => {});
   check('bob chat page loads (empty state)', /No conversations yet|Start a new chat/i.test((await bpg.textContent('body')) ?? ''));
   await ts(bpg, 'bob-chat-empty');
 
   // ------------------------------------------------- ALICE: START CHAT + SEND
   await spaNav(a, '/chat');
   await a.waitForTimeout(1200);
-  await a.click('[aria-label="Start a new chat"]');
-  await a.getByPlaceholder('Search @username or CN-XXXXXX').fill(bobCipher);
-  const bobResult = a.locator('li', { hasText: BOB.name }).getByRole('button', { name: 'Message' }).first();
+  await a.getByRole('button', { name: 'New Chat', exact: true }).click();
+  await a.getByPlaceholder('Search contacts...').fill(bobCipher);
+  const bobResult = a.locator('li', { hasText: BOB.name }).getByRole('button', { name: 'Start chat' }).first();
   await bobResult.waitFor({ timeout: 15000 });
   await bobResult.click();
   await a.waitForSelector('textarea', { timeout: 20000 });
@@ -278,48 +306,57 @@ try {
   check('bob session: no console/page errors', !bucketHasRealErrors(bB),
     [...bB.pageErrors, ...bB.consoleErrors].slice(0, 3).join(' | '));
 
-  // ------------------------------------------------- OTP RESET (REAL UI)
-  // OTP_DEBUG_LOG=true + no SMTP => the code is shown in a dev-mode toast.
+  // ------------------------------------------ RECOVERY-KEY RESET (REAL UI)
   const ctxO = await browser.newContext();
   const o = await ctxO.newPage();
   const bO = freshBucket();
   wire(o, bO);
   await o.goto(`${BASE}/forgot-password`, { waitUntil: 'networkidle' });
-  await o.fill('#email', ALICE.email);
-  // Dev mode has no SMTP: the code is printed to the API server log. Snapshot
-  // the log first so we only accept a code printed by THIS request.
-  const devLog = `${process.env.TEMP}\\cipher-dev.log`;
-  const lastCode = () => {
-    try {
-      const m = [...readFileSync(devLog, 'utf8').matchAll(/code is:?\s*(\d{6,8})/gi)];
-      return m.at(-1)?.[1] ?? null;
-    } catch { return null; }
-  };
-  const baseline = lastCode();
-  await o.click('button[type="submit"]');
-  let code = null;
-  for (let i = 0; i < 16; i++) {
-    await o.waitForTimeout(500);
-    const latest = lastCode();
-    if (latest && latest !== baseline) { code = latest; break; }
-  }
-  check('OTP code printed to server log (dev mode)', Boolean(code), code ?? 'not found');
-  await ts(o, 'otp-toast');
-  if (code) {
-    await o.fill('#otpCode', code);
+
+  if (recKey) {
+    // The RCVR- key saved at registration is what unwraps the vault: no SMTP
+    // and no escrow copy are involved on this path.
+    const NEW_PASSWORD = 'Browser-Reset-789-Zq';
+    await o.fill('#email', ALICE.email);
+    await o.fill('#recoveryKey', recKey);
+    await o.fill('#newPassword', NEW_PASSWORD);
+    await o.fill('#confirmNewPassword', NEW_PASSWORD);
+    await ts(o, 'recovery-reset-form');
+    await o.getByRole('button', { name: /Reset password with recovery key/ }).click();
+
+    // The success screen confirms the change, then redirects to /login.
+    await o.waitForSelector('text=Redirecting to sign in', { timeout: 30000 });
+    check('recovery-key reset completes to success',
+      /Password reset/i.test((await o.textContent('body')) ?? ''));
+    await ts(o, 'recovery-reset-done');
+    ALICE.password = NEW_PASSWORD; // password changed; the RCVR- key is burned
+
+    // Signing in with the NEW password proves the reset took effect.
+    await o.waitForURL('**/login', { timeout: 20000 });
+    await o.fill('#email', ALICE.email);
+    await o.fill('#password', ALICE.password);
     await o.click('button[type="submit"]');
-    await o.waitForSelector('#newPassword', { timeout: 15000 });
-    ALICE.password = 'browser-pass-789'; // password now changed
-    await o.fill('#newPassword', ALICE.password);
-    await o.fill('#confirmNewPassword', ALICE.password);
-    await o.click('button[type="submit"]');
-    await o.waitForTimeout(2000);
-    check('OTP reset completes to success', /sign in|success|reset/i.test((await o.textContent('body')) ?? ''));
-    await ts(o, 'otp-reset-done');
+    await o.waitForURL((u) => /\/(unlock|dashboard)$/.test(new URL(u).pathname), { timeout: 30000 });
+    if (o.url().includes('/unlock')) {
+      await o.fill('#password', ALICE.password);
+      await o.click('button[type="submit"]');
+      await o.waitForURL('**/dashboard', { timeout: 30000 });
+    }
+    check('login with reset password + unlock works', true);
+
+    // The vault still opens: the note created earlier must decrypt again.
+    await spaNav(o, '/notes');
+    await o.getByText('Browser Test Note').first().click({ timeout: 20000 });
+    await o.waitForSelector('text=Secret content from the browser test.', { timeout: 30000 });
+    check('note still opens and decrypts after reset',
+      ((await o.textContent('body')) ?? '').includes('Secret content from the browser test.'));
+    await ts(o, 'notes-after-reset');
+  } else {
+    check('recovery-key reset completes to success', false, 'no RCVR- key captured at registration');
   }
   await ctxO.close();
 
-  // ------------------------------------------------- LOGIN WITH NEW PW + MOBILE
+  // ------------------------------------------- LOGIN WITH RESET PW + MOBILE
   const ctxM = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const m = await ctxM.newPage();
   const bM = freshBucket();
@@ -334,14 +371,14 @@ try {
     await m.click('button[type="submit"]');
     await m.waitForURL('**/dashboard', { timeout: 30000 });
   }
-  check('login with OTP-reset password + unlock works', true);
+  check('login with recovery-key-reset password + unlock works', true);
   await spaNav(m, '/chat');
   await m.waitForTimeout(1500);
   // Mobile starts on the list pane - open the conversation with Bob first.
   await m.locator('text=Browser Bob').first().click({ timeout: 15000 }).catch(() => {});
   await m.waitForTimeout(1000);
   const backBtn = await m.locator('[aria-label="Back to conversations"]').isVisible().catch(() => false);
-  const composer = await m.locator('#chat-composer').isVisible().catch(() => false);
+  const composer = await m.locator('[aria-label="Message input"]').isVisible().catch(() => false);
   check('mobile chat: back button + composer visible', backBtn && composer);
   await ts(m, 'mobile-chat');
   check('mobile pass: no console/page errors', !bucketHasRealErrors(bM),
