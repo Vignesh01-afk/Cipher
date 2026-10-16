@@ -152,7 +152,7 @@ export function RegisterPage(): React.ReactElement {
                 autoComplete="new-password"
                 required
                 minLength={MIN_PASSWORD_LENGTH}
-                className="input-auth pr-11"
+                className="input pl-10 pr-11"
                 placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

@@ -105,7 +105,7 @@ export function LoginPage(): React.ReactElement {
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="current-password"
                 required
-                className="input-auth pr-11"
+                className="input pl-10 pr-11"
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
