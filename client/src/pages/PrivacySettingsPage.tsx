@@ -29,26 +29,25 @@ export function PrivacySettingsPage(): React.ReactElement {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <section className="card p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <section className="card p-5">          <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-line bg-line text-muted">
               <EyeSlash className="h-5 w-5" />
             </span>
-            <div className="min-w-0">              <h2 className="text-base font-semibold text-ink dark:text-paper">Privacy Mode</h2>
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold text-ink dark:text-paper">Privacy Mode</h2>
               <p className="mt-0.5 text-sm text-muted dark:text-muted">
                 Practical, browser-level protection against observation. Master switch for all behaviours below.
               </p>
             </div>
           </div>
-        </div>
-        <div className="border-t border-line pt-3 mt-4 space-y-1">
-          <Toggle
-            checked={settings.privacyMode}
-            onChange={(value) => updateSettings({ privacyMode: value })}
-            label="Privacy Mode"
-            containerClassName="flex items-center justify-between gap-4 border-t border-line pt-3 mt-3"
-          />
+          <div className="ml-14">
+            <Toggle
+              checked={settings.privacyMode}
+              onChange={(value) => updateSettings({ privacyMode: value })}
+              label="Master switch"
+            />
+          </div>
         </div>
 
 

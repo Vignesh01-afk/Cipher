@@ -25,11 +25,11 @@ export function Toggle({ checked, onChange, label, description, disabled, contai
         disabled={disabled}
         onClick={() => onChange(!checked)}
         className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-50 ${
-          checked ? 'bg-accent' : 'bg-line'
+          checked ? 'bg-gradient-to-r from-[#2f6bff] to-[#8b5cf6] shadow-[0_0_0_1px_rgba(99,102,241,0.35),0_0_12px_rgba(99,102,241,0.25)]' : 'bg-stone-200 dark:bg-stone-700'
         }`}
       >
         <span
-          className={`inline-block h-4 w-4 rounded-md bg-surface ${
+          className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm ${
             checked ? 'translate-x-6' : 'translate-x-1'
           }`}
         />

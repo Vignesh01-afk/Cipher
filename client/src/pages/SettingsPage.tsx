@@ -453,7 +453,7 @@ function PrivacySettingsWrapper(): ReactElement {
   return (
     <div className="space-y-6">
       <section className="card p-5">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-3 min-w-0">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-line bg-line text-muted">
               <EyeSlash className="h-5 w-5" />
@@ -465,15 +465,12 @@ function PrivacySettingsWrapper(): ReactElement {
               </p>
             </div>
           </div>
-          <div className="ml-14 min-w-0">
-            <label className="flex items-center justify-between gap-4">
-              <span className="text-sm font-medium text-ink dark:text-paper">Privacy Mode</span>
-              <Toggle
-                checked={settings.privacyMode}
-                onChange={(value) => updateSettings({ privacyMode: value })}
-                label=""
-              />
-            </label>
+          <div className="ml-14">
+            <Toggle
+              checked={settings.privacyMode}
+              onChange={(value) => updateSettings({ privacyMode: value })}
+              label="Master switch"
+            />
           </div>
         </div>
         <div className="border-t border-line pt-3 mt-4 space-y-1">
@@ -694,14 +691,30 @@ export function SettingsPage({ tab: initialTab }: SettingsPageProps): ReactEleme
   return (
     <div className="mx-auto max-w-5xl">
       <div className="flex flex-col lg:flex-row gap-6">
-        <nav className="flex flex-wrap gap-1 lg:flex-col lg:w-48 lg:flex-nowrap flex-shrink-0">
+        <nav className="flex overflow-x-auto overflow-y-visible flex-nowrap gap-1 bg-panel rounded-b-xl border-b border-line px-2 py-2 lg:hidden">
           {tabs.map((t) => (
             <button
               key={t.id}
               type="button"
-              className={`tab-btn whitespace-nowrap px-3 py-2 text-sm font-medium rounded-md transition ${
+              className={`whitespace-nowrap px-3 py-2 text-sm font-medium rounded-md transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-indigo ${
                 tab === t.id
-                  ? 'bg-accent/15 text-accent dark:bg-accent/20 dark:text-accent-indigo'
+                  ? 'bg-gradient-to-r from-[#2f6bff] to-[#8b5cf6] text-white shadow-[0_0_0_1px_rgba(99,102,241,0.35),0_0_14px_rgba(99,102,241,0.3)]'
+                  : 'text-muted hover:bg-panel/80 hover:text-ink dark:hover:bg-panel/40 dark:hover:text-stone-100'
+              }`}
+              onClick={() => navigateTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </nav>
+        <nav className="hidden lg:flex lg:flex-col lg:w-48 lg:flex-nowrap flex-shrink-0">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className={`tab-btn whitespace-nowrap px-3 py-2 text-sm font-medium rounded-md transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-indigo ${
+                tab === t.id
+                  ? 'bg-gradient-to-r from-[#2f6bff] to-[#8b5cf6] text-white shadow-[0_0_0_1px_rgba(99,102,241,0.35),0_0_14px_rgba(99,102,241,0.3)]'
                   : 'text-muted hover:bg-panel hover:text-ink dark:hover:bg-panel/40 dark:hover:text-stone-100'
               }`}
               onClick={() => navigateTab(t.id)}
