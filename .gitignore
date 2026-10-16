@@ -40,4 +40,13 @@ client.zip
 
 # UI audit harness artifacts (generated, never committed)
 client/ui-audit-shots/
+client/ui-shots/
+
+# Build artifacts
+*.tsbuildinfo
+
+# Stray screenshots in repo root
+*.png
+
+# Task says
 .task-says/
