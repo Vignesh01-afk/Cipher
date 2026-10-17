@@ -197,20 +197,29 @@
 }
 
 /* --- Buttons -------------------------------------------------------- */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border: 1px solid transparent;
-  border-radius: 0.75rem;
-  padding: 0.625rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.25;
-  cursor: pointer;
-  user-select: none;
-  transition: transform 120ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease, color 180ms ease;
+/* In @layer components (NOT unlayered): this file ships unlayered rules next
+   to `@import "tailwindcss"`, and Tailwind v4 puts utilities inside
+   `@layer utilities`. Unlayered CSS outranks every layered rule regardless of
+   specificity, so an unlayered `.btn { display: inline-flex }` silently beat
+   responsive utilities like `hidden`, `sm:hidden` and `lg:hidden` on .btn
+   elements (hamburger, search icon, sidebar X stayed visible at the wrong
+   widths). Layered utilities must win, so display lives in components. */
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 0.75rem;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.25;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 120ms ease, background 180ms ease, box-shadow 180ms ease, border-color 180ms ease, color 180ms ease;
+  }
 }
 
 .btn:disabled {
@@ -938,7 +947,15 @@
 .text-ink { color: var(--color-ink); }
 .text-muted { color: var(--color-muted); }
 
-.flex { display: flex; }
+/* Display-setting polyfill copies live in @layer components so real layered
+   Tailwind utilities (`hidden`, `lg:hidden`, ...) beat them. Unlayered they
+   outranked every utility: `flex ... lg:hidden` (settings tab bar) and
+   `inline-flex ... lg:hidden` (lock tile) stayed visible at all widths. */
+@layer components {
+  .flex { display: flex; }
+  .inline-flex { display: inline-flex; }
+  .grid { display: grid; }
+}
 .flex-col { flex-direction: column; }
 .items-center { align-items: center; }
 .justify-center { justify-content: center; }
@@ -1049,8 +1066,6 @@
 .break-words { word-wrap: break-word; }
 .break-all { word-break: break-all; }
 .select-all { user-select: all; }
-.inline-flex { display: inline-flex; }
-.grid { display: grid; }
 .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
 .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
 .grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
