@@ -690,8 +690,12 @@ export function SettingsPage({ tab: initialTab }: SettingsPageProps): ReactEleme
 
   return (
     <div className="mx-auto max-w-5xl">
-      <div className="flex flex-col lg:flex-row gap-6">
-        <nav className="flex overflow-x-auto overflow-y-visible flex-nowrap gap-1 bg-panel rounded-b-xl border-b border-line px-2 py-2 lg:hidden">
+      <div className="flex flex-col gap-6">
+        {/* ONE horizontal tab bar at every width; it scrolls sideways on small
+            screens. (The old vertical `hidden lg:flex` sidebar nav is gone, and
+            this nav no longer carries lg:hidden, so exactly one tab list exists
+            at any viewport.) */}
+        <nav className="flex overflow-x-auto overflow-y-visible flex-nowrap gap-1 bg-panel rounded-b-xl border-b border-line px-2 py-2">
           {tabs.map((t) => (
             <button
               key={t.id}
@@ -707,24 +711,8 @@ export function SettingsPage({ tab: initialTab }: SettingsPageProps): ReactEleme
             </button>
           ))}
         </nav>
-        <nav className="hidden lg:flex lg:flex-col lg:w-48 lg:flex-nowrap flex-shrink-0">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className={`tab-btn whitespace-nowrap px-3 py-2 text-sm font-medium rounded-md transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-indigo ${
-                tab === t.id
-                  ? 'bg-gradient-to-r from-[#2f6bff] to-[#8b5cf6] text-white shadow-[0_0_0_1px_rgba(99,102,241,0.35),0_0_14px_rgba(99,102,241,0.3)]'
-                  : 'text-muted hover:bg-panel hover:text-ink dark:hover:bg-panel/40 dark:hover:text-stone-100'
-              }`}
-              onClick={() => navigateTab(t.id)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </nav>
 
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0">
           <div className="card p-5">
             <div className="flex items-center gap-2 mb-4">
               <Badge variant="slate">{tabs.find((t) => t.id === tab)?.label ?? 'Settings'}</Badge>
