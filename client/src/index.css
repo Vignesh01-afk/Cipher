@@ -976,8 +976,11 @@
   .flex { display: flex; }
   .inline-flex { display: inline-flex; }
   .grid { display: grid; }
+  /* Direction setters live here too: unlayered, `.flex-col` beat responsive
+     `sm:flex-row` / `lg:flex-row` at every width (the chat composer, home
+     header and sm:flex-row modals stayed columns on wide screens). */
+  .flex-col { flex-direction: column; }
 }
-.flex-col { flex-direction: column; }
 .items-center { align-items: center; }
 .justify-center { justify-content: center; }
 .justify-between { justify-content: space-between; }

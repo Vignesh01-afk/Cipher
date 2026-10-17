@@ -888,8 +888,12 @@ export function ChatPage(): ReactElement {
             </div>
           ) : (
             <div className="flex flex-1 overflow-hidden">
+              {/* Below lg the conversation list is replaced by the open thread:
+                  the fixed 340px basis otherwise squeezes the thread (and the
+                  composer) into a few pixels at 390px. The thread's lg:hidden
+                  back button returns to this list. */}
               <section
-                className="card flex flex-col overflow-y-auto"
+                className={`card flex-col overflow-y-auto ${activeId ? 'hidden lg:flex' : 'flex'}`}
                 style={{ maxWidth: '340px', flex: '0 0 340px' }}
               >
                 <div className="p-4 pb-2">
@@ -1205,18 +1209,24 @@ export function ChatPage(): ReactElement {
                     </div>
 
                     <div className="card border-t border-line p-4">
-                      <div className="flex flex-col sm:flex-row sm:items-end gap-2">
-                        <div className="flex flex-1 gap-2">
+                      {/* ONE composer row at every width: [attach][emoji][input][send].
+                          The legacy polyfill defined `.flex-col` unlayered, so
+                          `flex-col sm:flex-row` stayed a column at all widths and
+                          the send button dropped onto its own row. A plain `flex`
+                          row (no direction utilities to fight) with shrink-0
+                          controls and a min-w-0 textarea keeps the layout on one
+                          line on desktop and mobile alike. */}
+                      <div className="flex items-end gap-2">
                           <button
                             type="button"
-                            className="btn btn-secondary p-2"
+                            className="btn btn-secondary shrink-0 p-2"
                             aria-label="Attach file"
                             disabled={!hasChatAttachApi}
                             title={hasChatAttachApi ? undefined : 'Not available yet'}
                           >
                             <Paperclip className="h-4 w-4" />
                           </button>
-                          <div className="relative">
+                          <div className="relative shrink-0">
                             <button
                               type="button"
                               className="btn btn-secondary p-2"
@@ -1247,7 +1257,8 @@ export function ChatPage(): ReactElement {
                           </div>
                           <textarea
                             ref={composerRef}
-                            className="input flex-1 min-h-[44px] max-h-[120px] resize-y px-3 py-2 text-sm"
+                            rows={1}
+                            className="input min-w-0 flex-1 min-h-[44px] max-h-[120px] resize-y px-3 py-2 text-sm"
                             placeholder={convCrypto ? 'Type a message...' : 'Unlocking conversation…'}
                             value={draft}
                             onChange={(e) => onDraftChange(e.target.value)}
@@ -1260,10 +1271,9 @@ export function ChatPage(): ReactElement {
                             disabled={sending || !convCrypto}
                             aria-label="Message input"
                           />
-                        </div>
                         <button
                           type="button"
-                          className="btn btn-primary self-end"
+                          className="btn btn-primary shrink-0 self-end"
                           onClick={() => void sendMessage()}
                           disabled={sending || !convCrypto || !draft.trim()}
                           aria-label="Send message"
