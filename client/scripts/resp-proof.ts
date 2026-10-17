@@ -174,6 +174,34 @@ async function main(): Promise<void> {
       } else {
         notes.push('MISS 1440x900 profile menu not visible');
       }
+
+      // FIX 7: the active sidebar link must fill the nav container's inner width.
+      const activeLink = page.locator('aside nav .nav-link-active');
+      const navContainer = page.locator('aside .sidebar-nav');
+      const linkBox = (await activeLink.count()) > 0 ? await activeLink.first().boundingBox() : null;
+      const navBox = await navContainer.boundingBox();
+      if (linkBox && navBox) {
+        const threshold = navBox.width - 24;
+        const ok = linkBox.width >= threshold;
+        rows.push({
+          vp: '1440x900',
+          label: 'active sidebar link >= nav container - 24',
+          expected: 1,
+          actual: ok ? 1 : 0,
+        });
+        console.log(
+          `  active sidebar link width = ${linkBox.width}px; sidebar nav container width = ${navBox.width}px; threshold (container - 24) = ${threshold}px (expect link >= threshold)`,
+        );
+        if (!ok) notes.push(`MISS sidebar active link ${linkBox.width}px < container-24 ${threshold}px`);
+      } else {
+        rows.push({
+          vp: '1440x900',
+          label: 'active sidebar link >= nav container - 24',
+          expected: 1,
+          actual: 0,
+        });
+        notes.push('MISS sidebar active link or nav container not found/visible');
+      }
     }
   }
 

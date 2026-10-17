@@ -290,8 +290,16 @@
 }
 
 /* --- Forms --------------------------------------------------------- */
+/* display in @layer components: keeps plain labels block-level while letting
+   the layered `flex` utility win on labels that carry both classes
+   (`label flex items-center gap-2`) - an unlayered copy beat it after f143217. */
+@layer components {
+  .label {
+    display: block;
+  }
+}
+
 .label {
-  display: block;
   margin-bottom: 0.375rem;
   font-size: 0.75rem;
   font-weight: 600;
@@ -449,8 +457,21 @@
 }
 
 /* --- Navigation ---------------------------------------------------- */
+/* Display + full-row width live in @layer components (same reason as .btn):
+   unlayered they would beat Tailwind's layered utilities, and - since the
+   legacy polyfill `.flex` copy also moved into components - an unlayered
+   `display: inline-flex` here would win over it and shrink every sidebar row
+   to a text-hugging pill. As flex + width 100% each nav link (active and
+   inactive) fills the sidebar's inner width; .nav-link-active keeps painting
+   the gradient + glow on the full row. */
+@layer components {
+  .nav-link {
+    display: flex;
+    width: 100%;
+  }
+}
+
 .nav-link {
-  display: inline-flex;
   align-items: center;
   gap: 0.75rem;
   border-radius: 0.75rem;
