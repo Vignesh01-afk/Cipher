@@ -14,7 +14,7 @@ interface TopbarProps {
 
 export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElement {
   const { theme, toggleTheme, setTheme } = useTheme();
-  const { status, user, logout } = useAuth();
+  const { status, user, lock, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -120,9 +120,25 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </button>
 
-          <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line lg:hidden ${status === 'unlocked' ? 'bg-accent-50 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300' : 'bg-danger-50 text-danger-700 dark:bg-danger-900/40 dark:text-danger-300'}`}>
+          {/* Lock vault: same handler as the sidebar's Lock button (lock() from
+              useAuth), then straight to the unlock screen. Visible at every
+              width; the tint shows the locked/unlocked state. */}
+          <button
+            type="button"
+            aria-label="Lock vault"
+            title="Lock"
+            onClick={() => {
+              lock();
+              navigate('/unlock');
+            }}
+            className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-line focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent ${
+              status === 'unlocked'
+                ? 'bg-accent-50 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300'
+                : 'bg-danger-50 text-danger-700 dark:bg-danger-900/40 dark:text-danger-300'
+            }`}
+          >
             <Lock className="h-4 w-4" />
-          </span>
+          </button>
 
           <Dropdown
             align="right"
