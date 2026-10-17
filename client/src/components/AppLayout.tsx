@@ -57,7 +57,11 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
 
   return (
     <header className="topbar">
-      <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
+      {/* w-full: the inner row is a flex item of .topbar, so without an explicit
+          width it shrink-wraps and ml-auto has no free space to push the right
+          group to the viewport edge. Horizontal padding lives only on .topbar
+          (1.25rem) so the profile menu sits 20px from the right edge (<= 24px). */}
+      <div className="flex w-full items-center gap-3 py-3">
         {onChatThread ? (
           <button
             type="button"
@@ -68,7 +72,7 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
             <ArrowLeft className="h-4 w-4" />
           </button>
         ) : onOpenSidebar ? (
-          <button type="button" className="btn btn-ghost h-9 w-9 shrink-0 p-0 hidden lg:inline-flex" onClick={onOpenSidebar} aria-label="Open navigation">
+          <button type="button" className="btn btn-ghost h-9 w-9 shrink-0 p-0 lg:hidden" onClick={onOpenSidebar} aria-label="Open navigation">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M4 6h16M4 12h16M4 18h16" />
             </svg>
@@ -102,7 +106,9 @@ export function Topbar({ onOpenSidebar, actions }: TopbarProps): React.ReactElem
           </form>
         ) : null}
 
-        <div className="flex shrink-0 items-center gap-2">
+        {/* Right group: pushed flush right; profile menu is the LAST item so it
+            sits at the far-right edge of the top bar. */}
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           {actions}
 
           <button
