@@ -27,7 +27,6 @@ import {
   ArrowLeft,
   ChatTeardropText,
   MagnifyingGlass,
-  Clock,
   ShareNetwork,
   Info,
   ShieldCheck,
@@ -950,41 +949,45 @@ export function ChatPage(): ReactElement {
                 <div className="px-4">
                   {conversations.map((conv) => {
                     const last = conv.lastMessage;
-                    const mine = conv.participants.some((p) => p.id === myUserId);
+                    const other = conv.participants.find((p) => p.id !== myUserId) ?? null;
+                    /* FIX 9: the second line must NEVER be a raw conversation or
+                       message id. It shows the relative time of the last activity
+                       ("just now", "5 minutes ago"), falling back to the contact's
+                       CipherNote id when there is no usable activity time. The
+                       selected row uses bg-accent/15 (Tailwind v4 opacity
+                       modifier - the old `bg-accent bg-opacity-15` pair painted a
+                       ~46% indigo that dropped text-muted to 1.9:1 contrast), so
+                       the muted subtitle stays readable there too. */
+                    const activityAt = last?.createdAt ?? conv.updatedAt;
+                    const activityTime = Number.isNaN(new Date(activityAt).getTime())
+                      ? null
+                      : formatRelativeTime(activityAt);
+                    const subtitleText = activityTime ?? other?.cipherId ?? '';
                     return (
                       <button
                         key={conv.id}
                         type="button"
                         className={`flex w-full flex-col gap-1 border-b border-line p-4 text-left transition hover:bg-stone-100 dark:hover:bg-stone-800 ${
-                          activeId === conv.id ? 'bg-accent bg-opacity-15 border-accent' : ''
+                          activeId === conv.id ? 'bg-accent/15 border-accent' : ''
                         }`}
                         onClick={() => void openConversation(conv.id)}
                       >
                         <div className="flex items-center gap-3">
-                          <Avatar
-                            name={conv.participants.find((p) => p.id !== myUserId)?.displayName ?? 'Chat'}
-                            size="sm"
-                          />
+                          <Avatar name={other?.displayName ?? 'Chat'} size="sm" />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-semibold text-ink">
-                              {conv.participants.find((p) => p.id !== myUserId)?.displayName ?? 'Chat'}
+                              {other?.displayName ?? 'Chat'}
                             </p>
-                            {last ? (
-                              <p className="truncate text-xs text-muted">
-                                {last.senderId === myUserId ? 'You: ' : ''}
-                                {last.hasPayload ? last.id.slice(0, 18) : last.id}
-                                {conv.unreadCount > 0 ? (
-                                  <span className="ml-2 inline-flex items-center justify-center rounded border border-accent bg-accent text-paper px-2 py-0.5 text-[10px] font-bold">
-                                    {conv.unreadCount}
-                                  </span>
-                                ) : null}
-                              </p>
-                            ) : null}
+                            <p className="truncate text-xs text-muted">
+                              {last && last.senderId === myUserId ? 'You: ' : ''}
+                              {subtitleText}
+                              {conv.unreadCount > 0 ? (
+                                <span className="ml-2 inline-flex items-center justify-center rounded border border-accent bg-accent text-paper px-2 py-0.5 text-[10px] font-bold">
+                                  {conv.unreadCount}
+                                </span>
+                              ) : null}
+                            </p>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2 text-[11px] text-muted">
-                          <Clock className="h-3 w-3" />
-                          <span>{formatRelativeTime(conv.updatedAt)}</span>
                         </div>
                       </button>
                     );
