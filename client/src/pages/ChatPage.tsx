@@ -306,6 +306,11 @@ export function ChatPage(): ReactElement {
             : c),
       );
 
+      // FIX 10: a message from the partner means they are no longer typing.
+      if (m.conversationId === activeId && m.senderId !== myUserId) {
+        setPeerTyping(false);
+      }
+
       if (m.conversationId !== activeId || !convCrypto) return;
 
       try {
@@ -348,9 +353,20 @@ export function ChatPage(): ReactElement {
       }
     }
 
+    // FIX 10: clear the typing indicator 4s after the last typing event,
+    // and immediately when a message from that partner arrives (handled in
+    // onMessage above). Do not change the socket event names.
     const onTyping = (p: { conversationId: string; userId: string; typing: boolean }) => {
       if (p.conversationId !== activeId || p.userId === myUserId) return;
       setPeerTyping(p.typing);
+      if (p.typing) {
+        if (typingTimer.current) window.clearTimeout(typingTimer.current);
+        typingTimer.current = window.setTimeout(() => {
+          setPeerTyping(false);
+        }, 4000);
+      } else {
+        if (typingTimer.current) window.clearTimeout(typingTimer.current);
+      }
     };
 
     const onReceipt = (p: { conversationId: string; messageId?: string; status: string; at: string }) => {
@@ -402,6 +418,7 @@ export function ChatPage(): ReactElement {
     socket.on('chat:activity', onActivity);
 
     return () => {
+      if (typingTimer.current) window.clearTimeout(typingTimer.current);
       socket.off('chat:message', onMessage);
       socket.off('chat:typing', onTyping);
       socket.off('chat:receipt', onReceipt);
@@ -456,7 +473,10 @@ export function ChatPage(): ReactElement {
           });
         }
 
+        // FIX 10 (polling fallback): a freshly delivered partner message
+        // means they are no longer typing, even when the socket path is down.
         if (hasNew && fresh.some((m) => m.senderId !== myUserId)) {
+          setPeerTyping(false);
           void api.markConversationRead(conversationId).catch(() => undefined);
           emitIfConnected('chat:read', { conversationId });
         }
