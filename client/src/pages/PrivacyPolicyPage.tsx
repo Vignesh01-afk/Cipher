@@ -72,7 +72,7 @@ export function PrivacyPolicyPage(): React.ReactElement {
             <section>
               <h2 className="flow-title">Contact</h2>
               <p>
-                Questions? Email <a href="mailto:yourname@gmail.com" className="link">yourname@gmail.com</a>.
+                Questions? Email <a href="mailto:REAL_EMAIL_HERE" className="link">REAL_EMAIL_HERE</a>.
               </p>
             </section>
           </div>
