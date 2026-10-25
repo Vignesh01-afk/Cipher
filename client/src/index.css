@@ -34,6 +34,10 @@
    */
   --color-page: #f4f6ff;
   --color-panel: #ffffff;
+  /* Surface: the raised card/panel fill behind content (toasts, chat bubbles,
+     headers). Without this key Tailwind emits no `bg-surface` at all, so those
+     elements rendered fully transparent in the light theme. */
+  --color-surface: #ffffff;
   --color-line: #e3e7fa;
   --color-ink: #151a33;
   --color-muted: #6b7194;
@@ -117,6 +121,7 @@
 .dark {
   --color-page: #0b0f1a;
   --color-panel: #1a1f2e;
+  --color-surface: #1a1f2e;
   --color-line: #2a2f3f;
   --color-ink: #e8eaf6;
   --color-muted: #8b92b8;

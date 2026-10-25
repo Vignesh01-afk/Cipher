@@ -88,7 +88,7 @@ export function ToastProvider({ children }: { children: ReactNode }): React.Reac
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-md border px-4 py-3    ${VARIANT_STYLES[toast.variant].container}`}
+            className={`pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-md border px-4 py-3 shadow-lg ${VARIANT_STYLES[toast.variant].container}`}
           >
             {VARIANT_STYLES[toast.variant].icon}
             <div className="min-w-0 flex-1">
