@@ -33,7 +33,8 @@ This project lives at the repository root - the directory that holds the top-lev
 17. [Demo flow: Alice, Bob and a revoked share](#demo-flow-alice-bob-and-a-revoked-share)
 18. [Threat model](#threat-model)
 19. [Security limitations](#security-limitations)
-20. [Troubleshooting](#troubleshooting)
+20. [Not available yet](#not-available-yet)
+21. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -769,6 +770,28 @@ are the same origin, so no CORS or `VITE_API_BASE_URL` configuration is needed.
    forbid inline scripts.
 
 See `server/.env.example` for the complete variable list with defaults.
+
+---
+
+## Not available yet
+
+These controls are visible in the UI but have no backend behind them. Each one
+is rendered `disabled` with `title="Not available yet"` and
+`aria-disabled="true"`, so it is unavailable to both pointer and screen reader,
+and it uses the standard disabled styling (50% opacity, `cursor: not-allowed`).
+None of them fires a fake success toast or writes fabricated data.
+
+| Control | Where it appears |
+| --- | --- |
+| **Save changes** (account edit) | Settings → Account → Profile fields |
+| **Change Photo** | Settings → Account → profile header |
+| **Two-Factor Authentication** | Settings → Account → Quick Actions |
+| **Download My Data** | Settings → Account → Quick Actions |
+| **Delete Account** | Settings → Account → Quick Actions |
+| **Attach file** | Chat → open conversation → message composer |
+| **Report user** | Chat → open conversation → Conversation details |
+
+Block user and Delete conversation are live and use /chat/blocks and /chat/conversations/:id.
 
 ---
 

@@ -126,7 +126,7 @@ function AccountTab({ userName, userEmail, storageNoteId }: { userName: string; 
           <h3 className="text-base font-semibold text-ink dark:text-paper break-all">{userName || '—'}</h3>
           <p className="mt-0.5 text-sm text-muted dark:text-muted break-all">{userEmail || '—'}</p>
         </div>
-        <Button variant="secondary" size="sm" disabled title="Not available yet" className="ml-auto flex-shrink-0">
+        <Button variant="secondary" size="sm" disabled title="Not available yet" aria-disabled="true" className="ml-auto flex-shrink-0">
           <User className="h-3.5 w-3.5" />
           Change Photo
         </Button>
@@ -154,7 +154,18 @@ function AccountTab({ userName, userEmail, storageNoteId }: { userName: string; 
           <p className="text-xs text-muted dark:text-muted">
             Name and email come from your account. There is no server endpoint to update them yet, so these fields are read-only.
           </p>
-          <Button variant="secondary" size="sm" disabled={saving || !('updateProfile' in api)} onClick={saveProfile}>
+          {/* There is no update-profile endpoint on the server yet (checked
+              server/src/routes/auth.ts), so name and email are read-only.
+              Plain `disabled` rather than a fake save: no success toast, no
+              fabricated data, nothing is written anywhere. */}
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled
+            title="Not available yet"
+            aria-disabled="true"
+            onClick={saveProfile}
+          >
             {saving ? 'Saving…' : 'Save changes'}
           </Button>
         </div>
@@ -167,15 +178,15 @@ function AccountTab({ userName, userEmail, storageNoteId }: { userName: string; 
             <Lock className="h-3.5 w-3.5" />
             Change Password
           </a>
-          <Button variant="secondary" size="sm" disabled title="Not available yet">
+          <Button variant="secondary" size="sm" disabled title="Not available yet" aria-disabled="true">
             <ShieldCheck className="h-3.5 w-3.5" />
             Two-Factor Authentication
           </Button>
-          <Button variant="secondary" size="sm" disabled title="Not available yet">
+          <Button variant="secondary" size="sm" disabled title="Not available yet" aria-disabled="true">
             <CloudCheck className="h-3.5 w-3.5" />
             Download My Data
           </Button>
-          <Button variant="danger" size="sm" disabled title="Not available yet">
+          <Button variant="danger" size="sm" disabled title="Not available yet" aria-disabled="true">
             <span className="flex items-center gap-2">
               <Trash className="h-3.5 w-3.5" />
               Delete Account

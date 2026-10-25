@@ -1246,6 +1246,7 @@ export function ChatPage(): ReactElement {
                             aria-label="Attach file"
                             disabled={!hasChatAttachApi}
                             title={hasChatAttachApi ? undefined : 'Not available yet'}
+                            aria-disabled={!hasChatAttachApi}
                           >
                             <Paperclip className="h-4 w-4" />
                           </button>

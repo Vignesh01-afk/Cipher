@@ -240,6 +240,7 @@ export function ChatInfoPanel({
         className="w-full justify-start text-stone-500 dark:text-stone-400"
         disabled
         title="Not available yet"
+        aria-disabled="true"
       >
         <Eye className="h-3.5 w-3.5 shrink-0" />
         Report user
