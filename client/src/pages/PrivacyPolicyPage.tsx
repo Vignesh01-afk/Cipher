@@ -72,8 +72,7 @@ export function PrivacyPolicyPage(): React.ReactElement {
             <section>
               <h2 className="flow-title">Contact</h2>
               <p>
-                Questions? Email <span className="font-mono">privacy@example.com</span> (placeholder - replace
-                before launch).
+                Questions? Email <a href="mailto:yourname@gmail.com" className="link">yourname@gmail.com</a>.
               </p>
             </section>
           </div>

@@ -75,8 +75,7 @@ export function TermsPage(): React.ReactElement {
             <section>
               <h2 className="flow-title">7. Contact</h2>
               <p>
-                Questions? Email <span className="font-mono">legal@example.com</span> (placeholder - replace
-                before launch).
+                Questions? Email <a href="mailto:yourname@gmail.com" className="link">yourname@gmail.com</a>.
               </p>
             </section>
           </div>
