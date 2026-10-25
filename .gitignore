@@ -42,6 +42,9 @@ client.zip
 client/ui-audit-shots/
 client/ui-shots/
 
+# graphify knowledge graph output (generated, never committed)
+graphify-out/
+
 # Build artifacts
 *.tsbuildinfo
 
