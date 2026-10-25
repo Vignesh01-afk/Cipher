@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Warning, Check, Eye, EyeSlash, Lock, Envelope, User } from '@phosphor-icons/react';
 import { useAuth } from '../context/AuthContext';
@@ -14,6 +14,7 @@ import {
   assessPassword,
   passwordPolicyError,
 } from '../lib/passwordStrength';
+import { api } from '../lib/api';
 
 export function RegisterPage(): React.ReactElement {
   const { register, isWebCryptoSupported } = useAuth();
@@ -30,20 +31,7 @@ export function RegisterPage(): React.ReactElement {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [googleUrl, setGoogleUrl] = useState<string | null>(null);
-
-  // Only show the Google button when the API hands back a real OAuth URL.
-  useEffect(() => {
-    let cancelled = false;
-    void import('../lib/api')
-      .then(({ api }) => api.getGoogleAuthUrl())
-      .then(({ url }) => {
-        if (!cancelled && typeof url === 'string' && /^https?:\/\//.test(url)) setGoogleUrl(url);
-      })
-      .catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const [googleBusy, setGoogleBusy] = useState(false);
 
   const strength = useMemo(() => assessPassword(password), [password]);
   const passwordsMatch = password.length > 0 && password === confirmPassword;
@@ -79,11 +67,31 @@ export function RegisterPage(): React.ReactElement {
     }
   }
 
-  function onGoogleSignUp(): void {
-    // Never navigate to a missing URL: the button only exists when the API
-    // confirmed Google is configured on this server.
-    if (!googleUrl) return;
-    window.location.href = googleUrl;
+  /**
+   * GET /api/auth/google/url sits behind a 30-per-15-minute per-IP rate limit,
+   * so it is fetched here - on the click - and never on page load. The URL is
+   * then cached for this session, so a repeat click costs no request at all.
+   */
+  async function onGoogleSignUp(): Promise<void> {
+    if (googleBusy) return;
+    if (googleUrl) {
+      window.location.href = googleUrl;
+      return;
+    }
+    setGoogleBusy(true);
+    try {
+      const { url } = await api.getGoogleAuthUrl();
+      if (typeof url === 'string' && /^https?:\/\//.test(url)) {
+        setGoogleUrl(url);
+        window.location.href = url;
+        return;
+      }
+      toast.error('Google sign-up unavailable', 'This server has no Google OAuth URL configured.');
+    } catch {
+      toast.error('Google sign-up unavailable', 'Could not fetch the Google sign-up URL.');
+    } finally {
+      setGoogleBusy(false);
+    }
   }
 
   return (
@@ -251,20 +259,21 @@ export function RegisterPage(): React.ReactElement {
           </Button>
         </form>
 
-        {googleUrl ? (
-          <>
-            <div className="my-5 flex items-center gap-3">
-              <span className="h-px flex-1 bg-stone-300" />
-              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-400 dark:text-stone-500">or</span>
-              <span className="h-px flex-1 bg-stone-300" />
-            </div>
+        <div className="my-5 flex items-center gap-3">
+          <span className="h-px flex-1 bg-stone-300" />
+          <span className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-400 dark:text-stone-500">or</span>
+          <span className="h-px flex-1 bg-stone-300" />
+        </div>
 
-            <Button variant="secondary" className="w-full" onClick={() => onGoogleSignUp()} disabled={busy}>
-              <GoogleIcon />
-              {busy ? 'Redirecting…' : 'Sign up with Google'}
-            </Button>
-          </>
-        ) : null}
+        <Button
+          variant="secondary"
+          className="w-full"
+          onClick={() => void onGoogleSignUp()}
+          disabled={busy || googleBusy}
+        >
+          <GoogleIcon />
+          {googleBusy ? 'Redirecting…' : 'Sign up with Google'}
+        </Button>
 
         <p className="mt-5 text-center text-sm text-stone-500 dark:text-stone-400">
           Already have an account?{' '}
